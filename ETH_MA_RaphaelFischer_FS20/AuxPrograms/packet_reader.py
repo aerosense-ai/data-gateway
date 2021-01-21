@@ -152,7 +152,14 @@ prevIdealTimestamp = {
 }
 
 
-def writeData(type, timestamp, period): #timestamp in s
+def writeData(type, timestamp, period):
+    '''
+    Dump data to files.
+    :param type:
+    :param timestamp: timestamp in s
+    :param period:
+    :return:
+    '''
     n = len(data[type][0])   #number of samples
     for i in range(len(data[type][0])):  #iterate through all sample times
         time = timestamp - (n-i)*period
@@ -162,6 +169,12 @@ def writeData(type, timestamp, period): #timestamp in s
         files[type].write("\n")
 
 def waitTillSetComplete(type, t):   #timestamp in 1/(2**16) s
+    '''
+
+    :param type:
+    :param t:
+    :return:
+    '''
     if type == "Mics" or type == "Baros" or type == "Analog":
         # For those measurement types, the samples are inherently synchronized to the CPU time already.
         # The timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones only to check if a packet has been dropped
@@ -175,7 +188,7 @@ def waitTillSetComplete(type, t):   #timestamp in 1/(2**16) s
                     print("Received first set of " + type + " packets")
                 idealNewTimestamp = currentTimestamp[type]
             writeData(type, idealNewTimestamp/(2**16), period[type])
-            data[type] = [ ([0]*samplesPerPacket[type]) for i in range(nMeasQty[type]) ]
+            data[type] = [ ([0]*samplesPerPacket[type]) for i in range(nMeasQty[type]) ]  # clean up data buffer(?)
             prevIdealTimestamp[type] = idealNewTimestamp
             currentTimestamp[type] = t
         elif currentTimestamp[type] == 0:
@@ -201,10 +214,10 @@ def parseSensorPacket(type, len, payload):
         print("Received packet with unknown type: ", type)
         return
 
-    t = int.from_bytes(payload[240:244], ENDIAN, signed=False)
+    t = int.from_bytes(payload[240:244], ENDIAN, signed=False)  #
 
     if handles[type].startswith("Baro group"):
-        waitTillSetComplete("Baros", t)
+        waitTillSetComplete("Baros", t)  # Writes data to files when set is complete
         
         #Write the received payload to the data field
         baroGroupNum = int(handles[type][11:])
@@ -260,12 +273,14 @@ def parseSensorPacket(type, len, payload):
 
         #print(data["Analog"][0][0])
 
+
 stop = False
+
 
 def read_packets(ser):
     global stop
     while not stop:
-        r = ser.read()
+        r = ser.read()  # init read data from serial port
         if len(r) == 0:
             continue
 
@@ -279,11 +294,12 @@ def read_packets(ser):
                 nextPacketStart = 0
                 packetCnt = 0
             else:
-                parseSensorPacket(pack_type, length, payload)
+                parseSensorPacket(pack_type, length, payload)  # Parse data from serial port
     
     for type in files:
         files[type].close()
 
+#  Define and create folder and filenames
 folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
 os.mkdir(folderString)
 files["Mics"] = open(folderString + "/mics.csv", "w")
@@ -296,7 +312,7 @@ files["Analog"] = open(folderString + "/analog.csv", "w")
 ser = serial.Serial('COM9', BAUDRATE)  # open serial port
 ser.set_buffer_size(rx_size = 100000, tx_size = 1280)
 
-start_new_thread(read_packets, (ser,))
+start_new_thread(read_packets, (ser,))  # thread that will parse serial data and write it to files
 
 """
 time.sleep(1)
