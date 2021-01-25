@@ -4,6 +4,32 @@
 Installation
 ============
 
+.. _creating_a_personal_access_token:
+
+Creating a Personal Access Token:
+=================================
+
+If setting up installation for many devices, you won't want to save your personal account credentials on the devices.
+
+To avoid this, create a "deployment account" - a "robot user" on GitLab which has read-only access only to the
+**data-gateway** repository.
+
+Log in to GitLab as the robot user, and create a "Personal Access Token", with only ``read_repository`` scope. Ensure
+you note in its description what it'll be used for.
+
+This allows download of the software more securely than using your own personal credentials (which will
+have varying levels of admin access, as well as read-write privileges). It's best to keep credentials like
+this as tightly scoped as possible.
+
+.. figure:: images/creating-a-personal-access-token.png
+    :width: 600px
+    :align: center
+    :figclass: align-center
+    :alt: Creating a personal access token in GitLab
+
+    Creating a Personal Access Token in GitLab.
+
+
 .. _installing_on_a_raspberry_pi:
 
 Installing on a Raspberry Pi 4
@@ -28,10 +54,17 @@ When booted into your **pi**, use the following commands to install...
 .. code-block::
 
    export GATEWAY_VERSION="0.1.0" # Or whatever release number you aim to use, check the latest available on GitLab
-   export PERSONAL_ACCESS_TOKEN_GITLAB=abcdef123456 # Generate a PAT in gitlab, noting that it's for this purpose (so
-you can revoke it in future if necessary)
-   git clone --depth 1 https://${PERSONAL_ACCESS_TOKEN_GITLAB}@gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway.git@${GATEWAY_VERSION}
+   export PERSONAL_ACCESS_TOKEN_GITLAB=abcdef123456 # See above for how to generate the PAT
+   git clone --depth 1 -b ${GATEWAY_VERSION} https://__token__:${PERSONAL_ACCESS_TOKEN_GITLAB}@gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway.git
    pip install -e ./data-gateway
+
+This installs the CLI :ref:`gateway_cli`, which enables you to start the gateway.
+
+.. ATTENTION::
+   For prototyping and early set-ups, you needn't bother creating a PAT. By omitting the
+   ``__token__:${PERSONAL_ACCESS_TOKEN_GITLAB}`` string from the above ``git clone`` command, you'll be prompted for
+   your own username and password, which will be used to fetch the code but won't be stored.
+
 
 .. _installing_on_other_hardware:
 
