@@ -1,8 +1,10 @@
 from . import exceptions
-from .gateway import GatewayServer
+
+
+# from .gateway import GatewayServer
 
 
 __all__ = (
-    "GatewayServer",
+    # "GatewayServer",
     "exceptions",
 )

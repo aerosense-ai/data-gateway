@@ -18,7 +18,7 @@ setup(
     name="gateway",
     version="0.0.1",
     py_modules=[],
-    install_requires=["pyserial==3.5"],
+    install_requires=["click>=7.1.2", "pyserial==3.5", "octue==0.1.7"],
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",
     author="OST Aerosense",
@@ -27,6 +27,10 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests", "docs")),
     include_package_data=True,
+    entry_points="""
+    [console_scripts]
+    gateway=gateway.cli:gateway_cli
+    """,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
