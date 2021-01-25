@@ -22,14 +22,14 @@ The data flow from the aerosense sensor modules looks like this:
          >  Ingress (server to receive data on-cloud)
            >  Digital Twin (data analysis and storage system)
 
-A `Node` streams data to the `Receiver` via bluetooth. The `Receiver` writes the bytestream directly to a serial port.
-The `Gateway` (this library) reads the bytestream from the serial port, decodes it and buffers it in local storage.
-The `Gateway` then is responsible for:
+A ``Node`` streams data to the ``Receiver`` via bluetooth. The ``Receiver`` writes the bytestream directly to a serial
+port. The ``Gateway`` (this library) reads the bytestream from the serial port, decodes it and buffers it in local
+storage. The ``Gateway`` then is responsible for:
 
-   - establishing a long-running connection (websocket) to `Ingress` and writing the buffered data, or
-   - packaging the data into events and files which are `POST`ed to `Ingress`.
+   - establishing a connection (websocket) to ``Ingress`` and writing the buffered data, or
+   - packaging the data into events and files which are ``POST``ed to ``Ingress``.
 
-The `Gateway` is also responsible for managing the buffer and local store to minimise data loss in the event of internet
+The ``Gateway`` is also responsible for managing the buffer and local store to minimise data loss in the event of internet
 outages.
 
 
@@ -38,5 +38,6 @@ outages.
 
    self
    installation
+   using_the_gateway
    api
    version_history

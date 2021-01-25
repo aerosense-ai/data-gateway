@@ -58,14 +58,13 @@ When booted into your **pi**, use the following commands to install...
    git clone --depth 1 -b ${GATEWAY_VERSION} https://__token__:${PERSONAL_ACCESS_TOKEN_GITLAB}@gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway.git
    pip install -e ./data-gateway
 
-This installs the gateway :ref:`gateway_cli`, which enables you to start the gateway.
-
-
+This installs the CLI :ref:`gateway_cli`, which enables you to start the gateway.
 
 .. ATTENTION::
    For prototyping and early set-ups, you needn't bother creating a PAT. By omitting the
    ``__token__:${PERSONAL_ACCESS_TOKEN_GITLAB}`` string from the above ``git clone`` command, you'll be prompted for
    your own username and password, which will be used to fetch the code but won't be stored.
+
 
 .. _installing_on_other_hardware:
 
