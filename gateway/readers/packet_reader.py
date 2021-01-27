@@ -214,7 +214,7 @@ def waitTillSetComplete(type, t):  # timestamp in 1/(2**16) s
         currentTimestamp[type] = t
 
 
-def parseSensorPacket(type, len, payload):
+def parseSensorPacket(type, payload):
     if not type in handles:
         logger.info("Received packet with unknown type: %s", type)
         return
@@ -303,7 +303,7 @@ def read_packets(ser):
             if pack_type == TYPE_HANDLE_DEF:
                 parseHandleDef(payload)
             else:
-                parseSensorPacket(pack_type, length, payload)  # Parse data from serial port
+                parseSensorPacket(pack_type, payload)  # Parse data from serial port
 
     for type in files:
         files[type].close()
