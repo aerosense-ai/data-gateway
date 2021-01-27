@@ -21,3 +21,12 @@ Exceptions
 
 .. automodule:: gateway.exceptions
     :members:
+
+
+.. _api_dummy_serial:
+
+Dummy Serial
+============
+
+.. automodule:: dummy_serial.dummy_serial
+    :members:
