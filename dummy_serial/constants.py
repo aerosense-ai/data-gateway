@@ -1,6 +1,9 @@
 import logging
 
 
+ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+NUMBERS = "0123456789"
+
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter(
     "%(asctime)s dummyserial %(levelname)s %(name)s.%(funcName)s:%(lineno)d" " - %(message)s"
