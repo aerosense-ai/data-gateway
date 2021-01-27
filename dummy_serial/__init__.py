@@ -1,9 +1,12 @@
 from . import constants, exceptions
 from .dummy_serial import DummySerial
+from .utils import random_bytes, random_string
 
 
 __all__ = (
-    "DummySerial",
     "constants",
+    "DummySerial",
     "exceptions",
+    "random_bytes",
+    "random_string",
 )
