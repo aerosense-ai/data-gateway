@@ -1,12 +1,16 @@
 # flake8: noqa
 # TODO remove the noqa and conform to flake8
 
+import logging
 import os
 from datetime import datetime
 import serial
 from _thread import start_new_thread
 
 import sys
+
+
+logger = logging.getLogger(__name__)
 
 
 MICS_FREQ = 5000
@@ -56,10 +60,6 @@ handles = {
 }
 
 
-def errPrint(s):
-    print("***** " + s + " *****")
-
-
 def parseHandleDef(payload):
     startHandle = int.from_bytes(payload[0:1], ENDIAN)
     endHandle = int.from_bytes(payload[2:3], ENDIAN)
@@ -93,9 +93,9 @@ def parseHandleDef(payload):
             startHandle + 46: "IMU Magnetometer",
             startHandle + 48: "Analog",
         }
-        print("Successfully updated the handles")
+        logger.warning("Updated the handles in loacl scope only - see TODO")
     else:
-        errPrint("Handle error: " + str(startHandle) + " " + str(endHandle))
+        logger.error("Handle error: %s %s", startHandle, endHandle)
 
 
 files = {}
@@ -181,15 +181,11 @@ def waitTillSetComplete(type, t):  # timestamp in 1/(2**16) s
                 2 ** 16
             ):  # If at least one set (= one packet per mic/baro group) of packets was lost
                 if prevIdealTimestamp[type] != 0:
-                    print(
-                        "Lost set of "
-                        + type
-                        + " packets: "
-                        + str((currentTimestamp[type] - idealNewTimestamp) / (2 ** 16) * 1000)
-                        + "ms gap"
-                    )
+                    ms_gap = (currentTimestamp[type] - idealNewTimestamp) / (2 ** 16) * 1000
+                    logger.warning("Lost set of %s packets: %s ms gap", type, ms_gap)
                 else:
-                    print("Received first set of " + type + " packets")
+                    logger.info("Received first set of %s packets", type)
+
                 idealNewTimestamp = currentTimestamp[type]
             writeData(type, idealNewTimestamp / (2 ** 16), period[type])
             data[type] = [([0] * samplesPerPacket[type]) for i in range(nMeasQty[type])]  # clean up data buffer(?)
@@ -208,15 +204,11 @@ def waitTillSetComplete(type, t):  # timestamp in 1/(2**16) s
                 ):  # If the calculated period is reasonable, accept it. If not, most likely a packet got lost
                     period[type] = per
                 else:
-                    print(
-                        "Lost "
-                        + type
-                        + " packet: "
-                        + str((currentTimestamp[type] - prevIdealTimestamp[type]) / (2 ** 16) * 1000)
-                        + "ms gap"
-                    )
+                    ms_gap = (currentTimestamp[type] - prevIdealTimestamp[type]) / (2 ** 16) * 1000
+                    logger.warning("Lost %s packet: %s ms gap", type, ms_gap)
             else:
-                print("Received first " + type + " packet")
+                logger.info("Received first %s packet", type)
+
             writeData(type, t / (2 ** 16), period[type])
         prevIdealTimestamp[type] = currentTimestamp[type]
         currentTimestamp[type] = t
@@ -224,7 +216,7 @@ def waitTillSetComplete(type, t):  # timestamp in 1/(2**16) s
 
 def parseSensorPacket(type, len, payload):
     if not type in handles:
-        print("Received packet with unknown type: ", type)
+        logger.info("Received packet with unknown type: %s", type)
         return
 
     t = int.from_bytes(payload[240:244], ENDIAN, signed=False)  #
@@ -290,7 +282,7 @@ def parseSensorPacket(type, len, payload):
             data["Analog"][0][i] = valToV(int.from_bytes(payload[(4 * i) : (4 * i + 2)], ENDIAN, signed=False))
             data["Analog"][1][i] = valToV(int.from_bytes(payload[(4 * i + 2) : (4 * i + 4)], ENDIAN, signed=False))
 
-        # print(data["Analog"][0][0])
+        # logger.info(data["Analog"][0][0])
 
 
 stop = False
