@@ -1,6 +1,7 @@
 [paths]
 source =
     gateway/
+    dummy_serial/
 
 [run]
 omit =
