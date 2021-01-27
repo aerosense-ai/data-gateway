@@ -2,7 +2,6 @@
 # TODO remove the noqa and conform to flake8
 
 import os
-import time
 from datetime import datetime
 import serial
 from _thread import start_new_thread
@@ -66,6 +65,8 @@ def parseHandleDef(payload):
     endHandle = int.from_bytes(payload[2:3], ENDIAN)
 
     if endHandle - startHandle == 50:
+        # TODO resolve with Rafael what he wants to be done here. "handles is a local variable which does not
+        #  update the "handles" variable in the outer scope, which is perhaps what was intended.
         handles = {
             startHandle + 2: "Baro group 0",
             startHandle + 4: "Baro group 1",
@@ -198,7 +199,6 @@ def waitTillSetComplete(type, t):  # timestamp in 1/(2**16) s
             currentTimestamp[type] = t
     else:  # The IMU values are not synchronized to the CPU time, so we simply always take the timestamp we have
         if currentTimestamp[type] != 0:
-            per = period[type]
             if (
                 prevIdealTimestamp[type] != 0
             ):  # If there is a previous timestamp, calculate the actual sampling period from the difference to the current timestamp
@@ -310,8 +310,6 @@ def read_packets(ser):
 
             if pack_type == TYPE_HANDLE_DEF:
                 parseHandleDef(payload)
-                nextPacketStart = 0
-                packetCnt = 0
             else:
                 parseSensorPacket(pack_type, length, payload)  # Parse data from serial port
 
