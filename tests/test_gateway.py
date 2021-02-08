@@ -1,12 +1,16 @@
+import os
 import unittest
 from gateway import GatewayServer
 
-from .base import BaseTestCase
 
-
-class TestExampleModule(BaseTestCase):
-    """ Testing operation of the ExampleModule class
+class TestGateway(unittest.TestCase):
+    """ Testing operation of the Gateway class
      """
+
+    def setUp(self):
+
+        super().setUp()
+        self.path = str(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", ""))
 
     def test_init_gateway(self):
         """ Ensures that the twine class can be instantiated with a file
