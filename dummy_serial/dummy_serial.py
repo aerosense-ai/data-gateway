@@ -32,7 +32,7 @@ class DummySerial(object):
         logger.debug("kwargs=%s", kwargs)
 
         self._isOpen = True  # pylint: disable=C0103
-        self._waiting_data = constants.NO_DATA_PRESENT
+        self._waiting_data = b""
 
         self.port = kwargs["port"]  # Serial port name.
         self.initial_port_name = self.port  # Initial name given to the port
@@ -95,7 +95,8 @@ class DummySerial(object):
 
         logger.debug("Writing bytes(%s): %s", len(data), self._ashex(data))
 
-        self._waiting_data = self._check_response(data)
+        # self._waiting_data = self._check_response(data)
+        self._waiting_data += data
 
     def read(self, size=1):
         """ Read size bytes from the Dummy Serial Responses.
