@@ -298,6 +298,17 @@ def parseSensorPacket(sensor_type, payload):
 stop = False
 
 
+#  Define and create folder and filenames
+folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+os.mkdir(folderString)
+files["Mics"] = open(folderString + "/mics.csv", "w")
+files["Baros"] = open(folderString + "/baros.csv", "w")
+files["Acc"] = open(folderString + "/acc.csv", "w")
+files["Gyro"] = open(folderString + "/gyro.csv", "w")
+files["Mag"] = open(folderString + "/mag.csv", "w")
+files["Analog"] = open(folderString + "/analog.csv", "w")
+
+
 def read_packets(ser):
     global stop
     while not stop:
@@ -319,35 +330,26 @@ def read_packets(ser):
         files[sensor_type].close()
 
 
-#  Define and create folder and filenames
-folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-os.mkdir(folderString)
-files["Mics"] = open(folderString + "/mics.csv", "w")
-files["Baros"] = open(folderString + "/baros.csv", "w")
-files["Acc"] = open(folderString + "/acc.csv", "w")
-files["Gyro"] = open(folderString + "/gyro.csv", "w")
-files["Mag"] = open(folderString + "/mag.csv", "w")
-files["Analog"] = open(folderString + "/analog.csv", "w")
+if __name__ == "__main__":
+    ser = serial.Serial(SERIAL_PORT, BAUDRATE)  # open serial port
+    ser.set_buffer_size(rx_size=SERIAL_BUFFER_RX_SIZE, tx_size=SERIAL_BUFFER_TX_SIZE)
 
-ser = serial.Serial(SERIAL_PORT, BAUDRATE)  # open serial port
-ser.set_buffer_size(rx_size=SERIAL_BUFFER_RX_SIZE, tx_size=SERIAL_BUFFER_TX_SIZE)
+    start_new_thread(read_packets, (ser,))  # thread that will parse serial data and write it to files
 
-start_new_thread(read_packets, (ser,))  # thread that will parse serial data and write it to files
+    """
+    time.sleep(1)
+    ser.write(("configMics "  + str(MICS_FREQ)  + " " + str(MICS_BM) + "\n").encode('utf_8'))
+    time.sleep(1)
+    ser.write(("configBaros " + str(BAROS_FREQ) + " " + str(BAROS_BM) + "\n").encode('utf_8'))
+    time.sleep(1)
+    ser.write(("configAccel " + str(ACC_FREQ)   + " " + str(ACC_RANGE) + "\n").encode('utf_8'))
+    time.sleep(1)
+    ser.write(("configGyro "  + str(GYRO_FREQ)  + " " + str(GYRO_RANGE) + "\n").encode('utf_8'))
+    """
 
-"""
-time.sleep(1)
-ser.write(("configMics "  + str(MICS_FREQ)  + " " + str(MICS_BM) + "\n").encode('utf_8'))
-time.sleep(1)
-ser.write(("configBaros " + str(BAROS_FREQ) + " " + str(BAROS_BM) + "\n").encode('utf_8'))
-time.sleep(1)
-ser.write(("configAccel " + str(ACC_FREQ)   + " " + str(ACC_RANGE) + "\n").encode('utf_8'))
-time.sleep(1)
-ser.write(("configGyro "  + str(GYRO_FREQ)  + " " + str(GYRO_RANGE) + "\n").encode('utf_8'))
-"""
-
-for line in sys.stdin:
-    if line == "stop\n":
-        stop = True
-        break
-    else:
-        ser.write(line.encode("utf_8"))
+    for line in sys.stdin:
+        if line == "stop\n":
+            stop = True
+            break
+        else:
+            ser.write(line.encode("utf_8"))
