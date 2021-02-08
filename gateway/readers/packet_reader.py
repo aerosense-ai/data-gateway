@@ -1,11 +1,12 @@
 # flake8: noqa
-# TODO remove the noqa and conform to flake8
+
 
 import logging
 import os
 from datetime import datetime
 import serial
 from _thread import start_new_thread
+from gateway import exceptions
 
 import sys
 
@@ -22,6 +23,10 @@ ACC_RANGE = 16
 GYRO_FREQ = 100
 GYRO_RANGE = 2000
 ANALOG_FREQ = 16384
+
+SERIAL_PORT = "COM9"
+SERIAL_BUFFER_RX_SIZE = 100000
+SERIAL_BUFFER_TX_SIZE = 1280
 
 BAUDRATE = 2300000
 ENDIAN = "little"
@@ -147,85 +152,90 @@ currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analo
 prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
 
-def writeData(type, timestamp, period):
-    """
-    Dump data to files.
-    :param type:
+def writeData(sensor_type, timestamp, period):
+    """ Dump data to files.
+    :param sensor_type:
     :param timestamp: timestamp in s
     :param period:
     :return:
     """
-    n = len(data[type][0])  # number of samples
-    for i in range(len(data[type][0])):  # iterate through all sample times
+    n = len(data[sensor_type][0])  # number of samples
+    for i in range(len(data[sensor_type][0])):  # iterate through all sample times
         time = timestamp - (n - i) * period
-        files[type].write(str(time) + ",")
-        for meas in data[type]:  # iterate through all measured quantities
-            files[type].write(str(meas[i]) + ",")
-        files[type].write("\n")
+        files[sensor_type].write(str(time) + ",")
+        for meas in data[sensor_type]:  # iterate through all measured quantities
+            files[sensor_type].write(str(meas[i]) + ",")
+        files[sensor_type].write("\n")
 
 
-def waitTillSetComplete(type, t):  # timestamp in 1/(2**16) s
+def waitTillSetComplete(sensor_type, t):  # timestamp in 1/(2**16) s
     """
-
-    :param type:
+    :param sensor_type:
     :param t:
     :return:
     """
-    if type == "Mics" or type == "Baros" or type == "Analog":
+    if sensor_type == "Mics" or sensor_type == "Baros" or sensor_type == "Analog":
         # For those measurement types, the samples are inherently synchronized to the CPU time already.
         # The timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones only to check if a packet has been dropped
         # Also, for mics and baros, there exist packet sets: Several packets arrive with the same timestamp
-        if t != currentTimestamp[type] and currentTimestamp[type] != 0:
-            idealNewTimestamp = prevIdealTimestamp[type] + samplesPerPacket[type] * period[type] * (2 ** 16)
-            if abs(idealNewTimestamp - currentTimestamp[type]) > MAX_TIMESTAMP_SLACK * (
+        if t != currentTimestamp[sensor_type] and currentTimestamp[sensor_type] != 0:
+            idealNewTimestamp = prevIdealTimestamp[sensor_type] + samplesPerPacket[sensor_type] * period[
+                sensor_type
+            ] * (2 ** 16)
+            if abs(idealNewTimestamp - currentTimestamp[sensor_type]) > MAX_TIMESTAMP_SLACK * (
                 2 ** 16
             ):  # If at least one set (= one packet per mic/baro group) of packets was lost
-                if prevIdealTimestamp[type] != 0:
-                    ms_gap = (currentTimestamp[type] - idealNewTimestamp) / (2 ** 16) * 1000
-                    logger.warning("Lost set of %s packets: %s ms gap", type, ms_gap)
+                if prevIdealTimestamp[sensor_type] != 0:
+                    ms_gap = (currentTimestamp[sensor_type] - idealNewTimestamp) / (2 ** 16) * 1000
+                    logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
                 else:
-                    logger.info("Received first set of %s packets", type)
+                    logger.info("Received first set of %s packets", sensor_type)
 
-                idealNewTimestamp = currentTimestamp[type]
-            writeData(type, idealNewTimestamp / (2 ** 16), period[type])
-            data[type] = [([0] * samplesPerPacket[type]) for i in range(nMeasQty[type])]  # clean up data buffer(?)
-            prevIdealTimestamp[type] = idealNewTimestamp
-            currentTimestamp[type] = t
-        elif currentTimestamp[type] == 0:
-            currentTimestamp[type] = t
+                idealNewTimestamp = currentTimestamp[sensor_type]
+            writeData(sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type])
+            data[sensor_type] = [
+                ([0] * samplesPerPacket[sensor_type]) for i in range(nMeasQty[sensor_type])
+            ]  # clean up data buffer(?)
+            prevIdealTimestamp[sensor_type] = idealNewTimestamp
+            currentTimestamp[sensor_type] = t
+        elif currentTimestamp[sensor_type] == 0:
+            currentTimestamp[sensor_type] = t
     else:  # The IMU values are not synchronized to the CPU time, so we simply always take the timestamp we have
-        if currentTimestamp[type] != 0:
+        if currentTimestamp[sensor_type] != 0:
             if (
-                prevIdealTimestamp[type] != 0
+                prevIdealTimestamp[sensor_type] != 0
             ):  # If there is a previous timestamp, calculate the actual sampling period from the difference to the current timestamp
-                per = (currentTimestamp[type] - prevIdealTimestamp[type]) / samplesPerPacket[type] / (2 ** 16)
+                per = (
+                    (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type])
+                    / samplesPerPacket[sensor_type]
+                    / (2 ** 16)
+                )
                 if (
-                    abs(per - period[type]) / period[type] < MAX_PERIOD_DRIFT
+                    abs(per - period[sensor_type]) / period[sensor_type] < MAX_PERIOD_DRIFT
                 ):  # If the calculated period is reasonable, accept it. If not, most likely a packet got lost
-                    period[type] = per
+                    period[sensor_type] = per
                 else:
-                    ms_gap = (currentTimestamp[type] - prevIdealTimestamp[type]) / (2 ** 16) * 1000
-                    logger.warning("Lost %s packet: %s ms gap", type, ms_gap)
+                    ms_gap = (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type]) / (2 ** 16) * 1000
+                    logger.warning("Lost %s packet: %s ms gap", sensor_type, ms_gap)
             else:
-                logger.info("Received first %s packet", type)
+                logger.info("Received first %s packet", sensor_type)
 
-            writeData(type, t / (2 ** 16), period[type])
-        prevIdealTimestamp[type] = currentTimestamp[type]
-        currentTimestamp[type] = t
+            writeData(sensor_type, t / (2 ** 16), period[sensor_type])
+        prevIdealTimestamp[sensor_type] = currentTimestamp[sensor_type]
+        currentTimestamp[sensor_type] = t
 
 
-def parseSensorPacket(type, payload):
-    if not type in handles:
-        logger.info("Received packet with unknown type: %s", type)
-        return
+def parseSensorPacket(sensor_type, payload):
+    if not sensor_type in handles:
+        raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
-    t = int.from_bytes(payload[240:244], ENDIAN, signed=False)  #
+    t = int.from_bytes(payload[240:244], ENDIAN, signed=False)
 
-    if handles[type].startswith("Baro group"):
+    if handles[sensor_type].startswith("Baro group"):
         waitTillSetComplete("Baros", t)  # Writes data to files when set is complete
 
         # Write the received payload to the data field
-        baroGroupNum = int(handles[type][11:])
+        baroGroupNum = int(handles[sensor_type][11:])
         for i in range(BAROS_SAMPLES_PER_PACKET):
             for j in range(BAROS_GROUP_SIZE):
                 data["Baros"][baroGroupNum * BAROS_GROUP_SIZE + j][i] = (
@@ -237,15 +247,15 @@ def parseSensorPacket(type, payload):
                     / 4096
                 )
 
-    elif handles[type].startswith("Mic"):
+    elif handles[sensor_type].startswith("Mic"):
         waitTillSetComplete("Mics", t)
 
         # Write the received payload to the data field
-        micNum = int(handles[type][4:])
+        micNum = int(handles[sensor_type][4:])
         for i in range(MICS_SAMPLES_PER_PACKET):
             data["Mics"][micNum][i] = int.from_bytes(payload[(2 * i) : (2 * i + 2)], ENDIAN, signed=True)
 
-    elif handles[type].startswith("IMU Accel"):
+    elif handles[sensor_type].startswith("IMU Accel"):
         waitTillSetComplete("Acc", t)
 
         # Write the received payload to the data field
@@ -254,7 +264,7 @@ def parseSensorPacket(type, payload):
             data["Acc"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
             data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
 
-    elif handles[type] == "IMU Gyro":
+    elif handles[sensor_type] == "IMU Gyro":
         waitTillSetComplete("Gyro", t)
 
         # Write the received payload to the data field
@@ -263,7 +273,7 @@ def parseSensorPacket(type, payload):
             data["Gyro"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
             data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
 
-    elif handles[type] == "IMU Magnetometer":
+    elif handles[sensor_type] == "IMU Magnetometer":
         waitTillSetComplete("Mag", t)
 
         # Write the received payload to the data field
@@ -272,7 +282,7 @@ def parseSensorPacket(type, payload):
             data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
             data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
 
-    elif handles[type] == "Analog":
+    elif handles[sensor_type] == "Analog":
         waitTillSetComplete("Analog", t)
 
         def valToV(val):
@@ -305,8 +315,8 @@ def read_packets(ser):
             else:
                 parseSensorPacket(pack_type, payload)  # Parse data from serial port
 
-    for type in files:
-        files[type].close()
+    for sensor_type in files:
+        files[sensor_type].close()
 
 
 #  Define and create folder and filenames
@@ -319,8 +329,8 @@ files["Gyro"] = open(folderString + "/gyro.csv", "w")
 files["Mag"] = open(folderString + "/mag.csv", "w")
 files["Analog"] = open(folderString + "/analog.csv", "w")
 
-ser = serial.Serial("COM9", BAUDRATE)  # open serial port
-ser.set_buffer_size(rx_size=100000, tx_size=1280)
+ser = serial.Serial(SERIAL_PORT, BAUDRATE)  # open serial port
+ser.set_buffer_size(rx_size=SERIAL_BUFFER_RX_SIZE, tx_size=SERIAL_BUFFER_TX_SIZE)
 
 start_new_thread(read_packets, (ser,))  # thread that will parse serial data and write it to files
 
