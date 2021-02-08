@@ -39,5 +39,6 @@ outages.
    self
    installation
    using_the_gateway
+   deployment
    api
    version_history
