@@ -26,7 +26,7 @@ from gateway.readers.constants import (
     period,
     samplesPerPacket,
 )
-from gateway.uploaders.uploader import StreamingUploader
+from gateway.uploaders import StreamingUploader
 
 
 logger = logging.getLogger(__name__)
