@@ -49,13 +49,48 @@ class PacketReader:
         )
         self.stop = False
 
+    def read_packets(self, ser, filenames=None, stop_when_no_more_data=False):
+        currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
+        prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
+
+        data = {
+            "Mics": [([0] * samplesPerPacket["Mics"]) for _ in range(nMeasQty["Mics"])],
+            "Baros": [([0] * samplesPerPacket["Baros"]) for _ in range(nMeasQty["Baros"])],
+            "Acc": [([0] * samplesPerPacket["Acc"]) for _ in range(nMeasQty["Acc"])],
+            "Gyro": [([0] * samplesPerPacket["Gyro"]) for _ in range(nMeasQty["Gyro"])],
+            "Mag": [([0] * samplesPerPacket["Mag"]) for _ in range(nMeasQty["Mag"])],
+            "Analog": [([0] * samplesPerPacket["Analog"]) for _ in range(nMeasQty["Analog"])],
+        }
+
+        while not self.stop:
+            r = ser.read()  # init read data from serial port
+            if len(r) == 0:
+                if stop_when_no_more_data:
+                    break
+                continue
+
+            if r[0] == PACKET_KEY:
+                pack_type = int.from_bytes(ser.read(), ENDIAN)
+                length = int.from_bytes(ser.read(), ENDIAN)
+                payload = ser.read(length)
+
+                if pack_type == TYPE_HANDLE_DEF:
+                    self.update_handles(payload)
+                else:
+                    self._parse_sensor_packet(
+                        pack_type,
+                        payload,
+                        filenames or self._generate_default_filenames(),
+                        data,
+                        currentTimestamp,
+                        prevIdealTimestamp,
+                    )
+
     def update_handles(self, payload):
         startHandle = int.from_bytes(payload[0:1], ENDIAN)
         endHandle = int.from_bytes(payload[2:3], ENDIAN)
 
         if endHandle - startHandle == 50:
-            # TODO resolve with Rafael what he wants to be done here. "handles is a local variable which does not
-            #  update the "handles" variable in the outer scope, which is perhaps what was intended.
             self.handles = {
                 startHandle + 2: "Baro group 0",
                 startHandle + 4: "Baro group 1",
@@ -88,32 +123,78 @@ class PacketReader:
         else:
             logger.error("Handle error: %s %s", startHandle, endHandle)
 
-    def write_data(self, data, sensor_type, timestamp, period, filenames):
-        """Dump data to files.
+    def _parse_sensor_packet(self, sensor_type, payload, filenames, data, currentTimestamp, prevIdealTimestamp):
+        if sensor_type not in self.handles:
+            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
-        :param sensor_type:
-        :param timestamp: timestamp in s
-        :param period:
-        :return:
-        """
-        n = len(data[sensor_type][0])  # number of samples
-        for i in range(len(data[sensor_type][0])):  # iterate through all sample times
-            time = timestamp - (n - i) * period
+        t = int.from_bytes(payload[240:244], ENDIAN, signed=False)
 
-            with open(filenames[sensor_type], "a") as f:
-                f.write(str(time) + ",")
-            self.uploader.add_to_stream(sensor_type, str(time) + ",")
+        if self.handles[sensor_type].startswith("Baro group"):
+            self._wait_until_set_is_complete(
+                "Baros", t, filenames, data, currentTimestamp, prevIdealTimestamp
+            )  # Writes data to files when set is complete
 
-            for meas in data[sensor_type]:  # iterate through all measured quantities
-                with open(filenames[sensor_type], "a") as f:
-                    f.write(str(meas[i]) + ",")
-                self.uploader.add_to_stream(sensor_type, str(meas[i]) + ",")
+            # Write the received payload to the data field
+            baroGroupNum = int(self.handles[sensor_type][11:])
+            for i in range(BAROS_SAMPLES_PER_PACKET):
+                for j in range(BAROS_GROUP_SIZE):
+                    data["Baros"][baroGroupNum * BAROS_GROUP_SIZE + j][i] = (
+                        int.from_bytes(
+                            payload[(4 * (BAROS_GROUP_SIZE * i + j)) : (4 * (BAROS_GROUP_SIZE * i + j) + 4)],
+                            ENDIAN,
+                            signed=False,
+                        )
+                        / 4096
+                    )
 
-            with open(filenames[sensor_type], "a") as f:
-                f.write("\n")
-            self.uploader.add_to_stream(sensor_type, "\n")
+        elif self.handles[sensor_type].startswith("Mic"):
+            self._wait_until_set_is_complete("Mics", t, filenames, data, currentTimestamp, prevIdealTimestamp)
 
-    def wait_until_set_is_complete(self, sensor_type, t, filenames, data, currentTimestamp, prevIdealTimestamp):
+            # Write the received payload to the data field
+            micNum = int(self.handles[sensor_type][4:])
+            for i in range(MICS_SAMPLES_PER_PACKET):
+                data["Mics"][micNum][i] = int.from_bytes(payload[(2 * i) : (2 * i + 2)], ENDIAN, signed=True)
+
+        elif self.handles[sensor_type].startswith("IMU Accel"):
+            self._wait_until_set_is_complete("Acc", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+
+            # Write the received payload to the data field
+            for i in range(IMU_SAMPLES_PER_PACKET):
+                data["Acc"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], ENDIAN, signed=True)
+                data["Acc"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
+                data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
+
+        elif self.handles[sensor_type] == "IMU Gyro":
+            self._wait_until_set_is_complete("Gyro", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+
+            # Write the received payload to the data field
+            for i in range(IMU_SAMPLES_PER_PACKET):
+                data["Gyro"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], ENDIAN, signed=True)
+                data["Gyro"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
+                data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
+
+        elif self.handles[sensor_type] == "IMU Magnetometer":
+            self._wait_until_set_is_complete("Mag", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+
+            # Write the received payload to the data field
+            for i in range(IMU_SAMPLES_PER_PACKET):
+                data["Mag"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], ENDIAN, signed=True)
+                data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
+                data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
+
+        elif self.handles[sensor_type] == "Analog":
+            self._wait_until_set_is_complete("Analog", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+
+            def valToV(val):
+                return (val << 6) / 1e6
+
+            for i in range(ANALOG_SAMPLES_PER_PACKET):
+                data["Analog"][0][i] = valToV(int.from_bytes(payload[(4 * i) : (4 * i + 2)], ENDIAN, signed=False))
+                data["Analog"][1][i] = valToV(int.from_bytes(payload[(4 * i + 2) : (4 * i + 4)], ENDIAN, signed=False))
+
+            # logger.info(data["Analog"][0][0])
+
+    def _wait_until_set_is_complete(self, sensor_type, t, filenames, data, currentTimestamp, prevIdealTimestamp):
         """timestamp in 1/(2**16) s
 
         :param sensor_type:
@@ -140,7 +221,7 @@ class PacketReader:
 
                     idealNewTimestamp = currentTimestamp[sensor_type]
 
-                self.write_data(data, sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type], filenames)
+                self._write_data(data, sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type], filenames)
 
                 # clean up data buffer(?)
                 data[sensor_type] = [([0] * samplesPerPacket[sensor_type]) for _ in range(nMeasQty[sensor_type])]
@@ -170,81 +251,35 @@ class PacketReader:
                 else:
                     logger.info("Received first %s packet", sensor_type)
 
-                self.write_data(data, sensor_type, t / (2 ** 16), period[sensor_type], filenames)
+                self._write_data(data, sensor_type, t / (2 ** 16), period[sensor_type], filenames)
 
             prevIdealTimestamp[sensor_type] = currentTimestamp[sensor_type]
             currentTimestamp[sensor_type] = t
 
-    def parse_sensor_packet(self, sensor_type, payload, filenames, data, currentTimestamp, prevIdealTimestamp):
-        if sensor_type not in self.handles:
-            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
+    def _write_data(self, data, sensor_type, timestamp, period, filenames):
+        """Dump data to files.
 
-        t = int.from_bytes(payload[240:244], ENDIAN, signed=False)
+        :param sensor_type:
+        :param timestamp: timestamp in s
+        :param period:
+        :return:
+        """
+        n = len(data[sensor_type][0])  # number of samples
+        for i in range(len(data[sensor_type][0])):  # iterate through all sample times
+            time = timestamp - (n - i) * period
 
-        if self.handles[sensor_type].startswith("Baro group"):
-            self.wait_until_set_is_complete(
-                "Baros", t, filenames, data, currentTimestamp, prevIdealTimestamp
-            )  # Writes data to files when set is complete
+            with open(filenames[sensor_type], "a") as f:
+                f.write(str(time) + ",")
+            self.uploader.add_to_stream(sensor_type, str(time) + ",")
 
-            # Write the received payload to the data field
-            baroGroupNum = int(self.handles[sensor_type][11:])
-            for i in range(BAROS_SAMPLES_PER_PACKET):
-                for j in range(BAROS_GROUP_SIZE):
-                    data["Baros"][baroGroupNum * BAROS_GROUP_SIZE + j][i] = (
-                        int.from_bytes(
-                            payload[(4 * (BAROS_GROUP_SIZE * i + j)) : (4 * (BAROS_GROUP_SIZE * i + j) + 4)],
-                            ENDIAN,
-                            signed=False,
-                        )
-                        / 4096
-                    )
+            for meas in data[sensor_type]:  # iterate through all measured quantities
+                with open(filenames[sensor_type], "a") as f:
+                    f.write(str(meas[i]) + ",")
+                self.uploader.add_to_stream(sensor_type, str(meas[i]) + ",")
 
-        elif self.handles[sensor_type].startswith("Mic"):
-            self.wait_until_set_is_complete("Mics", t, filenames, data, currentTimestamp, prevIdealTimestamp)
-
-            # Write the received payload to the data field
-            micNum = int(self.handles[sensor_type][4:])
-            for i in range(MICS_SAMPLES_PER_PACKET):
-                data["Mics"][micNum][i] = int.from_bytes(payload[(2 * i) : (2 * i + 2)], ENDIAN, signed=True)
-
-        elif self.handles[sensor_type].startswith("IMU Accel"):
-            self.wait_until_set_is_complete("Acc", t, filenames, data, currentTimestamp, prevIdealTimestamp)
-
-            # Write the received payload to the data field
-            for i in range(IMU_SAMPLES_PER_PACKET):
-                data["Acc"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], ENDIAN, signed=True)
-                data["Acc"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
-                data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
-
-        elif self.handles[sensor_type] == "IMU Gyro":
-            self.wait_until_set_is_complete("Gyro", t, filenames, data, currentTimestamp, prevIdealTimestamp)
-
-            # Write the received payload to the data field
-            for i in range(IMU_SAMPLES_PER_PACKET):
-                data["Gyro"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], ENDIAN, signed=True)
-                data["Gyro"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
-                data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
-
-        elif self.handles[sensor_type] == "IMU Magnetometer":
-            self.wait_until_set_is_complete("Mag", t, filenames, data, currentTimestamp, prevIdealTimestamp)
-
-            # Write the received payload to the data field
-            for i in range(IMU_SAMPLES_PER_PACKET):
-                data["Mag"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], ENDIAN, signed=True)
-                data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], ENDIAN, signed=True)
-                data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
-
-        elif self.handles[sensor_type] == "Analog":
-            self.wait_until_set_is_complete("Analog", t, filenames, data, currentTimestamp, prevIdealTimestamp)
-
-            def valToV(val):
-                return (val << 6) / 1e6
-
-            for i in range(ANALOG_SAMPLES_PER_PACKET):
-                data["Analog"][0][i] = valToV(int.from_bytes(payload[(4 * i) : (4 * i + 2)], ENDIAN, signed=False))
-                data["Analog"][1][i] = valToV(int.from_bytes(payload[(4 * i + 2) : (4 * i + 4)], ENDIAN, signed=False))
-
-            # logger.info(data["Analog"][0][0])
+            with open(filenames[sensor_type], "a") as f:
+                f.write("\n")
+            self.uploader.add_to_stream(sensor_type, "\n")
 
     @staticmethod
     def _generate_default_filenames():
@@ -259,43 +294,6 @@ class PacketReader:
             "Mag": os.path.join(folderString, "mag.csv"),
             "Analog": os.path.join(folderString, "analog.csv"),
         }
-
-    def read_packets(self, ser, filenames=None, stop_when_no_more_data=False):
-        currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
-        prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
-
-        data = {
-            "Mics": [([0] * samplesPerPacket["Mics"]) for _ in range(nMeasQty["Mics"])],
-            "Baros": [([0] * samplesPerPacket["Baros"]) for _ in range(nMeasQty["Baros"])],
-            "Acc": [([0] * samplesPerPacket["Acc"]) for _ in range(nMeasQty["Acc"])],
-            "Gyro": [([0] * samplesPerPacket["Gyro"]) for _ in range(nMeasQty["Gyro"])],
-            "Mag": [([0] * samplesPerPacket["Mag"]) for _ in range(nMeasQty["Mag"])],
-            "Analog": [([0] * samplesPerPacket["Analog"]) for _ in range(nMeasQty["Analog"])],
-        }
-
-        while not self.stop:
-            r = ser.read()  # init read data from serial port
-            if len(r) == 0:
-                if stop_when_no_more_data:
-                    break
-                continue
-
-            if r[0] == PACKET_KEY:
-                pack_type = int.from_bytes(ser.read(), ENDIAN)
-                length = int.from_bytes(ser.read(), ENDIAN)
-                payload = ser.read(length)
-
-                if pack_type == TYPE_HANDLE_DEF:
-                    self.update_handles(payload)
-                else:
-                    self.parse_sensor_packet(
-                        pack_type,
-                        payload,
-                        filenames or self._generate_default_filenames(),
-                        data,
-                        currentTimestamp,
-                        prevIdealTimestamp,
-                    )
 
 
 if __name__ == "__main__":
