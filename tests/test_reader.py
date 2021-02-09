@@ -54,7 +54,9 @@ class TestPacketReader(unittest.TestCase):
             process.terminate()
 
             with open(os.path.join(temporary_directory, "baros.csv")) as f:
-                self.assertTrue(len(f.read()) > 0)
+                outputs = f.read().split("\n")
+                self.assertTrue(len(outputs) > 1)
+                self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_mic_sensor(self):
         serial_port = DummySerial(port="test")
@@ -73,7 +75,9 @@ class TestPacketReader(unittest.TestCase):
             process.terminate()
 
             with open(os.path.join(temporary_directory, "mics.csv")) as f:
-                self.assertTrue(len(f.read()) > 0)
+                outputs = f.read().split("\n")
+                self.assertTrue(len(outputs) > 1)
+                self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_acc_sensor(self):
         serial_port = DummySerial(port="test")
@@ -92,7 +96,9 @@ class TestPacketReader(unittest.TestCase):
             process.terminate()
 
             with open(os.path.join(temporary_directory, "acc.csv")) as f:
-                self.assertTrue(len(f.read()) > 0)
+                outputs = f.read().split("\n")
+                self.assertTrue(len(outputs) > 1)
+                self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_gyro_sensor(self):
         serial_port = DummySerial(port="test")
@@ -111,7 +117,9 @@ class TestPacketReader(unittest.TestCase):
             process.terminate()
 
             with open(os.path.join(temporary_directory, "gyro.csv")) as f:
-                self.assertTrue(len(f.read()) > 0)
+                outputs = f.read().split("\n")
+                self.assertTrue(len(outputs) > 1)
+                self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_mag_sensor(self):
         serial_port = DummySerial(port="test")
@@ -130,7 +138,9 @@ class TestPacketReader(unittest.TestCase):
             process.terminate()
 
             with open(os.path.join(temporary_directory, "mag.csv")) as f:
-                self.assertTrue(len(f.read()) > 0)
+                outputs = f.read().split("\n")
+                self.assertTrue(len(outputs) > 1)
+                self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_analog_sensor(self):
         serial_port = DummySerial(port="test")
@@ -149,7 +159,9 @@ class TestPacketReader(unittest.TestCase):
             process.terminate()
 
             with open(os.path.join(temporary_directory, "analog.csv")) as f:
-                self.assertTrue(len(f.read()) > 0)
+                outputs = f.read().split("\n")
+                self.assertTrue(len(outputs) > 1)
+                self.assertTrue(len(outputs[0].split(",")) > 1)
 
 
 if __name__ == "__main__":
