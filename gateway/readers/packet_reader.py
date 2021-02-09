@@ -323,12 +323,14 @@ def generate_default_filenames():
 stop = False
 
 
-def read_packets(ser, filenames=None):
+def read_packets(ser, filenames=None, stop_when_no_more_data=False):
     global stop
 
     while not stop:
         r = ser.read()  # init read data from serial port
         if len(r) == 0:
+            if stop_when_no_more_data:
+                break
             continue
 
         if r[0] == PACKET_KEY:
