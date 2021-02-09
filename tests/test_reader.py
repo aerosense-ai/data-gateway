@@ -8,7 +8,7 @@ from octue.utils.cloud.credentials import GCPCredentialsManager
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
 from gateway.readers.constants import PACKET_KEY
-from gateway.readers.packet_reader import read_packets
+from gateway.readers.packet_reader import PacketReader
 
 
 class TestPacketReader(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestPacketReader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "baros.csv")) as f:
                 outputs = f.read().split("\n")
@@ -68,7 +68,7 @@ class TestPacketReader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "mics.csv")) as f:
                 outputs = f.read().split("\n")
@@ -86,7 +86,7 @@ class TestPacketReader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "acc.csv")) as f:
                 outputs = f.read().split("\n")
@@ -104,7 +104,7 @@ class TestPacketReader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "gyro.csv")) as f:
                 outputs = f.read().split("\n")
@@ -122,7 +122,7 @@ class TestPacketReader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "mag.csv")) as f:
                 outputs = f.read().split("\n")
@@ -140,7 +140,7 @@ class TestPacketReader(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "analog.csv")) as f:
                 outputs = f.read().split("\n")
