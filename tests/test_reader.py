@@ -3,14 +3,14 @@ import tempfile
 import time
 import unittest
 from multiprocessing import Process
+
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
 from gateway.readers.packet_reader import PACKET_KEY, read_packets
 
 
 class TestPacketReader(unittest.TestCase):
-    """ Testing operation of the PacketReader class
-    """
+    """Testing operation of the PacketReader class"""
 
     # def setUp(self):
     #     super().setUp()

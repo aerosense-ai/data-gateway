@@ -31,7 +31,7 @@ global_cli_context = {}
 )
 @click.version_option(version=pkg_resources.get_distribution("gateway").version)
 def gateway_cli(logger_uri, log_level):
-    """ AeroSense Gateway CLI.
+    """AeroSense Gateway CLI.
 
     Runs the on-nacelle gateway service to read data from the bluetooth receivers and send it to AeroSense Cloud.
     """
@@ -55,8 +55,7 @@ def gateway_cli(logger_uri, log_level):
     help="Path to your aerosense deployment configuration file.",
 )
 def start(config_file):
-    """ Start the gateway service (daemonise this for a deployment)
-    """
+    """Start the gateway service (daemonise this for a deployment)"""
     while True:
         logger.info("Do Stuff with", config_file)
     return 0
@@ -71,7 +70,7 @@ def start(config_file):
     help="Path to your aerosense deployment configuration file.",
 )
 def supervisord_conf(config_file):
-    """ Print conf entry for use with supervisord
+    """Print conf entry for use with supervisord
 
     Daemonising a process ensures it automatically restarts after a failure and on startup of the operating system
     failure.

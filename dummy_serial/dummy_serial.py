@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class DummySerial(object):
-    """ Dummy (mock) serial port for testing purposes.
+    """Dummy (mock) serial port for testing purposes.
 
     Mimics the behavior of a serial port as defined by the `pyserial <http://pyserial.sourceforge.net/>`_ module.
 
@@ -26,8 +26,7 @@ class DummySerial(object):
     """
 
     def __init__(self, *args, **kwargs):
-        """ Class constructor for DummySerial
-        """
+        """Class constructor for DummySerial"""
         logger.debug("args=%s", args)
         logger.debug("kwargs=%s", kwargs)
 
@@ -42,8 +41,7 @@ class DummySerial(object):
         self.baudrate = kwargs.get("baudrate", constants.DEFAULT_BAUDRATE)
 
     def __repr__(self):
-        """ String representation of the DummySerial instance
-        """
+        """String representation of the DummySerial instance"""
         return "{0}.{1}<id=0x{2:x}, open={3}>(port={4!r}, timeout={5!r}, " "waiting_data={6!r})".format(
             self.__module__,
             self.__class__.__name__,
@@ -55,8 +53,7 @@ class DummySerial(object):
         )
 
     def open(self):
-        """ Open the dummy serial port
-        """
+        """Open the dummy serial port"""
         logger.debug("Opening port")
 
         if self._isOpen:
@@ -66,15 +63,14 @@ class DummySerial(object):
         self.port = self.initial_port_name
 
     def close(self):
-        """ Close the dummy serial port
-        """
+        """Close the dummy serial port"""
         logger.debug("Closing port")
         if self._isOpen:
             self._isOpen = False
         self.port = None
 
     def write(self, data):
-        """ Write to the dummy serial port
+        """Write to the dummy serial port
 
         This will affect the response for subsequent read operations.
 
@@ -99,7 +95,7 @@ class DummySerial(object):
         self._waiting_data += data
 
     def read(self, size=1):
-        """ Read size bytes from the Dummy Serial Responses.
+        """Read size bytes from the Dummy Serial Responses.
         The response is dependent on what was written last to the port on
         dummyserial, and what is defined in the :data:`RESPONSES` dictionary.
 
@@ -154,8 +150,7 @@ class DummySerial(object):
 
     @property
     def in_waiting(self):
-        """ Length of waiting output data
-        """
+        """Length of waiting output data"""
         return len(self._waiting_data)
 
     def _check_response(self, data_in):

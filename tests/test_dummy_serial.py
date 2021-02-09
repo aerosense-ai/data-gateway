@@ -1,8 +1,9 @@
 import logging.handlers
 import random
 import unittest
-from dummy_serial import DummySerial, constants, exceptions, random_bytes, random_string
 from serial.serialutil import SerialException
+
+from dummy_serial import DummySerial, constants, exceptions, random_bytes, random_string
 
 
 class DummySerialTest(unittest.TestCase):
@@ -152,8 +153,7 @@ class DummySerialTest(unittest.TestCase):
         self.assertEqual(constants.NO_DATA_PRESENT, empty_data)
 
     def test_writing_non_bytes_data_raises_type_error(self):
-        """ Ensures that errors are raised if attempting to write non-bytes data
-        """
+        """Ensures that errors are raised if attempting to write non-bytes data"""
         rand_write_len = random.randint(256, 1024)
         rand_write_string = random_string(rand_write_len)
 
@@ -162,8 +162,7 @@ class DummySerialTest(unittest.TestCase):
             ds.write(rand_write_string)
 
     def test_negative_read_size(self):
-        """ Ensures that errors are raised if attempting to access more or less data than in the buffer
-        """
+        """Ensures that errors are raised if attempting to access more or less data than in the buffer"""
         rand_write_len = random.randint(256, 1024)
         rand_write_bytes = random_bytes(rand_write_len)
 
@@ -174,8 +173,7 @@ class DummySerialTest(unittest.TestCase):
             ds.read(-1)
 
     def test_timeout_with_large_read_size(self):
-        """ Ensures that errors are raised if attempting to access more or less data than in the buffer
-        """
+        """Ensures that errors are raised if attempting to access more or less data than in the buffer"""
         rand_write_len = random.randint(256, 1024)
         rand_write_bytes = random_bytes(rand_write_len)
 
@@ -189,8 +187,7 @@ class DummySerialTest(unittest.TestCase):
         self.assertEqual(len(result), rand_write_len)
 
     def test_partial_read(self):
-        """ Ensures that errors are raised if attempting to access more or less data than in the buffer
-        """
+        """Ensures that errors are raised if attempting to access more or less data than in the buffer"""
         rand_write_len = random.randint(256, 1024)
         rand_write_bytes = random_bytes(rand_write_len)
 
@@ -204,12 +201,14 @@ class DummySerialTest(unittest.TestCase):
         self.assertEqual(ds.in_waiting, 2)
 
     def test_write_bytearray(self):
-        """ Ensures that errors are raised if attempting to access more or less data than in the buffer
-        """
+        """Ensures that errors are raised if attempting to access more or less data than in the buffer"""
         rand_write_len = random.randint(256, 1024)
         rand_write_bytearray = bytearray(random_bytes(rand_write_len))
 
-        ds = DummySerial(port=self.random_serial_port, baudrate=self.random_baudrate,)
+        ds = DummySerial(
+            port=self.random_serial_port,
+            baudrate=self.random_baudrate,
+        )
         ds.write(rand_write_bytearray)
 
 

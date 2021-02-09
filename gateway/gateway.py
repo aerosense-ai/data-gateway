@@ -57,31 +57,28 @@ DEFAULT_CONFIGURATION = {}
 
 
 class Gateway:
-    """ Gateway process manager
+    """Gateway process manager
 
     This'll get rendered in the auto generated docs. If Kanye could see this he'd rap about how great it is.
 
     """
 
     def __init__(self, configuration=None, **kwargs):
-        """ Instantiate and configure gateway server
-        """
+        """Instantiate and configure gateway server"""
         # TODO use the helpers in twined to load configurations from src, file or dict
         self.configuration = {**DEFAULT_CONFIGURATION, **configuration}
 
     def _connect(self):
-        """ Connect to the ingress service
+        """Connect to the ingress service
         Establishes a persistent, reconnecting websocket connection to the ingress
         """
         pass
 
     def _dump(self):
-        """ Method to show how to handle an error
-        """
+        """Method to show how to handle an error"""
 
     def start(self):
-        """ Start the reader service and the uploader service
-        """
+        """Start the reader service and the uploader service"""
 
 
 # TODO SAFE STOP() TO CLOSE SOCKETS AND FILES ON KEYBOARD INTERRUPT

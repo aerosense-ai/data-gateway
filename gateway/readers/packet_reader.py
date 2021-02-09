@@ -1,14 +1,11 @@
-# flake8: noqa
-
-
 import logging
 import os
+from _thread import start_new_thread
 from datetime import datetime
 import serial
-from _thread import start_new_thread
-from gateway import exceptions
 
 import sys
+from gateway import exceptions
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +69,7 @@ def parseHandleDef(payload):
     if endHandle - startHandle == 50:
         # TODO resolve with Rafael what he wants to be done here. "handles is a local variable which does not
         #  update the "handles" variable in the outer scope, which is perhaps what was intended.
-        handles = {
+        handles = {  # noqa
             startHandle + 2: "Baro group 0",
             startHandle + 4: "Baro group 1",
             startHandle + 6: "Baro group 2",
@@ -151,7 +148,7 @@ prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Ana
 
 
 def writeData(sensor_type, timestamp, period, filenames):
-    """ Dump data to files.
+    """Dump data to files.
     :param sensor_type:
     :param timestamp: timestamp in s
     :param period:

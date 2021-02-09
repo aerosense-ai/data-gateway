@@ -1,10 +1,11 @@
 import random
 from os import urandom
+
 from dummy_serial.constants import ALPHABET, NUMBERS
 
 
 def random_bytes(length=8, as_bytearray=False):
-    """ Generates a random bytes object of a given length
+    """Generates a random bytes object of a given length
 
     :param length: Length of bytes object to generate (default 8)
     :type length: int

@@ -1,10 +1,8 @@
 class GatewayException(Exception):
-    """ All exceptions raised by the library must inherit from this exception
-    """
+    """All exceptions raised by the library must inherit from this exception"""
 
 
 class UnknownPacketTypeException(GatewayException, ValueError):
-    """ Raised if attempting to parse a packet of unknown type
-    """
+    """Raised if attempting to parse a packet of unknown type"""
 
     pass

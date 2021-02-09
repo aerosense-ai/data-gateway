@@ -2,14 +2,13 @@ from dummy_serial import DummySerial, random_bytes
 
 
 def generate_packet():
-    """Generates packet data consistent with aerosense instrument (although actual values are meaningless)
-    """
+    """Generates packet data consistent with aerosense instrument (although actual values are meaningless)"""
     # TODO
     return random_bytes(8)
 
 
 class SimulatedSerial(DummySerial):
-    """ A dummy serial port which generates mocked aerosense data
+    """A dummy serial port which generates mocked aerosense data
 
     Instantiate SimulatedSerial as you would a normal pyserial.Serial object:
     ```
@@ -24,8 +23,7 @@ class SimulatedSerial(DummySerial):
     """
 
     def __init__(self, *args, **kwargs):
-        """ Constructor for SimulatedSerial
-        """
+        """Constructor for SimulatedSerial"""
         super().__init__(*args, responses=self._generate_response, **kwargs)
 
     @staticmethod
