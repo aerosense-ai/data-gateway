@@ -26,14 +26,22 @@ from gateway.readers.constants import (
     period,
     samplesPerPacket,
 )
-from gateway.uploaders.uploader import Uploader
-
-
-CLOUD_DIRECTORY_NAME = "data_gateway"
+from gateway.uploaders.uploader import StreamingUploader
 
 
 logger = logging.getLogger(__name__)
-uploader = Uploader(configuration={"sensor_types": ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")})
+uploader = StreamingUploader(
+    sensor_types=(
+        {"name": "Mics", "extension": ".csv"},
+        {"name": "Baros", "extension": ".csv"},
+        {"name": "Acc", "extension": ".csv"},
+        {"name": "Gyro", "extension": ".csv"},
+        {"name": "Mag", "extension": ".csv"},
+        {"name": "Analog", "extension": ".csv"},
+    ),
+    project_name=os.environ["TEST_PROJECT_NAME"],
+    bucket_name=os.environ["TEST_BUCKET_NAME"],
+)
 
 
 def parseHandleDef(payload):
@@ -253,7 +261,7 @@ def generate_default_filenames():
 stop = False
 
 
-def read_packets(ser, filenames=None, stop_when_no_more_data=False, project_name=None, bucket_name=None):
+def read_packets(ser, filenames=None, stop_when_no_more_data=False):
     global stop
 
     currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
@@ -291,9 +299,6 @@ def read_packets(ser, filenames=None, stop_when_no_more_data=False, project_name
                     currentTimestamp,
                     prevIdealTimestamp,
                 )
-
-    if project_name is not None:
-        uploader.upload(project_name, bucket_name, directory_in_bucket=CLOUD_DIRECTORY_NAME, extension=".csv")
 
 
 if __name__ == "__main__":

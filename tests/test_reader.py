@@ -1,6 +1,9 @@
 import os
 import tempfile
 import unittest
+from gcloud_storage_emulator.server import create_server
+from google.cloud import storage
+from octue.utils.cloud.credentials import GCPCredentialsManager
 
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
@@ -11,20 +14,20 @@ from gateway.readers.packet_reader import read_packets
 class TestPacketReader(unittest.TestCase):
     """Testing operation of the PacketReader class"""
 
-    # def setUp(self):
-    #     super().setUp()
-    #
-    #     # powerCheck = '{0}{1:>4}\r'.format(SharpCodes['POWER'], SharpCodes['CHECK'])
-    #     # com = dummyserial.Serial(port='COM1', baudrate=9600, ds_responses={powerCheck: powerCheck})
-    #     # tv = SharpTV(com=com, TVID=999, tvInput='DVI')
-    #     # tv.sendCmd(SharpCodes['POWER'], SharpCodes['CHECK'])
-    #     # self.assertEqual(tv.recv(), powerCheck)
-    #
-    # def test_init_packet_reader(self):
-    #     """ Ensures that the class can be instantiated
-    #     """
-    #     # test_data_file = self.path + "test_data/test_configuration.json"
-    #     PacketReader()
+    TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
+    TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
+    storage_emulator = create_server("localhost", 9090, in_memory=True)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.storage_emulator.start()
+        storage.Client(
+            project=cls.TEST_PROJECT_NAME, credentials=GCPCredentialsManager().get_credentials()
+        ).create_bucket(bucket_or_name=cls.TEST_BUCKET_NAME)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.storage_emulator.stop()
 
     def _generate_filenames(self, directory_path):
         return {
