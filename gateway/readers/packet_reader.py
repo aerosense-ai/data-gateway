@@ -177,7 +177,7 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
     :param t:
     :return:
     """
-    if sensor_type == "Mics" or sensor_type == "Baros" or sensor_type == "Analog":
+    if sensor_type in {"Mics", "Baros", "Analog"}:
         # For those measurement types, the samples are inherently synchronized to the CPU time already.
         # The timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones only to check if a packet has been dropped
         # Also, for mics and baros, there exist packet sets: Several packets arrive with the same timestamp
