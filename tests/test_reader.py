@@ -4,7 +4,8 @@ import unittest
 
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
-from gateway.readers.packet_reader import PACKET_KEY, read_packets
+from gateway.readers.constants import PACKET_KEY
+from gateway.readers.packet_reader import read_packets
 
 
 class TestPacketReader(unittest.TestCase):
