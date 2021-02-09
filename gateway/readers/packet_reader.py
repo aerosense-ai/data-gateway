@@ -162,10 +162,15 @@ def writeData(sensor_type, timestamp, period):
     n = len(data[sensor_type][0])  # number of samples
     for i in range(len(data[sensor_type][0])):  # iterate through all sample times
         time = timestamp - (n - i) * period
-        files[sensor_type].write(str(time) + ",")
+        with open(files[sensor_type], "a") as f:
+            f.write(str(time) + ",")
+
         for meas in data[sensor_type]:  # iterate through all measured quantities
-            files[sensor_type].write(str(meas[i]) + ",")
-        files[sensor_type].write("\n")
+            with open(files[sensor_type], "a") as f:
+                f.write(str(meas[i]) + ",")
+
+        with open(files[sensor_type], "a") as f:
+            f.write("\n")
 
 
 def waitTillSetComplete(sensor_type, t):  # timestamp in 1/(2**16) s
@@ -300,13 +305,14 @@ stop = False
 
 #  Define and create folder and filenames
 folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-os.mkdir(folderString)
-files["Mics"] = open(folderString + "/mics.csv", "w")
-files["Baros"] = open(folderString + "/baros.csv", "w")
-files["Acc"] = open(folderString + "/acc.csv", "w")
-files["Gyro"] = open(folderString + "/gyro.csv", "w")
-files["Mag"] = open(folderString + "/mag.csv", "w")
-files["Analog"] = open(folderString + "/analog.csv", "w")
+if not os.path.exists(folderString):
+    os.mkdir(folderString)
+files["Mics"] = os.path.join(folderString, "mics.csv")
+files["Baros"] = os.path.join(folderString, "baros.csv")
+files["Acc"] = os.path.join(folderString, "acc.csv")
+files["Gyro"] = os.path.join(folderString, "gyro.csv")
+files["Mag"] = os.path.join(folderString, "mag.csv")
+files["Analog"] = os.path.join(folderString, "analog.csv")
 
 
 def read_packets(ser):
@@ -325,9 +331,6 @@ def read_packets(ser):
                 parseHandleDef(payload)
             else:
                 parseSensorPacket(pack_type, payload)  # Parse data from serial port
-
-    for sensor_type in files:
-        files[sensor_type].close()
 
 
 if __name__ == "__main__":

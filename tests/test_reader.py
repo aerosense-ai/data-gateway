@@ -1,4 +1,7 @@
+import os
+import time
 import unittest
+from multiprocessing import Process
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
 from gateway.readers.packet_reader import PACKET_KEY, read_packets
@@ -23,7 +26,7 @@ class TestPacketReader(unittest.TestCase):
     #     # test_data_file = self.path + "test_data/test_configuration.json"
     #     PacketReader()
 
-    def test_packet_reader(self):
+    def test_packet_reader_with_baro_sensor(self):
         serial_port = DummySerial(port="test")
         packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([34])
@@ -32,7 +35,18 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
 
-        read_packets(serial_port)
+        process = Process(target=read_packets, args=(serial_port,))
+        process.start()
+        time.sleep(5)
+        process.terminate()
+
+        test_directory = os.path.dirname(__file__)
+        directory_contents = sorted(os.listdir(test_directory))
+        subdirectory_to_check = [item for item in directory_contents if item.startswith("2021")][-1]
+        baros_file = os.path.join(test_directory, subdirectory_to_check, "baros.csv")
+
+        with open(baros_file) as f:
+            self.assertTrue(len(f.read()) > 0)
 
 
 if __name__ == "__main__":
