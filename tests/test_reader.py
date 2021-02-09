@@ -50,7 +50,7 @@ class TestPacketReader(unittest.TestCase):
             filenames = self._generate_filenames(temporary_directory)
             process = Process(target=read_packets, args=(serial_port,), kwargs={"filenames": filenames})
             process.start()
-            time.sleep(5)
+            time.sleep(2)
             process.terminate()
 
             with open(os.path.join(temporary_directory, "baros.csv")) as f:
@@ -69,7 +69,7 @@ class TestPacketReader(unittest.TestCase):
             filenames = self._generate_filenames(temporary_directory)
             process = Process(target=read_packets, args=(serial_port,), kwargs={"filenames": filenames})
             process.start()
-            time.sleep(5)
+            time.sleep(2)
             process.terminate()
 
             with open(os.path.join(temporary_directory, "mics.csv")) as f:
@@ -88,7 +88,7 @@ class TestPacketReader(unittest.TestCase):
             filenames = self._generate_filenames(temporary_directory)
             process = Process(target=read_packets, args=(serial_port,), kwargs={"filenames": filenames})
             process.start()
-            time.sleep(5)
+            time.sleep(2)
             process.terminate()
 
             with open(os.path.join(temporary_directory, "acc.csv")) as f:
@@ -107,7 +107,7 @@ class TestPacketReader(unittest.TestCase):
             filenames = self._generate_filenames(temporary_directory)
             process = Process(target=read_packets, args=(serial_port,), kwargs={"filenames": filenames})
             process.start()
-            time.sleep(5)
+            time.sleep(2)
             process.terminate()
 
             with open(os.path.join(temporary_directory, "gyro.csv")) as f:
@@ -126,7 +126,7 @@ class TestPacketReader(unittest.TestCase):
             filenames = self._generate_filenames(temporary_directory)
             process = Process(target=read_packets, args=(serial_port,), kwargs={"filenames": filenames})
             process.start()
-            time.sleep(5)
+            time.sleep(2)
             process.terminate()
 
             with open(os.path.join(temporary_directory, "mag.csv")) as f:
@@ -145,7 +145,7 @@ class TestPacketReader(unittest.TestCase):
             filenames = self._generate_filenames(temporary_directory)
             process = Process(target=read_packets, args=(serial_port,), kwargs={"filenames": filenames})
             process.start()
-            time.sleep(5)
+            time.sleep(2)
             process.terminate()
 
             with open(os.path.join(temporary_directory, "analog.csv")) as f:
