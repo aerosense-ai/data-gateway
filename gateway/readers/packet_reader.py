@@ -300,24 +300,25 @@ def parseSensorPacket(sensor_type, payload, filenames):
         # logger.info(data["Analog"][0][0])
 
 
+def generate_default_filenames():
+    folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+    os.mkdir(folderString)
+
+    return {
+        "Mics": os.path.join(folderString, "mics.csv"),
+        "Baros": os.path.join(folderString, "baros.csv"),
+        "Acc": os.path.join(folderString, "acc.csv"),
+        "Gyro": os.path.join(folderString, "gyro.csv"),
+        "Mag": os.path.join(folderString, "mag.csv"),
+        "Analog": os.path.join(folderString, "analog.csv"),
+    }
+
+
 stop = False
 
 
 def read_packets(ser, filenames=None):
     global stop
-
-    if not filenames:
-        folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-        os.mkdir(folderString)
-
-        filenames = {
-            "Mics": os.path.join(folderString, "mics.csv"),
-            "Baros": os.path.join(folderString, "baros.csv"),
-            "Acc": os.path.join(folderString, "acc.csv"),
-            "Gyro": os.path.join(folderString, "gyro.csv"),
-            "Mag": os.path.join(folderString, "mag.csv"),
-            "Analog": os.path.join(folderString, "analog.csv"),
-        }
 
     while not stop:
         r = ser.read()  # init read data from serial port
@@ -332,14 +333,15 @@ def read_packets(ser, filenames=None):
             if pack_type == TYPE_HANDLE_DEF:
                 parseHandleDef(payload)
             else:
-                parseSensorPacket(pack_type, payload, filenames)  # Parse data from serial port
+                parseSensorPacket(pack_type, payload, filenames or generate_default_filenames())
 
 
 if __name__ == "__main__":
     ser = serial.Serial(SERIAL_PORT, BAUDRATE)  # open serial port
     ser.set_buffer_size(rx_size=SERIAL_BUFFER_RX_SIZE, tx_size=SERIAL_BUFFER_TX_SIZE)
 
-    start_new_thread(read_packets, (ser,))  # thread that will parse serial data and write it to files
+    # Thread that will parse serial data and write it to files.
+    start_new_thread(read_packets, args=(ser,), kwargs={"filenames": generate_default_filenames()})
 
     """
     time.sleep(1)
