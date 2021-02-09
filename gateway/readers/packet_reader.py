@@ -26,10 +26,14 @@ from gateway.readers.constants import (
     period,
     samplesPerPacket,
 )
+from gateway.uploaders.uploader import Uploader
+
+
+CLOUD_DIRECTORY_NAME = "data_gateway"
 
 
 logger = logging.getLogger(__name__)
-streams = {"Mics": [], "Baros": [], "Acc": [], "Gyro": [], "Mag": [], "Analog": []}
+uploader = Uploader(configuration={"sensor_types": ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")})
 
 
 def parseHandleDef(payload):
@@ -84,16 +88,16 @@ def writeData(data, sensor_type, timestamp, period, filenames):
 
         with open(filenames[sensor_type], "a") as f:
             f.write(str(time) + ",")
-        streams[sensor_type].append(str(time) + ",")
+        uploader.add_to_stream(sensor_type, str(time) + ",")
 
         for meas in data[sensor_type]:  # iterate through all measured quantities
             with open(filenames[sensor_type], "a") as f:
                 f.write(str(meas[i]) + ",")
-            streams[sensor_type].append(str(meas[i]) + ",")
+            uploader.add_to_stream(sensor_type, str(meas[i]) + ",")
 
         with open(filenames[sensor_type], "a") as f:
             f.write("\n")
-        streams[sensor_type].append("\n")
+        uploader.add_to_stream(sensor_type, "\n")
 
 
 def waitTillSetComplete(
@@ -249,7 +253,7 @@ def generate_default_filenames():
 stop = False
 
 
-def read_packets(ser, filenames=None, stop_when_no_more_data=False):
+def read_packets(ser, filenames=None, stop_when_no_more_data=False, project_name=None, bucket_name=None):
     global stop
 
     currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
@@ -287,6 +291,9 @@ def read_packets(ser, filenames=None, stop_when_no_more_data=False):
                     currentTimestamp,
                     prevIdealTimestamp,
                 )
+
+    if project_name is not None:
+        uploader.upload(project_name, bucket_name, directory_in_bucket=CLOUD_DIRECTORY_NAME, extension=".csv")
 
 
 if __name__ == "__main__":
