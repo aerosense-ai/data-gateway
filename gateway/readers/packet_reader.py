@@ -182,12 +182,13 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
         # The timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones only to check if a packet has been dropped
         # Also, for mics and baros, there exist packet sets: Several packets arrive with the same timestamp
         if t != currentTimestamp[sensor_type] and currentTimestamp[sensor_type] != 0:
+
             idealNewTimestamp = prevIdealTimestamp[sensor_type] + samplesPerPacket[sensor_type] * period[
                 sensor_type
             ] * (2 ** 16)
-            if abs(idealNewTimestamp - currentTimestamp[sensor_type]) > MAX_TIMESTAMP_SLACK * (
-                2 ** 16
-            ):  # If at least one set (= one packet per mic/baro group) of packets was lost
+
+            # If at least one set (= one packet per mic/baro group) of packets was lost
+            if abs(idealNewTimestamp - currentTimestamp[sensor_type]) > MAX_TIMESTAMP_SLACK * (2 ** 16):
                 if prevIdealTimestamp[sensor_type] != 0:
                     ms_gap = (currentTimestamp[sensor_type] - idealNewTimestamp) / (2 ** 16) * 1000
                     logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
@@ -195,14 +196,17 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
                     logger.info("Received first set of %s packets", sensor_type)
 
                 idealNewTimestamp = currentTimestamp[sensor_type]
+
             writeData(sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type], filenames)
-            data[sensor_type] = [
-                ([0] * samplesPerPacket[sensor_type]) for _ in range(nMeasQty[sensor_type])
-            ]  # clean up data buffer(?)
+
+            # clean up data buffer(?)
+            data[sensor_type] = [([0] * samplesPerPacket[sensor_type]) for _ in range(nMeasQty[sensor_type])]
+
             prevIdealTimestamp[sensor_type] = idealNewTimestamp
             currentTimestamp[sensor_type] = t
         elif currentTimestamp[sensor_type] == 0:
             currentTimestamp[sensor_type] = t
+
     else:  # The IMU values are not synchronized to the CPU time, so we simply always take the timestamp we have
         if currentTimestamp[sensor_type] != 0:
             if (
@@ -213,9 +217,9 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
                     / samplesPerPacket[sensor_type]
                     / (2 ** 16)
                 )
-                if (
-                    abs(per - period[sensor_type]) / period[sensor_type] < MAX_PERIOD_DRIFT
-                ):  # If the calculated period is reasonable, accept it. If not, most likely a packet got lost
+
+                # If the calculated period is reasonable, accept it. If not, most likely a packet got lost
+                if abs(per - period[sensor_type]) / period[sensor_type] < MAX_PERIOD_DRIFT:
                     period[sensor_type] = per
                 else:
                     ms_gap = (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type]) / (2 ** 16) * 1000
@@ -224,6 +228,7 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
                 logger.info("Received first %s packet", sensor_type)
 
             writeData(sensor_type, t / (2 ** 16), period[sensor_type], filenames)
+
         prevIdealTimestamp[sensor_type] = currentTimestamp[sensor_type]
         currentTimestamp[sensor_type] = t
 
