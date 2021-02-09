@@ -129,12 +129,12 @@ nMeasQty = {
 }
 
 data = {
-    "Mics": [([0] * samplesPerPacket["Mics"]) for i in range(nMeasQty["Mics"])],
-    "Baros": [([0] * samplesPerPacket["Baros"]) for i in range(nMeasQty["Baros"])],
-    "Acc": [([0] * samplesPerPacket["Acc"]) for i in range(nMeasQty["Acc"])],
-    "Gyro": [([0] * samplesPerPacket["Gyro"]) for i in range(nMeasQty["Gyro"])],
-    "Mag": [([0] * samplesPerPacket["Mag"]) for i in range(nMeasQty["Mag"])],
-    "Analog": [([0] * samplesPerPacket["Analog"]) for i in range(nMeasQty["Analog"])],
+    "Mics": [([0] * samplesPerPacket["Mics"]) for _ in range(nMeasQty["Mics"])],
+    "Baros": [([0] * samplesPerPacket["Baros"]) for _ in range(nMeasQty["Baros"])],
+    "Acc": [([0] * samplesPerPacket["Acc"]) for _ in range(nMeasQty["Acc"])],
+    "Gyro": [([0] * samplesPerPacket["Gyro"]) for _ in range(nMeasQty["Gyro"])],
+    "Mag": [([0] * samplesPerPacket["Mag"]) for _ in range(nMeasQty["Mag"])],
+    "Analog": [([0] * samplesPerPacket["Analog"]) for _ in range(nMeasQty["Analog"])],
 }
 
 period = {
@@ -197,7 +197,7 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
                 idealNewTimestamp = currentTimestamp[sensor_type]
             writeData(sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type], filenames)
             data[sensor_type] = [
-                ([0] * samplesPerPacket[sensor_type]) for i in range(nMeasQty[sensor_type])
+                ([0] * samplesPerPacket[sensor_type]) for _ in range(nMeasQty[sensor_type])
             ]  # clean up data buffer(?)
             prevIdealTimestamp[sensor_type] = idealNewTimestamp
             currentTimestamp[sensor_type] = t
@@ -229,7 +229,7 @@ def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
 
 
 def parseSensorPacket(sensor_type, payload, filenames):
-    if not sensor_type in handles:
+    if sensor_type not in handles:
         raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
     t = int.from_bytes(payload[240:244], ENDIAN, signed=False)
