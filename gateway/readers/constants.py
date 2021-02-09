@@ -17,7 +17,7 @@ MAX_PERIOD_DRIFT = 0.02  # 2% difference between IMU clock and CPU clock allowed
 PACKET_KEY = 0xFE
 TYPE_HANDLE_DEF = 0xFF
 
-handles = {
+DEFAULT_HANDLES = {
     34: "Baro group 0",
     36: "Baro group 1",
     38: "Baro group 2",

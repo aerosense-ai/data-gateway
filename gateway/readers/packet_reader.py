@@ -11,6 +11,7 @@ from gateway.readers.constants import (
     BAROS_GROUP_SIZE,
     BAROS_SAMPLES_PER_PACKET,
     BAUDRATE,
+    DEFAULT_HANDLES,
     ENDIAN,
     IMU_SAMPLES_PER_PACKET,
     MAX_PERIOD_DRIFT,
@@ -21,7 +22,6 @@ from gateway.readers.constants import (
     SERIAL_BUFFER_TX_SIZE,
     SERIAL_PORT,
     TYPE_HANDLE_DEF,
-    handles,
     nMeasQty,
     period,
     samplesPerPacket,
@@ -51,7 +51,7 @@ def parseHandleDef(payload):
     if endHandle - startHandle == 50:
         # TODO resolve with Rafael what he wants to be done here. "handles is a local variable which does not
         #  update the "handles" variable in the outer scope, which is perhaps what was intended.
-        handles = {  # noqa
+        handles = {
             startHandle + 2: "Baro group 0",
             startHandle + 4: "Baro group 1",
             startHandle + 6: "Baro group 2",
@@ -77,7 +77,10 @@ def parseHandleDef(payload):
             startHandle + 46: "IMU Magnetometer",
             startHandle + 48: "Analog",
         }
-        logger.warning("Updated the handles in loacl scope only - see TODO")
+
+        logger.info("Succesfully updated handles.")
+        return handles
+
     else:
         logger.error("Handle error: %s %s", startHandle, endHandle)
 
@@ -172,7 +175,7 @@ def waitTillSetComplete(
         currentTimestamp[sensor_type] = t
 
 
-def parseSensorPacket(sensor_type, payload, filenames, data, currentTimestamp, prevIdealTimestamp):
+def parseSensorPacket(sensor_type, payload, handles, filenames, data, currentTimestamp, prevIdealTimestamp):
     if sensor_type not in handles:
         raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
@@ -263,6 +266,7 @@ stop = False
 
 def read_packets(ser, filenames=None, stop_when_no_more_data=False):
     global stop
+    handles = DEFAULT_HANDLES
 
     currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
     prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
@@ -289,11 +293,12 @@ def read_packets(ser, filenames=None, stop_when_no_more_data=False):
             payload = ser.read(length)
 
             if pack_type == TYPE_HANDLE_DEF:
-                parseHandleDef(payload)
+                handles = parseHandleDef(payload)
             else:
                 parseSensorPacket(
                     pack_type,
                     payload,
+                    handles,
                     filenames or generate_default_filenames(),
                     data,
                     currentTimestamp,
