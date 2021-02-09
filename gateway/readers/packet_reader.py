@@ -103,8 +103,6 @@ def parseHandleDef(payload):
         logger.error("Handle error: %s %s", startHandle, endHandle)
 
 
-files = {}
-
 MICS_SAMPLES_PER_PACKET = 120
 BAROS_PACKET_SIZE = 60
 BAROS_GROUP_SIZE = 4
@@ -152,7 +150,7 @@ currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analo
 prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
 
-def writeData(sensor_type, timestamp, period):
+def writeData(sensor_type, timestamp, period, filenames):
     """ Dump data to files.
     :param sensor_type:
     :param timestamp: timestamp in s
@@ -162,18 +160,18 @@ def writeData(sensor_type, timestamp, period):
     n = len(data[sensor_type][0])  # number of samples
     for i in range(len(data[sensor_type][0])):  # iterate through all sample times
         time = timestamp - (n - i) * period
-        with open(files[sensor_type], "a") as f:
+        with open(filenames[sensor_type], "a") as f:
             f.write(str(time) + ",")
 
         for meas in data[sensor_type]:  # iterate through all measured quantities
-            with open(files[sensor_type], "a") as f:
+            with open(filenames[sensor_type], "a") as f:
                 f.write(str(meas[i]) + ",")
 
-        with open(files[sensor_type], "a") as f:
+        with open(filenames[sensor_type], "a") as f:
             f.write("\n")
 
 
-def waitTillSetComplete(sensor_type, t):  # timestamp in 1/(2**16) s
+def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
     """
     :param sensor_type:
     :param t:
@@ -197,7 +195,7 @@ def waitTillSetComplete(sensor_type, t):  # timestamp in 1/(2**16) s
                     logger.info("Received first set of %s packets", sensor_type)
 
                 idealNewTimestamp = currentTimestamp[sensor_type]
-            writeData(sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type])
+            writeData(sensor_type, idealNewTimestamp / (2 ** 16), period[sensor_type], filenames)
             data[sensor_type] = [
                 ([0] * samplesPerPacket[sensor_type]) for i in range(nMeasQty[sensor_type])
             ]  # clean up data buffer(?)
@@ -225,19 +223,19 @@ def waitTillSetComplete(sensor_type, t):  # timestamp in 1/(2**16) s
             else:
                 logger.info("Received first %s packet", sensor_type)
 
-            writeData(sensor_type, t / (2 ** 16), period[sensor_type])
+            writeData(sensor_type, t / (2 ** 16), period[sensor_type], filenames)
         prevIdealTimestamp[sensor_type] = currentTimestamp[sensor_type]
         currentTimestamp[sensor_type] = t
 
 
-def parseSensorPacket(sensor_type, payload):
+def parseSensorPacket(sensor_type, payload, filenames):
     if not sensor_type in handles:
         raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
     t = int.from_bytes(payload[240:244], ENDIAN, signed=False)
 
     if handles[sensor_type].startswith("Baro group"):
-        waitTillSetComplete("Baros", t)  # Writes data to files when set is complete
+        waitTillSetComplete("Baros", t, filenames)  # Writes data to files when set is complete
 
         # Write the received payload to the data field
         baroGroupNum = int(handles[sensor_type][11:])
@@ -253,7 +251,7 @@ def parseSensorPacket(sensor_type, payload):
                 )
 
     elif handles[sensor_type].startswith("Mic"):
-        waitTillSetComplete("Mics", t)
+        waitTillSetComplete("Mics", t, filenames)
 
         # Write the received payload to the data field
         micNum = int(handles[sensor_type][4:])
@@ -261,7 +259,7 @@ def parseSensorPacket(sensor_type, payload):
             data["Mics"][micNum][i] = int.from_bytes(payload[(2 * i) : (2 * i + 2)], ENDIAN, signed=True)
 
     elif handles[sensor_type].startswith("IMU Accel"):
-        waitTillSetComplete("Acc", t)
+        waitTillSetComplete("Acc", t, filenames)
 
         # Write the received payload to the data field
         for i in range(IMU_SAMPLES_PER_PACKET):
@@ -270,7 +268,7 @@ def parseSensorPacket(sensor_type, payload):
             data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
 
     elif handles[sensor_type] == "IMU Gyro":
-        waitTillSetComplete("Gyro", t)
+        waitTillSetComplete("Gyro", t, filenames)
 
         # Write the received payload to the data field
         for i in range(IMU_SAMPLES_PER_PACKET):
@@ -279,7 +277,7 @@ def parseSensorPacket(sensor_type, payload):
             data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
 
     elif handles[sensor_type] == "IMU Magnetometer":
-        waitTillSetComplete("Mag", t)
+        waitTillSetComplete("Mag", t, filenames)
 
         # Write the received payload to the data field
         for i in range(IMU_SAMPLES_PER_PACKET):
@@ -288,7 +286,7 @@ def parseSensorPacket(sensor_type, payload):
             data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], ENDIAN, signed=True)
 
     elif handles[sensor_type] == "Analog":
-        waitTillSetComplete("Analog", t)
+        waitTillSetComplete("Analog", t, filenames)
 
         def valToV(val):
             return (val << 6) / 1e6
@@ -303,20 +301,22 @@ def parseSensorPacket(sensor_type, payload):
 stop = False
 
 
-#  Define and create folder and filenames
-folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-if not os.path.exists(folderString):
-    os.mkdir(folderString)
-files["Mics"] = os.path.join(folderString, "mics.csv")
-files["Baros"] = os.path.join(folderString, "baros.csv")
-files["Acc"] = os.path.join(folderString, "acc.csv")
-files["Gyro"] = os.path.join(folderString, "gyro.csv")
-files["Mag"] = os.path.join(folderString, "mag.csv")
-files["Analog"] = os.path.join(folderString, "analog.csv")
-
-
-def read_packets(ser):
+def read_packets(ser, filenames=None):
     global stop
+
+    if not filenames:
+        folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        os.mkdir(folderString)
+
+        filenames = {
+            "Mics": os.path.join(folderString, "mics.csv"),
+            "Baros": os.path.join(folderString, "baros.csv"),
+            "Acc": os.path.join(folderString, "acc.csv"),
+            "Gyro": os.path.join(folderString, "gyro.csv"),
+            "Mag": os.path.join(folderString, "mag.csv"),
+            "Analog": os.path.join(folderString, "analog.csv"),
+        }
+
     while not stop:
         r = ser.read()  # init read data from serial port
         if len(r) == 0:
@@ -330,7 +330,7 @@ def read_packets(ser):
             if pack_type == TYPE_HANDLE_DEF:
                 parseHandleDef(payload)
             else:
-                parseSensorPacket(pack_type, payload)  # Parse data from serial port
+                parseSensorPacket(pack_type, payload, filenames)  # Parse data from serial port
 
 
 if __name__ == "__main__":
