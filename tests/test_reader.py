@@ -48,6 +48,115 @@ class TestPacketReader(unittest.TestCase):
         with open(baros_file) as f:
             self.assertTrue(len(f.read()) > 0)
 
+    def test_packet_reader_with_mic_sensor(self):
+        serial_port = DummySerial(port="test")
+        packet_key = PACKET_KEY.to_bytes(1, "little")
+        sensor_type = bytes([54])
+        length = bytes([244])
+
+        for _ in range(2):
+            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+
+        process = Process(target=read_packets, args=(serial_port,))
+        process.start()
+        time.sleep(5)
+        process.terminate()
+
+        test_directory = os.path.dirname(__file__)
+        directory_contents = sorted(os.listdir(test_directory))
+        subdirectory_to_check = [item for item in directory_contents if item.startswith("2021")][-1]
+        mics_file = os.path.join(test_directory, subdirectory_to_check, "mics.csv")
+
+        with open(mics_file) as f:
+            self.assertTrue(len(f.read()) > 0)
+
+    def test_packet_reader_with_acc_sensor(self):
+        serial_port = DummySerial(port="test")
+        packet_key = PACKET_KEY.to_bytes(1, "little")
+        sensor_type = bytes([74])
+        length = bytes([244])
+
+        for _ in range(2):
+            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+
+        process = Process(target=read_packets, args=(serial_port,))
+        process.start()
+        time.sleep(5)
+        process.terminate()
+
+        test_directory = os.path.dirname(__file__)
+        directory_contents = sorted(os.listdir(test_directory))
+        subdirectory_to_check = [item for item in directory_contents if item.startswith("2021")][-1]
+
+        with open(os.path.join(test_directory, subdirectory_to_check, "acc.csv")) as f:
+            self.assertTrue(len(f.read()) > 0)
+
+    def test_packet_reader_with_gyro_sensor(self):
+        serial_port = DummySerial(port="test")
+        packet_key = PACKET_KEY.to_bytes(1, "little")
+        sensor_type = bytes([76])
+        length = bytes([244])
+
+        for _ in range(2):
+            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+
+        process = Process(target=read_packets, args=(serial_port,))
+        process.start()
+        time.sleep(5)
+        process.terminate()
+
+        test_directory = os.path.dirname(__file__)
+        directory_contents = sorted(os.listdir(test_directory))
+        subdirectory_to_check = [item for item in directory_contents if item.startswith("2021")][-1]
+        mics_file = os.path.join(test_directory, subdirectory_to_check, "gyro.csv")
+
+        with open(mics_file) as f:
+            self.assertTrue(len(f.read()) > 0)
+
+    def test_packet_reader_with_mag_sensor(self):
+        serial_port = DummySerial(port="test")
+        packet_key = PACKET_KEY.to_bytes(1, "little")
+        sensor_type = bytes([78])
+        length = bytes([244])
+
+        for _ in range(2):
+            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+
+        process = Process(target=read_packets, args=(serial_port,))
+        process.start()
+        time.sleep(5)
+        process.terminate()
+
+        test_directory = os.path.dirname(__file__)
+        directory_contents = sorted(os.listdir(test_directory))
+        subdirectory_to_check = [item for item in directory_contents if item.startswith("2021")][-1]
+        mics_file = os.path.join(test_directory, subdirectory_to_check, "mag.csv")
+
+        with open(mics_file) as f:
+            self.assertTrue(len(f.read()) > 0)
+
+    def test_packet_reader_with_analog_sensor(self):
+        serial_port = DummySerial(port="test")
+        packet_key = PACKET_KEY.to_bytes(1, "little")
+        sensor_type = bytes([80])
+        length = bytes([244])
+
+        for _ in range(2):
+            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+
+        process = Process(target=read_packets, args=(serial_port,))
+        process.start()
+        time.sleep(5)
+        process.terminate()
+
+        test_directory = os.path.dirname(__file__)
+        directory_contents = sorted(os.listdir(test_directory))
+        subdirectory_to_check = [item for item in directory_contents if item.startswith("2021")][-1]
+        mics_file = os.path.join(test_directory, subdirectory_to_check, "analog.csv")
+
+        with open(mics_file) as f:
+            self.assertTrue(len(f.read()) > 0)
+
 
 if __name__ == "__main__":
     unittest.main()
