@@ -18,7 +18,11 @@ setup(
     name="gateway",
     version="0.0.1",
     py_modules=[],
-    install_requires=["click>=7.1.2", "pyserial==3.5", "octue==0.1.7"],
+    install_requires=[
+        "click>=7.1.2",
+        "pyserial==3.5",
+        "octue @ https://api.github.com/repos/octue/octue-sdk-python/tarball/release/0.1.9",
+    ],
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",
     author="OST Aerosense",

@@ -108,6 +108,9 @@ currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analo
 prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
 
+streams = {"Mics": [], "Baros": [], "Acc": [], "Gyro": [], "Mag": [], "Analog": []}
+
+
 def parseHandleDef(payload):
     startHandle = int.from_bytes(payload[0:1], ENDIAN)
     endHandle = int.from_bytes(payload[2:3], ENDIAN)
@@ -156,15 +159,19 @@ def writeData(sensor_type, timestamp, period, filenames):
     n = len(data[sensor_type][0])  # number of samples
     for i in range(len(data[sensor_type][0])):  # iterate through all sample times
         time = timestamp - (n - i) * period
+
         with open(filenames[sensor_type], "a") as f:
             f.write(str(time) + ",")
+        streams[sensor_type].append(str(time) + ",")
 
         for meas in data[sensor_type]:  # iterate through all measured quantities
             with open(filenames[sensor_type], "a") as f:
                 f.write(str(meas[i]) + ",")
+            streams[sensor_type].append(str(meas[i]) + ",")
 
         with open(filenames[sensor_type], "a") as f:
             f.write("\n")
+        streams[sensor_type].append("\n")
 
 
 def waitTillSetComplete(sensor_type, t, filenames):  # timestamp in 1/(2**16) s
