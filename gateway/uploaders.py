@@ -58,11 +58,11 @@ class StreamingUploader:
         if len(self.streams[sensor_type]["data"]) >= self.batch_size:
             sensor = self.streams[sensor_type]
             path_in_bucket = f"{CLOUD_DIRECTORY_NAME}/{sensor_type}/batch-{sensor['counts']}{sensor['extension']}"
-            self.upload(data=sensor["data"][: self.batch_size], path_in_bucket=path_in_bucket)
+            self._upload(data=sensor["data"][: self.batch_size], path_in_bucket=path_in_bucket)
             self.streams[sensor_type]["data"] = sensor["data"][self.batch_size :]
             self.streams[sensor_type]["counts"] += 1
 
-    def upload(self, data, path_in_bucket):
+    def _upload(self, data, path_in_bucket):
         self.client.upload_from_string(
             serialised_data="".join(data),
             bucket_name=self.bucket_name,
