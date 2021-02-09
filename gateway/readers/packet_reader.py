@@ -61,45 +61,6 @@ handles = {
     80: "Analog",
 }
 
-
-def parseHandleDef(payload):
-    startHandle = int.from_bytes(payload[0:1], ENDIAN)
-    endHandle = int.from_bytes(payload[2:3], ENDIAN)
-
-    if endHandle - startHandle == 50:
-        # TODO resolve with Rafael what he wants to be done here. "handles is a local variable which does not
-        #  update the "handles" variable in the outer scope, which is perhaps what was intended.
-        handles = {  # noqa
-            startHandle + 2: "Baro group 0",
-            startHandle + 4: "Baro group 1",
-            startHandle + 6: "Baro group 2",
-            startHandle + 8: "Baro group 3",
-            startHandle + 10: "Baro group 4",
-            startHandle + 12: "Baro group 5",
-            startHandle + 14: "Baro group 6",
-            startHandle + 16: "Baro group 7",
-            startHandle + 18: "Baro group 8",
-            startHandle + 20: "Baro group 9",
-            startHandle + 22: "Mic 0",
-            startHandle + 24: "Mic 1",
-            startHandle + 26: "Mic 2",
-            startHandle + 28: "Mic 3",
-            startHandle + 30: "Mic 4",
-            startHandle + 32: "Mic 5",
-            startHandle + 34: "Mic 6",
-            startHandle + 36: "Mic 7",
-            startHandle + 38: "Mic 8",
-            startHandle + 40: "Mic 9",
-            startHandle + 42: "IMU Accel",
-            startHandle + 44: "IMU Gyro",
-            startHandle + 46: "IMU Magnetometer",
-            startHandle + 48: "Analog",
-        }
-        logger.warning("Updated the handles in loacl scope only - see TODO")
-    else:
-        logger.error("Handle error: %s %s", startHandle, endHandle)
-
-
 MICS_SAMPLES_PER_PACKET = 120
 BAROS_PACKET_SIZE = 60
 BAROS_GROUP_SIZE = 4
@@ -145,6 +106,44 @@ period = {
 
 currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
+
+
+def parseHandleDef(payload):
+    startHandle = int.from_bytes(payload[0:1], ENDIAN)
+    endHandle = int.from_bytes(payload[2:3], ENDIAN)
+
+    if endHandle - startHandle == 50:
+        # TODO resolve with Rafael what he wants to be done here. "handles is a local variable which does not
+        #  update the "handles" variable in the outer scope, which is perhaps what was intended.
+        handles = {  # noqa
+            startHandle + 2: "Baro group 0",
+            startHandle + 4: "Baro group 1",
+            startHandle + 6: "Baro group 2",
+            startHandle + 8: "Baro group 3",
+            startHandle + 10: "Baro group 4",
+            startHandle + 12: "Baro group 5",
+            startHandle + 14: "Baro group 6",
+            startHandle + 16: "Baro group 7",
+            startHandle + 18: "Baro group 8",
+            startHandle + 20: "Baro group 9",
+            startHandle + 22: "Mic 0",
+            startHandle + 24: "Mic 1",
+            startHandle + 26: "Mic 2",
+            startHandle + 28: "Mic 3",
+            startHandle + 30: "Mic 4",
+            startHandle + 32: "Mic 5",
+            startHandle + 34: "Mic 6",
+            startHandle + 36: "Mic 7",
+            startHandle + 38: "Mic 8",
+            startHandle + 40: "Mic 9",
+            startHandle + 42: "IMU Accel",
+            startHandle + 44: "IMU Gyro",
+            startHandle + 46: "IMU Magnetometer",
+            startHandle + 48: "Analog",
+        }
+        logger.warning("Updated the handles in loacl scope only - see TODO")
+    else:
+        logger.error("Handle error: %s %s", startHandle, endHandle)
 
 
 def writeData(sensor_type, timestamp, period, filenames):
