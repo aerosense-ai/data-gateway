@@ -4,11 +4,13 @@ import unittest
 from gcloud_storage_emulator.server import create_server
 from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
+from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
 from gateway.readers.constants import PACKET_KEY
 from gateway.readers.packet_reader import PacketReader
+from gateway.uploaders import CLOUD_DIRECTORY_NAME
 
 
 class TestPacketReader(unittest.TestCase):
@@ -48,14 +50,35 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
 
+        packet_reader = PacketReader()
+
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_filenames(temporary_directory)
-            PacketReader().read_packets(serial_port, filenames, stop_when_no_more_data=True)
+            packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
 
             with open(os.path.join(temporary_directory, "baros.csv")) as f:
                 outputs = f.read().split("\n")
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
+
+        number_of_batches = packet_reader.uploader.streams["Baros"]["batch_number"]
+        self.assertTrue(number_of_batches > 0)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            for i in range(number_of_batches):
+                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
+
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Baros/batch-{i}.csv",
+                    local_path=batch_download_path,
+                )
+
+                with open(batch_download_path) as f:
+                    outputs = f.read().split("\n")
+                    self.assertTrue(len(outputs) > 1)
+                    self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_mic_sensor(self):
         serial_port = DummySerial(port="test")
