@@ -48,7 +48,7 @@ class TestPacketReader(unittest.TestCase):
 
     def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_name, number_of_batches_to_check=5):
         """Check that non-trivial batches from a packet reader for a particular sensor are uploaded to cloud storage."""
-        number_of_batches = packet_reader.uploader.streams[sensor_name]["batch_number"]
+        number_of_batches = packet_reader.uploader.batcher.streams[sensor_name]["batch_number"]
         self.assertTrue(number_of_batches > 0)
 
         for i in range(number_of_batches_to_check):

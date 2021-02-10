@@ -35,10 +35,14 @@ class TestStreamingUploader(unittest.TestCase):
             upload_interval=600,
         )
 
-        self.assertEqual(uploader.streams["test"], {"name": "test", "data": [], "batch_number": 0, "extension": ".csv"})
+        stream = uploader.batcher.streams["test"]
+        self.assertEqual(stream["name"], "test"),
+        self.assertEqual(stream["data"], [])
+        self.assertEqual(stream["batch_number"], 0),
+        self.assertEqual(stream["extension"], ".csv")
 
         uploader.add_to_stream(sensor_type="test", data="blah,")
-        self.assertEqual(uploader.streams["test"]["data"], ["blah,"])
+        self.assertEqual(uploader.batcher.streams["test"]["data"], ["blah,"])
 
     def test_data_is_uploaded_in_batches_and_can_be_retrieved_from_cloud_storage(self):
         """Test that data is uploaded in batches of whatever units it is added to the stream in, and that it can be
@@ -54,17 +58,16 @@ class TestStreamingUploader(unittest.TestCase):
         with uploader:
             uploader.add_to_stream(sensor_type="test", data="ping,")
             uploader.add_to_stream(sensor_type="test", data="pong,\n")
-            self.assertEqual(len(uploader.streams["test"]["data"]), 2)
+            self.assertEqual(len(uploader.batcher.streams["test"]["data"]), 2)
             time.sleep(0.01)
 
             uploader.add_to_stream(sensor_type="test", data="ding,")
-            self.assertEqual(len(uploader.streams["test"]["data"]), 0)
+            self.assertEqual(len(uploader.batcher.streams["test"]["data"]), 0)
 
             uploader.add_to_stream(sensor_type="test", data="dong,\n")
-            self.assertEqual(len(uploader.streams["test"]["data"]), 1)
             time.sleep(0.01)
 
-        self.assertEqual(len(uploader.streams["test"]["data"]), 0)
+        self.assertEqual(len(uploader.batcher.streams["test"]["data"]), 0)
 
         self.assertEqual(
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
