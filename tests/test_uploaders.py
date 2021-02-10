@@ -49,21 +49,23 @@ class TestStreamingUploader(unittest.TestCase):
             sensor_types=[{"name": "test", "extension": ".csv"}],
             project_name=self.TEST_PROJECT_NAME,
             bucket_name=self.TEST_BUCKET_NAME,
-            upload_interval=0.5,
+            upload_interval=0.01,
         )
 
-        uploader.add_to_stream(sensor_type="test", data="ping,")
-        uploader.add_to_stream(sensor_type="test", data="pong,\n")
-        self.assertEqual(len(uploader.streams["test"]["data"]), 2)
+        with uploader:
+            uploader.add_to_stream(sensor_type="test", data="ping,")
+            uploader.add_to_stream(sensor_type="test", data="pong,\n")
+            self.assertEqual(len(uploader.streams["test"]["data"]), 2)
+            time.sleep(0.01)
 
-        time.sleep(0.5)
-        uploader.add_to_stream(sensor_type="test", data="ding,")
+            uploader.add_to_stream(sensor_type="test", data="ding,")
+            self.assertEqual(len(uploader.streams["test"]["data"]), 0)
+
+            uploader.add_to_stream(sensor_type="test", data="dong,\n")
+            self.assertEqual(len(uploader.streams["test"]["data"]), 1)
+            time.sleep(0.01)
+
         self.assertEqual(len(uploader.streams["test"]["data"]), 0)
-
-        uploader.add_to_stream(sensor_type="test", data="dong,\n")
-        self.assertEqual(len(uploader.streams["test"]["data"]), 1)
-        time.sleep(0.5)
-        uploader.force_upload()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             first_batch_download_path = os.path.join(temporary_directory, "batch.csv")

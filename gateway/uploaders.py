@@ -66,6 +66,12 @@ class StreamingUploader:
         self.client = GoogleCloudStorageClient(project_name=project_name)
         self.start_time = time.perf_counter()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.force_upload()
+
     def add_to_stream(self, sensor_type, data):
         """Add serialised data (a string) to the stream for the given sensor type.
 
