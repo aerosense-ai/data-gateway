@@ -1,5 +1,4 @@
 import os
-import tempfile
 import time
 import unittest
 from gcloud_storage_emulator.server import create_server
@@ -67,25 +66,18 @@ class TestStreamingUploader(unittest.TestCase):
 
         self.assertEqual(len(uploader.streams["test"]["data"]), 0)
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            first_batch_download_path = os.path.join(temporary_directory, "batch.csv")
-
-            GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
+        self.assertEqual(
+            GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
                 path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/test/batch-0.csv",
-                local_path=first_batch_download_path,
-            )
+            ),
+            "ping,pong,\nding,",
+        )
 
-            with open(first_batch_download_path) as f:
-                self.assertEqual(f.read(), "ping,pong,\nding,")
-
-            second_batch_download_path = os.path.join(temporary_directory, "batch.csv")
-
-            GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
+        self.assertEqual(
+            GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
                 path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/test/batch-1.csv",
-                local_path=second_batch_download_path,
-            )
-
-            with open(second_batch_download_path) as f:
-                self.assertEqual(f.read(), "dong,\n")
+            ),
+            "dong,\n",
+        )
