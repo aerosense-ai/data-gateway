@@ -30,7 +30,7 @@ class PacketReader:
         )
         self.stop = False
 
-    def read_packets(self, ser, filenames=None, stop_when_no_more_data=False):
+    def read_packets(self, serial_port, filenames=None, stop_when_no_more_data=False):
         currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
         prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
@@ -44,7 +44,7 @@ class PacketReader:
         }
 
         while not self.stop:
-            r = ser.read()  # init read data from serial port
+            r = serial_port.read()
             if len(r) == 0:
                 if stop_when_no_more_data:
                     break
@@ -53,21 +53,21 @@ class PacketReader:
             if r[0] != constants.PACKET_KEY:
                 continue
 
-            pack_type = int.from_bytes(ser.read(), constants.ENDIAN)
-            length = int.from_bytes(ser.read(), constants.ENDIAN)
-            payload = ser.read(length)
+            packet_type = int.from_bytes(serial_port.read(), constants.ENDIAN)
+            length = int.from_bytes(serial_port.read(), constants.ENDIAN)
+            payload = serial_port.read(length)
 
-            if pack_type == constants.TYPE_HANDLE_DEF:
+            if packet_type == constants.TYPE_HANDLE_DEF:
                 self.update_handles(payload)
                 continue
 
             self._parse_sensor_packet(
-                pack_type,
-                payload,
-                filenames or self._generate_default_filenames(),
-                data,
-                currentTimestamp,
-                prevIdealTimestamp,
+                sensor_type=packet_type,
+                payload=payload,
+                filenames=filenames or self._generate_default_filenames(),
+                data=data,
+                currentTimestamp=currentTimestamp,
+                prevIdealTimestamp=prevIdealTimestamp,
             )
 
     def update_handles(self, payload):
@@ -119,6 +119,7 @@ class PacketReader:
 
             # Write the received payload to the data field
             baroGroupNum = int(self.handles[sensor_type][11:])
+
             for i in range(constants.BAROS_SAMPLES_PER_PACKET):
                 for j in range(constants.BAROS_GROUP_SIZE):
                     data["Baros"][baroGroupNum * constants.BAROS_GROUP_SIZE + j][i] = (
@@ -193,9 +194,10 @@ class PacketReader:
         :return:
         """
         if sensor_type in {"Mics", "Baros", "Analog"}:
-            # For those measurement types, the samples are inherently synchronized to the CPU time already.
-            # The timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones only to check if a packet has been dropped
-            # Also, for mics and baros, there exist packet sets: Several packets arrive with the same timestamp
+            # For those measurement types, the samples are inherently synchronized to the CPU time already. The
+            # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
+            # only to check if a packet has been dropped Also, for mics and baros, there exist packet sets: Several
+            # packets arrive with the same timestamp
             if t != currentTimestamp[sensor_type] and currentTimestamp[sensor_type] != 0:
 
                 idealNewTimestamp = prevIdealTimestamp[sensor_type] + constants.samplesPerPacket[
@@ -204,6 +206,7 @@ class PacketReader:
 
                 # If at least one set (= one packet per mic/baro group) of packets was lost
                 if abs(idealNewTimestamp - currentTimestamp[sensor_type]) > constants.MAX_TIMESTAMP_SLACK * (2 ** 16):
+
                     if prevIdealTimestamp[sensor_type] != 0:
                         ms_gap = (currentTimestamp[sensor_type] - idealNewTimestamp) / (2 ** 16) * 1000
                         logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
@@ -233,7 +236,7 @@ class PacketReader:
                 # If there is a previous timestamp, calculate the actual sampling period from the difference to the
                 # current timestamp
                 if prevIdealTimestamp[sensor_type] != 0:
-                    per = (
+                    period = (
                         (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type])
                         / constants.samplesPerPacket[sensor_type]
                         / (2 ** 16)
@@ -241,10 +244,10 @@ class PacketReader:
 
                     # If the calculated period is reasonable, accept it. If not, most likely a packet got lost
                     if (
-                        abs(per - constants.period[sensor_type]) / constants.period[sensor_type]
+                        abs(period - constants.period[sensor_type]) / constants.period[sensor_type]
                         < constants.MAX_PERIOD_DRIFT
                     ):
-                        constants.period[sensor_type] = per
+                        constants.period[sensor_type] = period
 
                     else:
                         ms_gap = (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type]) / (2 ** 16) * 1000
@@ -266,9 +269,11 @@ class PacketReader:
         :param period:
         :return:
         """
-        n = len(data[sensor_type][0])  # number of samples
-        for i in range(len(data[sensor_type][0])):  # iterate through all sample times
-            time = timestamp - (n - i) * period
+        number_of_samples = len(data[sensor_type][0])
+
+        # Iterate through all sample times.
+        for i in range(len(data[sensor_type][0])):
+            time = timestamp - (number_of_samples - i) * period
 
             with open(filenames[sensor_type], "a") as f:
                 f.write(str(time) + ",")
@@ -299,13 +304,12 @@ class PacketReader:
 
 
 if __name__ == "__main__":
-    ser = serial.Serial(constants.SERIAL_PORT, constants.BAUDRATE)  # open serial port
-    ser.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
-
+    serial_port = serial.Serial(constants.SERIAL_PORT, constants.BAUDRATE)
+    serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
     packet_reader = PacketReader()
 
     # Thread that will parse serial data and write it to files.
-    start_new_thread(packet_reader.read_packets, args=(ser,))
+    start_new_thread(packet_reader.read_packets, args=(serial_port,))
 
     """
     time.sleep(1)
@@ -323,4 +327,4 @@ if __name__ == "__main__":
             stop = True
             break
         else:
-            ser.write(line.encode("utf_8"))
+            serial_port.write(line.encode("utf_8"))
