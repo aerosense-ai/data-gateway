@@ -18,6 +18,8 @@ class TestPacketReader(unittest.TestCase):
 
     TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
+    PACKET_KEY = PACKET_KEY.to_bytes(1, "little")
+    LENGTH = bytes([244])
     storage_emulator = create_server("localhost", 9090, in_memory=True)
 
     @classmethod
@@ -41,14 +43,31 @@ class TestPacketReader(unittest.TestCase):
             "Analog": os.path.join(directory_path, "analog.csv"),
         }
 
+    def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_name):
+        number_of_batches = packet_reader.uploader.streams[sensor_name]["batch_number"]
+        self.assertTrue(number_of_batches > 0)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            for i in range(number_of_batches):
+                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
+
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/{sensor_name}/batch-{i}.csv",
+                    local_path=batch_download_path,
+                )
+
+                with open(batch_download_path) as f:
+                    outputs = f.read().split("\n")
+                    self.assertTrue(len(outputs) > 1)
+                    self.assertTrue(len(outputs[0].split(",")) > 1)
+
     def test_packet_reader_with_baro_sensor(self):
         serial_port = DummySerial(port="test")
-        packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([34])
-        length = bytes([244])
 
         for _ in range(2):
-            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
         packet_reader = PacketReader()
 
@@ -61,33 +80,14 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
 
-        number_of_batches = packet_reader.uploader.streams["Baros"]["batch_number"]
-        self.assertTrue(number_of_batches > 0)
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
-            for i in range(number_of_batches):
-                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
-
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
-                    bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Baros/batch-{i}.csv",
-                    local_path=batch_download_path,
-                )
-
-                with open(batch_download_path) as f:
-                    outputs = f.read().split("\n")
-                    self.assertTrue(len(outputs) > 1)
-                    self.assertTrue(len(outputs[0].split(",")) > 1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Baros")
 
     def test_packet_reader_with_mic_sensor(self):
         serial_port = DummySerial(port="test")
-        packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([54])
-        length = bytes([244])
 
         for _ in range(2):
-            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
         packet_reader = PacketReader()
 
@@ -100,33 +100,14 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
 
-        number_of_batches = packet_reader.uploader.streams["Mics"]["batch_number"]
-        self.assertTrue(number_of_batches > 0)
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
-            for i in range(number_of_batches):
-                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
-
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
-                    bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Mics/batch-{i}.csv",
-                    local_path=batch_download_path,
-                )
-
-                with open(batch_download_path) as f:
-                    outputs = f.read().split("\n")
-                    self.assertTrue(len(outputs) > 1)
-                    self.assertTrue(len(outputs[0].split(",")) > 1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Mics")
 
     def test_packet_reader_with_acc_sensor(self):
         serial_port = DummySerial(port="test")
-        packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([74])
-        length = bytes([244])
 
         for _ in range(2):
-            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
         packet_reader = PacketReader()
 
@@ -139,33 +120,14 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
 
-        number_of_batches = packet_reader.uploader.streams["Acc"]["batch_number"]
-        self.assertTrue(number_of_batches > 0)
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
-            for i in range(number_of_batches):
-                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
-
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
-                    bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Acc/batch-{i}.csv",
-                    local_path=batch_download_path,
-                )
-
-                with open(batch_download_path) as f:
-                    outputs = f.read().split("\n")
-                    self.assertTrue(len(outputs) > 1)
-                    self.assertTrue(len(outputs[0].split(",")) > 1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Acc")
 
     def test_packet_reader_with_gyro_sensor(self):
         serial_port = DummySerial(port="test")
-        packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([76])
-        length = bytes([244])
 
         for _ in range(2):
-            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
         packet_reader = PacketReader()
 
@@ -178,33 +140,14 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
 
-        number_of_batches = packet_reader.uploader.streams["Gyro"]["batch_number"]
-        self.assertTrue(number_of_batches > 0)
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
-            for i in range(number_of_batches):
-                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
-
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
-                    bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Gyro/batch-{i}.csv",
-                    local_path=batch_download_path,
-                )
-
-                with open(batch_download_path) as f:
-                    outputs = f.read().split("\n")
-                    self.assertTrue(len(outputs) > 1)
-                    self.assertTrue(len(outputs[0].split(",")) > 1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Gyro")
 
     def test_packet_reader_with_mag_sensor(self):
         serial_port = DummySerial(port="test")
-        packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([78])
-        length = bytes([244])
 
         for _ in range(2):
-            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
         packet_reader = PacketReader()
 
@@ -217,33 +160,14 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
 
-        number_of_batches = packet_reader.uploader.streams["Mag"]["batch_number"]
-        self.assertTrue(number_of_batches > 0)
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
-            for i in range(number_of_batches):
-                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
-
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
-                    bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Mag/batch-{i}.csv",
-                    local_path=batch_download_path,
-                )
-
-                with open(batch_download_path) as f:
-                    outputs = f.read().split("\n")
-                    self.assertTrue(len(outputs) > 1)
-                    self.assertTrue(len(outputs[0].split(",")) > 1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Mag")
 
     def test_packet_reader_with_analog_sensor(self):
         serial_port = DummySerial(port="test")
-        packet_key = PACKET_KEY.to_bytes(1, "little")
         sensor_type = bytes([80])
-        length = bytes([244])
 
         for _ in range(2):
-            serial_port.write(data=packet_key + sensor_type + length + random_bytes(256))
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
         packet_reader = PacketReader()
 
@@ -256,24 +180,7 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
 
-        number_of_batches = packet_reader.uploader.streams["Analog"]["batch_number"]
-        self.assertTrue(number_of_batches > 0)
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
-            for i in range(number_of_batches):
-                batch_download_path = os.path.join(temporary_directory, f"batch-{i}.csv")
-
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_file(
-                    bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/Analog/batch-{i}.csv",
-                    local_path=batch_download_path,
-                )
-
-                with open(batch_download_path) as f:
-                    outputs = f.read().split("\n")
-                    self.assertTrue(len(outputs) > 1)
-                    self.assertTrue(len(outputs[0].split(",")) > 1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Analog")
 
 
 if __name__ == "__main__":
