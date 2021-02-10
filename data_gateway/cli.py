@@ -58,13 +58,13 @@ def gateway_cli(logger_uri, log_level):
     help="Path to your aerosense deployment configuration file.",
 )
 def start(config_file):
-    """Start the gateway service (daemonise this for a deployment)"""
+    """Start the gateway service (daemonise this for a deployment)."""
     serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
     packet_reader = PacketReader()
 
     # This new thread will parse the serial data while the main thread stays ready to take in commands from stdin.
-    start_new_thread(packet_reader.read_packets, args=(serial_port,))
+    start_new_thread(packet_reader.read_packets, (serial_port,))
 
     """
     time.sleep(1)
@@ -77,12 +77,13 @@ def start(config_file):
     ser.write(("configGyro "  + str(GYRO_FREQ)  + " " + str(GYRO_RANGE) + "\n").encode('utf_8'))
     """
 
-    for line in sys.stdin:
-        if line == "stop\n":
-            packet_reader.stop = True
-            break
+    while not packet_reader.stop:
+        for line in sys.stdin:
+            if line == "stop\n":
+                packet_reader.stop = True
+                break
 
-        serial_port.write(line.encode("utf_8"))
+            serial_port.write(line.encode("utf_8"))
 
 
 @gateway_cli.command()
