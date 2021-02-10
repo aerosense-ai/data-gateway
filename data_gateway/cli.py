@@ -73,14 +73,15 @@ def start(config_file, interactive):
     """Start the gateway service (daemonise this for a deployment)."""
     serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
-    packet_reader = PacketReader()
 
     if not interactive:
-        packet_reader.read_packets(serial_port)
+        PacketReader(save_locally=False, upload_to_cloud=True).read_packets(serial_port)
         return
 
-    # This new thread will parse the serial data while the main thread stays ready to take in commands from stdin.
+    # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
+    packet_reader = PacketReader(save_locally=True, upload_to_cloud=False)
     threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
+    print("Starting gateway.")
 
     while not packet_reader.stop:
         for line in sys.stdin:

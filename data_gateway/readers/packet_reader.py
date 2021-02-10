@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class PacketReader:
-    def __init__(self, upload_interval=600):
+    def __init__(self, save_locally, upload_to_cloud, upload_interval=600):
+        self.save_locally = save_locally
+        self.upload_to_cloud = upload_to_cloud
         self.handles = constants.DEFAULT_HANDLES
         self.uploader = StreamingUploader(
             sensor_types=(
@@ -279,18 +281,27 @@ class PacketReader:
         for i in range(len(data[sensor_type][0])):
             time = timestamp - (number_of_samples - i) * period
 
-            with open(filenames[sensor_type], "a") as f:
-                f.write(str(time) + ",")
-            self.uploader.add_to_stream(sensor_type, str(time) + ",")
-
-            for meas in data[sensor_type]:  # iterate through all measured quantities
+            if self.save_locally:
                 with open(filenames[sensor_type], "a") as f:
-                    f.write(str(meas[i]) + ",")
-                self.uploader.add_to_stream(sensor_type, str(meas[i]) + ",")
+                    f.write(str(time) + ",")
 
-            with open(filenames[sensor_type], "a") as f:
-                f.write("\n")
-            self.uploader.add_to_stream(sensor_type, "\n")
+            if self.upload_to_cloud:
+                self.uploader.add_to_stream(sensor_type, str(time) + ",")
+
+            for meas in data[sensor_type]:
+                if self.save_locally:
+                    with open(filenames[sensor_type], "a") as f:
+                        f.write(str(meas[i]) + ",")
+
+                if self.upload_to_cloud:
+                    self.uploader.add_to_stream(sensor_type, str(meas[i]) + ",")
+
+            if self.save_locally:
+                with open(filenames[sensor_type], "a") as f:
+                    f.write("\n")
+
+            if self.upload_to_cloud:
+                self.uploader.add_to_stream(sensor_type, "\n")
 
     @staticmethod
     def _generate_default_filenames():

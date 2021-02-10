@@ -75,7 +75,7 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
-        packet_reader = PacketReader(upload_interval=self.UPLOAD_INTERVAL)
+        packet_reader = PacketReader(save_locally=True, upload_to_cloud=True, upload_interval=self.UPLOAD_INTERVAL)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_file_paths(temporary_directory)
@@ -92,7 +92,7 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
-        packet_reader = PacketReader(upload_interval=self.UPLOAD_INTERVAL)
+        packet_reader = PacketReader(save_locally=True, upload_to_cloud=True, upload_interval=self.UPLOAD_INTERVAL)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_file_paths(temporary_directory)
@@ -109,7 +109,7 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
-        packet_reader = PacketReader(upload_interval=self.UPLOAD_INTERVAL)
+        packet_reader = PacketReader(save_locally=True, upload_to_cloud=True, upload_interval=self.UPLOAD_INTERVAL)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_file_paths(temporary_directory)
@@ -126,7 +126,7 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
-        packet_reader = PacketReader(upload_interval=self.UPLOAD_INTERVAL)
+        packet_reader = PacketReader(save_locally=True, upload_to_cloud=True, upload_interval=self.UPLOAD_INTERVAL)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_file_paths(temporary_directory)
@@ -143,7 +143,7 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
-        packet_reader = PacketReader(upload_interval=self.UPLOAD_INTERVAL)
+        packet_reader = PacketReader(save_locally=True, upload_to_cloud=True, upload_interval=self.UPLOAD_INTERVAL)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_file_paths(temporary_directory)
@@ -160,7 +160,7 @@ class TestPacketReader(unittest.TestCase):
         for _ in range(2):
             serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
 
-        packet_reader = PacketReader(upload_interval=self.UPLOAD_INTERVAL)
+        packet_reader = PacketReader(save_locally=True, upload_to_cloud=True, upload_interval=self.UPLOAD_INTERVAL)
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             filenames = self._generate_file_paths(temporary_directory)
