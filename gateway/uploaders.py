@@ -96,6 +96,10 @@ class StreamingUploader:
         :param dict stream:
         :return None:
         """
+        if len(stream["data"]) == 0:
+            logger.warning(f"No data to upload for {stream['name']} during force upload.")
+            return
+
         self.client.upload_from_string(
             serialised_data="".join(stream["data"]),
             bucket_name=self.bucket_name,

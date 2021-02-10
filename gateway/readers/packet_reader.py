@@ -44,32 +44,34 @@ class PacketReader:
             "Analog": [([0] * constants.samplesPerPacket["Analog"]) for _ in range(constants.nMeasQty["Analog"])],
         }
 
-        while not self.stop:
-            r = serial_port.read()
-            if len(r) == 0:
-                if stop_when_no_more_data:
-                    break
-                continue
+        with self.uploader:
 
-            if r[0] != constants.PACKET_KEY:
-                continue
+            while not self.stop:
+                r = serial_port.read()
+                if len(r) == 0:
+                    if stop_when_no_more_data:
+                        break
+                    continue
 
-            packet_type = int.from_bytes(serial_port.read(), constants.ENDIAN)
-            length = int.from_bytes(serial_port.read(), constants.ENDIAN)
-            payload = serial_port.read(length)
+                if r[0] != constants.PACKET_KEY:
+                    continue
 
-            if packet_type == constants.TYPE_HANDLE_DEF:
-                self.update_handles(payload)
-                continue
+                packet_type = int.from_bytes(serial_port.read(), constants.ENDIAN)
+                length = int.from_bytes(serial_port.read(), constants.ENDIAN)
+                payload = serial_port.read(length)
 
-            self._parse_sensor_packet(
-                sensor_type=packet_type,
-                payload=payload,
-                filenames=filenames or self._generate_default_filenames(),
-                data=data,
-                current_timestamp=current_timestamp,
-                previous_ideal_timestamp=previous_ideal_timestamp,
-            )
+                if packet_type == constants.TYPE_HANDLE_DEF:
+                    self.update_handles(payload)
+                    continue
+
+                self._parse_sensor_packet(
+                    sensor_type=packet_type,
+                    payload=payload,
+                    filenames=filenames or self._generate_default_filenames(),
+                    data=data,
+                    current_timestamp=current_timestamp,
+                    previous_ideal_timestamp=previous_ideal_timestamp,
+                )
 
     def update_handles(self, payload):
         start_handle = int.from_bytes(payload[0:1], constants.ENDIAN)
