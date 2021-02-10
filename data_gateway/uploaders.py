@@ -37,19 +37,22 @@ class TimeBatcher:
 
         # Move to the next batch if enough time has elapsed.
         if time.perf_counter() - self._start_time >= self.batch_interval:
-            self._start_time = time.perf_counter()
+            self.prepare_next_batch(stream)
 
-            batch = {
-                "name": stream["name"],
-                "data": stream["data"].copy(),
-                "batch_number": stream["batch_number"],
-                "extension": stream["extension"],
-            }
+    def prepare_next_batch(self, stream):
+        self._start_time = time.perf_counter()
 
-            stream["ready_batches"].put(batch)
+        batch = {
+            "name": stream["name"],
+            "data": stream["data"].copy(),
+            "batch_number": stream["batch_number"],
+            "extension": stream["extension"],
+        }
 
-            stream["data"].clear()
-            stream["batch_number"] += 1
+        stream["ready_batches"].put(batch)
+
+        stream["data"].clear()
+        stream["batch_number"] += 1
 
     def pop_next_batch(self, sensor_type):
         return self.streams[sensor_type]["ready_batches"].get(block=False)
@@ -96,6 +99,7 @@ class StreamingUploader:
     def force_upload(self):
         """Upload all the streams, regardless of whether a complete upload interval has passed."""
         for stream in self.batcher.streams.values():
+            self.batcher.prepare_next_batch(stream)
             self._upload_batch(stream=stream)
 
     def _upload_batch(self, stream):
