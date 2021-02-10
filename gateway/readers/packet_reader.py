@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class PacketReader:
-    def __init__(self):
+    def __init__(self, upload_interval=600):
         self.handles = constants.DEFAULT_HANDLES
         self.uploader = StreamingUploader(
             sensor_types=(
@@ -27,6 +27,7 @@ class PacketReader:
             ),
             project_name=os.environ["TEST_PROJECT_NAME"],
             bucket_name=os.environ["TEST_BUCKET_NAME"],
+            upload_interval=upload_interval,
         )
         self.stop = False
 

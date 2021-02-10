@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 import unittest
 from gcloud_storage_emulator.server import create_server
 from google.cloud import storage
@@ -32,9 +33,10 @@ class TestStreamingUploader(unittest.TestCase):
             sensor_types=[{"name": "test", "extension": ".csv"}],
             project_name=self.TEST_PROJECT_NAME,
             bucket_name=self.TEST_BUCKET_NAME,
+            upload_interval=600,
         )
 
-        self.assertEqual(uploader.streams["test"], {"data": [], "counts": 0, "extension": ".csv"})
+        self.assertEqual(uploader.streams["test"], {"name": "test", "data": [], "batch_number": 0, "extension": ".csv"})
 
         uploader.add_to_stream(sensor_type="test", data="blah,")
         self.assertEqual(uploader.streams["test"]["data"], ["blah,"])
@@ -47,20 +49,21 @@ class TestStreamingUploader(unittest.TestCase):
             sensor_types=[{"name": "test", "extension": ".csv"}],
             project_name=self.TEST_PROJECT_NAME,
             bucket_name=self.TEST_BUCKET_NAME,
-            batch_size=2,
+            upload_interval=0.5,
         )
 
         uploader.add_to_stream(sensor_type="test", data="ping,")
-        self.assertEqual(len(uploader.streams["test"]["data"]), 1)
-
         uploader.add_to_stream(sensor_type="test", data="pong,\n")
-        self.assertEqual(len(uploader.streams["test"]["data"]), 0)
+        self.assertEqual(len(uploader.streams["test"]["data"]), 2)
 
+        time.sleep(0.5)
         uploader.add_to_stream(sensor_type="test", data="ding,")
-        self.assertEqual(len(uploader.streams["test"]["data"]), 1)
+        self.assertEqual(len(uploader.streams["test"]["data"]), 0)
 
         uploader.add_to_stream(sensor_type="test", data="dong,\n")
-        self.assertEqual(len(uploader.streams["test"]["data"]), 0)
+        self.assertEqual(len(uploader.streams["test"]["data"]), 1)
+        time.sleep(0.5)
+        uploader.force_upload()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             first_batch_download_path = os.path.join(temporary_directory, "batch.csv")
@@ -72,7 +75,7 @@ class TestStreamingUploader(unittest.TestCase):
             )
 
             with open(first_batch_download_path) as f:
-                self.assertEqual(f.read(), "ping,pong,\n")
+                self.assertEqual(f.read(), "ping,pong,\nding,")
 
             second_batch_download_path = os.path.join(temporary_directory, "batch.csv")
 
@@ -83,4 +86,4 @@ class TestStreamingUploader(unittest.TestCase):
             )
 
             with open(second_batch_download_path) as f:
-                self.assertEqual(f.read(), "ding,dong,\n")
+                self.assertEqual(f.read(), "dong,\n")

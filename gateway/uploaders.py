@@ -1,4 +1,5 @@
 import logging
+import time
 import pkg_resources
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
@@ -42,22 +43,28 @@ class Uploader:
 
 
 class StreamingUploader:
-    def __init__(self, sensor_types, project_name, bucket_name, batch_size=100):
+    def __init__(self, sensor_types, project_name, bucket_name, upload_interval):
         """Initialise a StreamingUploader with a bucket from a given GCP project.
 
         :param iter(dict) sensor_types: a dictionary with "name" and "extension" entries
         :param str project_name:
         :param str bucket_name:
-        :param int batch_size:
+        :param float upload_interval: time in seconds between cloud uploads
         :return None:
         """
         self.streams = {
-            sensor_type["name"]: {"data": [], "batch_number": 0, "extension": sensor_type["extension"]}
+            sensor_type["name"]: {
+                "name": sensor_type["name"],
+                "data": [],
+                "batch_number": 0,
+                "extension": sensor_type["extension"],
+            }
             for sensor_type in sensor_types
         }
-        self.batch_size = batch_size
         self.bucket_name = bucket_name
+        self.upload_interval = upload_interval
         self.client = GoogleCloudStorageClient(project_name=project_name)
+        self.start_time = time.perf_counter()
 
     def add_to_stream(self, sensor_type, data):
         """Add serialised data (a string) to the stream for the given sensor type.
@@ -68,23 +75,35 @@ class StreamingUploader:
         """
         self.streams[sensor_type]["data"].append(data)
 
-        # Send a batch to the cloud if enough data has been collected.
-        if len(self.streams[sensor_type]["data"]) >= self.batch_size:
-            sensor = self.streams[sensor_type]
-            path_in_bucket = f"{CLOUD_DIRECTORY_NAME}/{sensor_type}/batch-{sensor['batch_number']}{sensor['extension']}"
-            self._upload(data=sensor["data"][: self.batch_size], path_in_bucket=path_in_bucket)
-            self.streams[sensor_type]["data"] = sensor["data"][self.batch_size :]
-            self.streams[sensor_type]["batch_number"] += 1
+        # Send a batch to the cloud if enough time has elapsed.
+        if time.perf_counter() - self.start_time >= self.upload_interval:
+            self._upload_batch(stream=self.streams[sensor_type])
 
-    def _upload(self, data, path_in_bucket):
+    def force_upload(self):
+        """Upload all the streams, regardless of whether a complete upload interval has passed."""
+        for stream in self.streams.values():
+            self._upload_batch(stream=stream)
+
+    def _upload_batch(self, stream):
         """Upload serialised data to a path in the bucket.
 
-        :param str data:
-        :param str path_in_bucket:
+        :param dict stream:
         :return None:
         """
         self.client.upload_from_string(
-            serialised_data="".join(data),
+            serialised_data="".join(stream["data"]),
             bucket_name=self.bucket_name,
-            path_in_bucket=path_in_bucket,
+            path_in_bucket=self._generate_path_in_bucket(stream),
         )
+
+        stream["data"].clear()
+        stream["batch_number"] += 1
+        self.start_time = time.perf_counter()
+
+    def _generate_path_in_bucket(self, stream):
+        """Generate the path in the bucket that the next batch of the stream should be uploaded to.
+
+        :param dict stream:
+        :return str:
+        """
+        return f"{CLOUD_DIRECTORY_NAME}/{stream['name']}/batch-{stream['batch_number']}{stream['extension']}"
