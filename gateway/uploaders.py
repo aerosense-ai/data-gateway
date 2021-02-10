@@ -43,6 +43,14 @@ class Uploader:
 
 class StreamingUploader:
     def __init__(self, sensor_types, project_name, bucket_name, batch_size=100):
+        """Initialise a StreamingUploader with a bucket from a given GCP project.
+
+        :param iter(dict) sensor_types: a dictionary with "name" and "extension" entries
+        :param str project_name:
+        :param str bucket_name:
+        :param int batch_size:
+        :return None:
+        """
         self.streams = {
             sensor_type["name"]: {"data": [], "batch_number": 0, "extension": sensor_type["extension"]}
             for sensor_type in sensor_types
@@ -52,6 +60,12 @@ class StreamingUploader:
         self.client = GoogleCloudStorageClient(project_name=project_name)
 
     def add_to_stream(self, sensor_type, data):
+        """Add serialised data (a string) to the stream for the given sensor type.
+
+        :param str sensor_type:
+        :param str data:
+        :return None:
+        """
         self.streams[sensor_type]["data"].append(data)
 
         # Send a batch to the cloud if enough data has been collected.
@@ -63,6 +77,12 @@ class StreamingUploader:
             self.streams[sensor_type]["batch_number"] += 1
 
     def _upload(self, data, path_in_bucket):
+        """Upload serialised data to a path in the bucket.
+
+        :param str data:
+        :param str path_in_bucket:
+        :return None:
+        """
         self.client.upload_from_string(
             serialised_data="".join(data),
             bucket_name=self.bucket_name,
