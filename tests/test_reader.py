@@ -33,7 +33,8 @@ class TestPacketReader(unittest.TestCase):
     def tearDownClass(cls):
         cls.storage_emulator.stop()
 
-    def _generate_file_paths(self, directory_path):
+    @staticmethod
+    def _generate_file_paths(directory_path):
         """Generate paths for the expected output files."""
         return {
             "Mics": os.path.join(directory_path, "mics.csv"),
