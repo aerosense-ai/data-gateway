@@ -6,7 +6,7 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from gateway.uploaders import CLOUD_DIRECTORY_NAME, StreamingUploader
+from data_gateway.uploaders import CLOUD_DIRECTORY_NAME, StreamingUploader
 
 
 class TestStreamingUploader(unittest.TestCase):

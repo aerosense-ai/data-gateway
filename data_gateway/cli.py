@@ -7,7 +7,7 @@ import serial
 from octue.logging_handlers import get_remote_handler
 
 import sys
-from gateway.readers import PacketReader, constants
+from data_gateway.readers import PacketReader, constants
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -32,7 +32,7 @@ global_cli_context = {}
     show_default=True,
     help="Log level used for the analysis.",
 )
-@click.version_option(version=pkg_resources.get_distribution("gateway").version)
+@click.version_option(version=pkg_resources.get_distribution("data_gateway").version)
 def gateway_cli(logger_uri, log_level):
     """AeroSense Gateway CLI.
 
@@ -59,7 +59,7 @@ def gateway_cli(logger_uri, log_level):
 )
 def start(config_file):
     """Start the gateway service (daemonise this for a deployment)"""
-    serial_port = serial.Serial(constants.SERIAL_PORT, constants.BAUDRATE)
+    serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
     packet_reader = PacketReader()
 

@@ -1,4 +1,4 @@
-exclude: 'build|docs|node_modules|.git|.tox|dist|docs|gateway.egg-info'
+exclude: 'build|docs|node_modules|.git|.tox|dist|docs|data_gateway.egg-info'
 default_stages: [commit]
 fail_fast: true
 default_language_version:

@@ -15,7 +15,7 @@ with open("LICENSE") as f:
     license_text = f.read()
 
 setup(
-    name="gateway",
+    name="data_gateway",
     version="0.0.1",
     py_modules=[],
     install_requires=[
@@ -26,14 +26,14 @@ setup(
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",
     author="OST Aerosense",
-    description="A gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud.",
+    description="A data_gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud.",
     long_description=readme_text,
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests", "docs")),
     include_package_data=True,
     entry_points="""
     [console_scripts]
-    gateway=gateway.cli:gateway_cli
+    gateway=data_gateway.cli:gateway_cli
     """,
     classifiers=[
         "Development Status :: 4 - Beta",

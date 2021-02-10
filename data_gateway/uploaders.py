@@ -33,12 +33,12 @@ class Uploader:
 
     def _validate_event(self):
         """Validate event data against the required schema"""
-        file_name = pkg_resources.resource_string("gateway", "schema/event_schema.json")
+        file_name = pkg_resources.resource_string("data_gateway", "schema/event_schema.json")
         logger.info("file name is %s", file_name)
 
     def _validate_audio(self):
         """Validate audio+meta data against the required schema"""
-        file_name = pkg_resources.resource_string("gateway", "schema/audio_meta_schema.json")
+        file_name = pkg_resources.resource_string("data_gateway", "schema/audio_meta_schema.json")
         logger.info("file name is %s", file_name)
 
 

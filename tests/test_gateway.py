@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from gateway import GatewayServer
+from data_gateway import GatewayServer
 
 
 class TestGateway(unittest.TestCase):

@@ -2,9 +2,9 @@ import logging
 import os
 from datetime import datetime
 
-from gateway import exceptions
-from gateway.readers import constants
-from gateway.uploaders import StreamingUploader
+from data_gateway import exceptions
+from data_gateway.readers import constants
+from data_gateway.uploaders import StreamingUploader
 
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 from . import exceptions
 
 
-# from .gateway import GatewayServer
+# from .data_gateway import GatewayServer
 
 
 __all__ = (
