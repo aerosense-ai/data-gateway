@@ -52,6 +52,9 @@ class DummySerial(object):
             self._waiting_data,
         )
 
+    def set_buffer_size(self, rx_size=4096, tx_size=None):
+        pass
+
     def open(self):
         """Open the dummy serial port"""
         logger.debug("Opening port")

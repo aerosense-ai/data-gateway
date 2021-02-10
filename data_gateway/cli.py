@@ -81,6 +81,7 @@ def start(config_file):
         for line in sys.stdin:
             if line == "stop\n":
                 packet_reader.stop = True
+                print("Stopping gateway.")
                 break
 
             serial_port.write(line.encode("utf_8"))
