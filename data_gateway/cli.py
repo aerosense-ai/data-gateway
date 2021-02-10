@@ -1,6 +1,6 @@
 import logging
 import os
-from _thread import start_new_thread
+import threading
 import click
 import pkg_resources
 import serial
@@ -64,7 +64,7 @@ def start(config_file):
     packet_reader = PacketReader()
 
     # This new thread will parse the serial data while the main thread stays ready to take in commands from stdin.
-    start_new_thread(packet_reader.read_packets, (serial_port,))
+    threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
 
     """
     time.sleep(1)
