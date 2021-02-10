@@ -39,8 +39,10 @@ class TestStreamingUploader(unittest.TestCase):
         uploader.add_to_stream(sensor_type="test", data="blah,")
         self.assertEqual(uploader.streams["test"]["data"], ["blah,"])
 
-    def test_data_is_uploaded_in_batches(self):
-        """Test that data is uploaded in batches of whatever units it is added to the stream in."""
+    def test_data_is_uploaded_in_batches_and_can_be_retrieved_from_cloud_storage(self):
+        """Test that data is uploaded in batches of whatever units it is added to the stream in, and that it can be
+        retrieved from cloud storage.
+        """
         uploader = StreamingUploader(
             sensor_types=[{"name": "test", "extension": ".csv"}],
             project_name=self.TEST_PROJECT_NAME,
