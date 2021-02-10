@@ -57,25 +57,30 @@ def gateway_cli(logger_uri, log_level):
     show_default=True,
     help="Path to your aerosense deployment configuration file.",
 )
-def start(config_file):
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="""
+        Run the gateway in interactive mode, allowing commands to be sent to the serial port via the command line.\n
+        WARNING: the output of the gateway will be saved to files locally and not uploaded to the cloud if this
+        option is used.
+    """,
+)
+def start(config_file, interactive):
     """Start the gateway service (daemonise this for a deployment)."""
     serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
     packet_reader = PacketReader()
 
+    if not interactive:
+        packet_reader.read_packets(serial_port)
+        return
+
     # This new thread will parse the serial data while the main thread stays ready to take in commands from stdin.
     threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
-
-    """
-    time.sleep(1)
-    ser.write(("configMics "  + str(MICS_FREQ)  + " " + str(MICS_BM) + "\n").encode('utf_8'))
-    time.sleep(1)
-    ser.write(("configBaros " + str(BAROS_FREQ) + " " + str(BAROS_BM) + "\n").encode('utf_8'))
-    time.sleep(1)
-    ser.write(("configAccel " + str(ACC_FREQ)   + " " + str(ACC_RANGE) + "\n").encode('utf_8'))
-    time.sleep(1)
-    ser.write(("configGyro "  + str(GYRO_FREQ)  + " " + str(GYRO_RANGE) + "\n").encode('utf_8'))
-    """
 
     while not packet_reader.stop:
         for line in sys.stdin:

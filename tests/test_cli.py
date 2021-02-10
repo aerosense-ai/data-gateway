@@ -20,9 +20,9 @@ class TestCLI(TestCase):
         assert help_result.output == h_result.output
 
     def test_start_and_stop(self):
-        """Ensure the gateway can be started and stopped via the CLI."""
+        """Ensure the gateway can be started and stopped via the CLI in interactive mode."""
         with mock.patch("serial.Serial", new=DummySerial):
-            result = CliRunner().invoke(gateway_cli, "start", input="stop\n")
+            result = CliRunner().invoke(gateway_cli, "start --interactive", input="stop\n")
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
             self.assertTrue("Stopping gateway." in result.output)
