@@ -50,22 +50,25 @@ class PacketReader:
                     break
                 continue
 
-            if r[0] == constants.PACKET_KEY:
-                pack_type = int.from_bytes(ser.read(), constants.ENDIAN)
-                length = int.from_bytes(ser.read(), constants.ENDIAN)
-                payload = ser.read(length)
+            if r[0] != constants.PACKET_KEY:
+                continue
 
-                if pack_type == constants.TYPE_HANDLE_DEF:
-                    self.update_handles(payload)
-                else:
-                    self._parse_sensor_packet(
-                        pack_type,
-                        payload,
-                        filenames or self._generate_default_filenames(),
-                        data,
-                        currentTimestamp,
-                        prevIdealTimestamp,
-                    )
+            pack_type = int.from_bytes(ser.read(), constants.ENDIAN)
+            length = int.from_bytes(ser.read(), constants.ENDIAN)
+            payload = ser.read(length)
+
+            if pack_type == constants.TYPE_HANDLE_DEF:
+                self.update_handles(payload)
+                continue
+
+            self._parse_sensor_packet(
+                pack_type,
+                payload,
+                filenames or self._generate_default_filenames(),
+                data,
+                currentTimestamp,
+                prevIdealTimestamp,
+            )
 
     def update_handles(self, payload):
         startHandle = int.from_bytes(payload[0:1], constants.ENDIAN)
@@ -99,10 +102,10 @@ class PacketReader:
                 startHandle + 48: "Analog",
             }
 
-            logger.info("Succesfully updated handles.")
+            logger.info("Successfully updated handles.")
+            return
 
-        else:
-            logger.error("Handle error: %s %s", startHandle, endHandle)
+        logger.error("Handle error: %s %s", startHandle, endHandle)
 
     def _parse_sensor_packet(self, sensor_type, payload, filenames, data, currentTimestamp, prevIdealTimestamp):
         if sensor_type not in self.handles:
@@ -111,9 +114,8 @@ class PacketReader:
         t = int.from_bytes(payload[240:244], constants.ENDIAN, signed=False)
 
         if self.handles[sensor_type].startswith("Baro group"):
-            self._wait_until_set_is_complete(
-                "Baros", t, filenames, data, currentTimestamp, prevIdealTimestamp
-            )  # Writes data to files when set is complete
+            # Write data to files when set is complete.
+            self._wait_until_set_is_complete("Baros", t, filenames, data, currentTimestamp, prevIdealTimestamp)
 
             # Write the received payload to the data field
             baroGroupNum = int(self.handles[sensor_type][11:])
@@ -221,14 +223,16 @@ class PacketReader:
 
                 prevIdealTimestamp[sensor_type] = idealNewTimestamp
                 currentTimestamp[sensor_type] = t
+
             elif currentTimestamp[sensor_type] == 0:
                 currentTimestamp[sensor_type] = t
 
         else:  # The IMU values are not synchronized to the CPU time, so we simply always take the timestamp we have
             if currentTimestamp[sensor_type] != 0:
-                if (
-                    prevIdealTimestamp[sensor_type] != 0
-                ):  # If there is a previous timestamp, calculate the actual sampling period from the difference to the current timestamp
+
+                # If there is a previous timestamp, calculate the actual sampling period from the difference to the
+                # current timestamp
+                if prevIdealTimestamp[sensor_type] != 0:
                     per = (
                         (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type])
                         / constants.samplesPerPacket[sensor_type]
@@ -241,9 +245,11 @@ class PacketReader:
                         < constants.MAX_PERIOD_DRIFT
                     ):
                         constants.period[sensor_type] = per
+
                     else:
                         ms_gap = (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type]) / (2 ** 16) * 1000
                         logger.warning("Lost %s packet: %s ms gap", sensor_type, ms_gap)
+
                 else:
                     logger.info("Received first %s packet", sensor_type)
 
