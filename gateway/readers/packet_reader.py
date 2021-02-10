@@ -31,8 +31,8 @@ class PacketReader:
         self.stop = False
 
     def read_packets(self, serial_port, filenames=None, stop_when_no_more_data=False):
-        currentTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
-        prevIdealTimestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
+        current_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
+        previous_ideal_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
         data = {
             "Mics": [([0] * constants.samplesPerPacket["Mics"]) for _ in range(constants.nMeasQty["Mics"])],
@@ -66,48 +66,48 @@ class PacketReader:
                 payload=payload,
                 filenames=filenames or self._generate_default_filenames(),
                 data=data,
-                currentTimestamp=currentTimestamp,
-                prevIdealTimestamp=prevIdealTimestamp,
+                current_timestamp=current_timestamp,
+                previous_ideal_timestamp=previous_ideal_timestamp,
             )
 
     def update_handles(self, payload):
-        startHandle = int.from_bytes(payload[0:1], constants.ENDIAN)
-        endHandle = int.from_bytes(payload[2:3], constants.ENDIAN)
+        start_handle = int.from_bytes(payload[0:1], constants.ENDIAN)
+        end_handle = int.from_bytes(payload[2:3], constants.ENDIAN)
 
-        if endHandle - startHandle == 50:
+        if end_handle - start_handle == 50:
             self.handles = {
-                startHandle + 2: "Baro group 0",
-                startHandle + 4: "Baro group 1",
-                startHandle + 6: "Baro group 2",
-                startHandle + 8: "Baro group 3",
-                startHandle + 10: "Baro group 4",
-                startHandle + 12: "Baro group 5",
-                startHandle + 14: "Baro group 6",
-                startHandle + 16: "Baro group 7",
-                startHandle + 18: "Baro group 8",
-                startHandle + 20: "Baro group 9",
-                startHandle + 22: "Mic 0",
-                startHandle + 24: "Mic 1",
-                startHandle + 26: "Mic 2",
-                startHandle + 28: "Mic 3",
-                startHandle + 30: "Mic 4",
-                startHandle + 32: "Mic 5",
-                startHandle + 34: "Mic 6",
-                startHandle + 36: "Mic 7",
-                startHandle + 38: "Mic 8",
-                startHandle + 40: "Mic 9",
-                startHandle + 42: "IMU Accel",
-                startHandle + 44: "IMU Gyro",
-                startHandle + 46: "IMU Magnetometer",
-                startHandle + 48: "Analog",
+                start_handle + 2: "Baro group 0",
+                start_handle + 4: "Baro group 1",
+                start_handle + 6: "Baro group 2",
+                start_handle + 8: "Baro group 3",
+                start_handle + 10: "Baro group 4",
+                start_handle + 12: "Baro group 5",
+                start_handle + 14: "Baro group 6",
+                start_handle + 16: "Baro group 7",
+                start_handle + 18: "Baro group 8",
+                start_handle + 20: "Baro group 9",
+                start_handle + 22: "Mic 0",
+                start_handle + 24: "Mic 1",
+                start_handle + 26: "Mic 2",
+                start_handle + 28: "Mic 3",
+                start_handle + 30: "Mic 4",
+                start_handle + 32: "Mic 5",
+                start_handle + 34: "Mic 6",
+                start_handle + 36: "Mic 7",
+                start_handle + 38: "Mic 8",
+                start_handle + 40: "Mic 9",
+                start_handle + 42: "IMU Accel",
+                start_handle + 44: "IMU Gyro",
+                start_handle + 46: "IMU Magnetometer",
+                start_handle + 48: "Analog",
             }
 
             logger.info("Successfully updated handles.")
             return
 
-        logger.error("Handle error: %s %s", startHandle, endHandle)
+        logger.error("Handle error: %s %s", start_handle, end_handle)
 
-    def _parse_sensor_packet(self, sensor_type, payload, filenames, data, currentTimestamp, prevIdealTimestamp):
+    def _parse_sensor_packet(self, sensor_type, payload, filenames, data, current_timestamp, previous_ideal_timestamp):
         if sensor_type not in self.handles:
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
@@ -115,14 +115,14 @@ class PacketReader:
 
         if self.handles[sensor_type].startswith("Baro group"):
             # Write data to files when set is complete.
-            self._wait_until_set_is_complete("Baros", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+            self._wait_until_set_is_complete("Baros", t, filenames, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
-            baroGroupNum = int(self.handles[sensor_type][11:])
+            baro_group_number = int(self.handles[sensor_type][11:])
 
             for i in range(constants.BAROS_SAMPLES_PER_PACKET):
                 for j in range(constants.BAROS_GROUP_SIZE):
-                    data["Baros"][baroGroupNum * constants.BAROS_GROUP_SIZE + j][i] = (
+                    data["Baros"][baro_group_number * constants.BAROS_GROUP_SIZE + j][i] = (
                         int.from_bytes(
                             payload[
                                 (4 * (constants.BAROS_GROUP_SIZE * i + j)) : (
@@ -136,15 +136,17 @@ class PacketReader:
                     )
 
         elif self.handles[sensor_type].startswith("Mic"):
-            self._wait_until_set_is_complete("Mics", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+            self._wait_until_set_is_complete("Mics", t, filenames, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
-            micNum = int(self.handles[sensor_type][4:])
+            mic_number = int(self.handles[sensor_type][4:])
             for i in range(constants.MICS_SAMPLES_PER_PACKET):
-                data["Mics"][micNum][i] = int.from_bytes(payload[(2 * i) : (2 * i + 2)], constants.ENDIAN, signed=True)
+                data["Mics"][mic_number][i] = int.from_bytes(
+                    payload[(2 * i) : (2 * i + 2)], constants.ENDIAN, signed=True
+                )
 
         elif self.handles[sensor_type].startswith("IMU Accel"):
-            self._wait_until_set_is_complete("Acc", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+            self._wait_until_set_is_complete("Acc", t, filenames, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             for i in range(constants.IMU_SAMPLES_PER_PACKET):
@@ -153,7 +155,7 @@ class PacketReader:
                 data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], constants.ENDIAN, signed=True)
 
         elif self.handles[sensor_type] == "IMU Gyro":
-            self._wait_until_set_is_complete("Gyro", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+            self._wait_until_set_is_complete("Gyro", t, filenames, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             for i in range(constants.IMU_SAMPLES_PER_PACKET):
@@ -162,7 +164,7 @@ class PacketReader:
                 data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], constants.ENDIAN, signed=True)
 
         elif self.handles[sensor_type] == "IMU Magnetometer":
-            self._wait_until_set_is_complete("Mag", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+            self._wait_until_set_is_complete("Mag", t, filenames, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             for i in range(constants.IMU_SAMPLES_PER_PACKET):
@@ -171,22 +173,22 @@ class PacketReader:
                 data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], constants.ENDIAN, signed=True)
 
         elif self.handles[sensor_type] == "Analog":
-            self._wait_until_set_is_complete("Analog", t, filenames, data, currentTimestamp, prevIdealTimestamp)
+            self._wait_until_set_is_complete("Analog", t, filenames, data, current_timestamp, previous_ideal_timestamp)
 
-            def valToV(val):
+            def val_to_v(val):
                 return (val << 6) / 1e6
 
             for i in range(constants.ANALOG_SAMPLES_PER_PACKET):
-                data["Analog"][0][i] = valToV(
+                data["Analog"][0][i] = val_to_v(
                     int.from_bytes(payload[(4 * i) : (4 * i + 2)], constants.ENDIAN, signed=False)
                 )
-                data["Analog"][1][i] = valToV(
+                data["Analog"][1][i] = val_to_v(
                     int.from_bytes(payload[(4 * i + 2) : (4 * i + 4)], constants.ENDIAN, signed=False)
                 )
 
             # logger.info(data["Analog"][0][0])
 
-    def _wait_until_set_is_complete(self, sensor_type, t, filenames, data, currentTimestamp, prevIdealTimestamp):
+    def _wait_until_set_is_complete(self, sensor_type, t, filenames, data, current_timestamp, prev_ideal_timestamp):
         """timestamp in 1/(2**16) s
 
         :param sensor_type:
@@ -198,25 +200,27 @@ class PacketReader:
             # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
             # only to check if a packet has been dropped Also, for mics and baros, there exist packet sets: Several
             # packets arrive with the same timestamp
-            if t != currentTimestamp[sensor_type] and currentTimestamp[sensor_type] != 0:
+            if t != current_timestamp[sensor_type] and current_timestamp[sensor_type] != 0:
 
-                idealNewTimestamp = prevIdealTimestamp[sensor_type] + constants.samplesPerPacket[
+                ideal_new_timestamp = prev_ideal_timestamp[sensor_type] + constants.samplesPerPacket[
                     sensor_type
                 ] * constants.period[sensor_type] * (2 ** 16)
 
                 # If at least one set (= one packet per mic/baro group) of packets was lost
-                if abs(idealNewTimestamp - currentTimestamp[sensor_type]) > constants.MAX_TIMESTAMP_SLACK * (2 ** 16):
+                if abs(ideal_new_timestamp - current_timestamp[sensor_type]) > constants.MAX_TIMESTAMP_SLACK * (
+                    2 ** 16
+                ):
 
-                    if prevIdealTimestamp[sensor_type] != 0:
-                        ms_gap = (currentTimestamp[sensor_type] - idealNewTimestamp) / (2 ** 16) * 1000
+                    if prev_ideal_timestamp[sensor_type] != 0:
+                        ms_gap = (current_timestamp[sensor_type] - ideal_new_timestamp) / (2 ** 16) * 1000
                         logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
                     else:
                         logger.info("Received first set of %s packets", sensor_type)
 
-                    idealNewTimestamp = currentTimestamp[sensor_type]
+                    ideal_new_timestamp = current_timestamp[sensor_type]
 
                 self._write_data(
-                    data, sensor_type, idealNewTimestamp / (2 ** 16), constants.period[sensor_type], filenames
+                    data, sensor_type, ideal_new_timestamp / (2 ** 16), constants.period[sensor_type], filenames
                 )
 
                 # clean up data buffer(?)
@@ -224,20 +228,20 @@ class PacketReader:
                     ([0] * constants.samplesPerPacket[sensor_type]) for _ in range(constants.nMeasQty[sensor_type])
                 ]
 
-                prevIdealTimestamp[sensor_type] = idealNewTimestamp
-                currentTimestamp[sensor_type] = t
+                prev_ideal_timestamp[sensor_type] = ideal_new_timestamp
+                current_timestamp[sensor_type] = t
 
-            elif currentTimestamp[sensor_type] == 0:
-                currentTimestamp[sensor_type] = t
+            elif current_timestamp[sensor_type] == 0:
+                current_timestamp[sensor_type] = t
 
         else:  # The IMU values are not synchronized to the CPU time, so we simply always take the timestamp we have
-            if currentTimestamp[sensor_type] != 0:
+            if current_timestamp[sensor_type] != 0:
 
                 # If there is a previous timestamp, calculate the actual sampling period from the difference to the
                 # current timestamp
-                if prevIdealTimestamp[sensor_type] != 0:
+                if prev_ideal_timestamp[sensor_type] != 0:
                     period = (
-                        (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type])
+                        (current_timestamp[sensor_type] - prev_ideal_timestamp[sensor_type])
                         / constants.samplesPerPacket[sensor_type]
                         / (2 ** 16)
                     )
@@ -250,7 +254,7 @@ class PacketReader:
                         constants.period[sensor_type] = period
 
                     else:
-                        ms_gap = (currentTimestamp[sensor_type] - prevIdealTimestamp[sensor_type]) / (2 ** 16) * 1000
+                        ms_gap = (current_timestamp[sensor_type] - prev_ideal_timestamp[sensor_type]) / (2 ** 16) * 1000
                         logger.warning("Lost %s packet: %s ms gap", sensor_type, ms_gap)
 
                 else:
@@ -258,8 +262,8 @@ class PacketReader:
 
                 self._write_data(data, sensor_type, t / (2 ** 16), constants.period[sensor_type], filenames)
 
-            prevIdealTimestamp[sensor_type] = currentTimestamp[sensor_type]
-            currentTimestamp[sensor_type] = t
+            prev_ideal_timestamp[sensor_type] = current_timestamp[sensor_type]
+            current_timestamp[sensor_type] = t
 
     def _write_data(self, data, sensor_type, timestamp, period, filenames):
         """Dump data to files.
@@ -290,16 +294,16 @@ class PacketReader:
 
     @staticmethod
     def _generate_default_filenames():
-        folderString = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-        os.mkdir(folderString)
+        folder_name = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        os.mkdir(folder_name)
 
         return {
-            "Mics": os.path.join(folderString, "mics.csv"),
-            "Baros": os.path.join(folderString, "baros.csv"),
-            "Acc": os.path.join(folderString, "acc.csv"),
-            "Gyro": os.path.join(folderString, "gyro.csv"),
-            "Mag": os.path.join(folderString, "mag.csv"),
-            "Analog": os.path.join(folderString, "analog.csv"),
+            "Mics": os.path.join(folder_name, "mics.csv"),
+            "Baros": os.path.join(folder_name, "baros.csv"),
+            "Acc": os.path.join(folder_name, "acc.csv"),
+            "Gyro": os.path.join(folder_name, "gyro.csv"),
+            "Mag": os.path.join(folder_name, "mag.csv"),
+            "Analog": os.path.join(folder_name, "analog.csv"),
         }
 
 
