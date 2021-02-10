@@ -1,10 +1,13 @@
 import logging
 import os
+from _thread import start_new_thread
 import click
 import pkg_resources
+import serial
 from octue.logging_handlers import get_remote_handler
 
 import sys
+from gateway.readers import PacketReader, constants
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -56,9 +59,30 @@ def gateway_cli(logger_uri, log_level):
 )
 def start(config_file):
     """Start the gateway service (daemonise this for a deployment)"""
-    while True:
-        logger.info("Do Stuff with", config_file)
-    return 0
+    serial_port = serial.Serial(constants.SERIAL_PORT, constants.BAUDRATE)
+    serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
+    packet_reader = PacketReader()
+
+    # This new thread will parse the serial data while the main thread stays ready to take in commands from stdin.
+    start_new_thread(packet_reader.read_packets, args=(serial_port,))
+
+    """
+    time.sleep(1)
+    ser.write(("configMics "  + str(MICS_FREQ)  + " " + str(MICS_BM) + "\n").encode('utf_8'))
+    time.sleep(1)
+    ser.write(("configBaros " + str(BAROS_FREQ) + " " + str(BAROS_BM) + "\n").encode('utf_8'))
+    time.sleep(1)
+    ser.write(("configAccel " + str(ACC_FREQ)   + " " + str(ACC_RANGE) + "\n").encode('utf_8'))
+    time.sleep(1)
+    ser.write(("configGyro "  + str(GYRO_FREQ)  + " " + str(GYRO_RANGE) + "\n").encode('utf_8'))
+    """
+
+    for line in sys.stdin:
+        if line == "stop\n":
+            packet_reader.stop = True
+            break
+
+        serial_port.write(line.encode("utf_8"))
 
 
 @gateway_cli.command()

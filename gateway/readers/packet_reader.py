@@ -1,10 +1,7 @@
 import logging
 import os
-from _thread import start_new_thread
 from datetime import datetime
-import serial
 
-import sys
 from gateway import exceptions
 from gateway.readers import constants
 from gateway.uploaders import StreamingUploader
@@ -308,30 +305,3 @@ class PacketReader:
             "Mag": os.path.join(folder_name, "mag.csv"),
             "Analog": os.path.join(folder_name, "analog.csv"),
         }
-
-
-if __name__ == "__main__":
-    serial_port = serial.Serial(constants.SERIAL_PORT, constants.BAUDRATE)
-    serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
-    packet_reader = PacketReader()
-
-    # Thread that will parse serial data and write it to files.
-    start_new_thread(packet_reader.read_packets, args=(serial_port,))
-
-    """
-    time.sleep(1)
-    ser.write(("configMics "  + str(MICS_FREQ)  + " " + str(MICS_BM) + "\n").encode('utf_8'))
-    time.sleep(1)
-    ser.write(("configBaros " + str(BAROS_FREQ) + " " + str(BAROS_BM) + "\n").encode('utf_8'))
-    time.sleep(1)
-    ser.write(("configAccel " + str(ACC_FREQ)   + " " + str(ACC_RANGE) + "\n").encode('utf_8'))
-    time.sleep(1)
-    ser.write(("configGyro "  + str(GYRO_FREQ)  + " " + str(GYRO_RANGE) + "\n").encode('utf_8'))
-    """
-
-    for line in sys.stdin:
-        if line == "stop\n":
-            packet_reader.stop = True
-            break
-
-        serial_port.write(line.encode("utf_8"))
