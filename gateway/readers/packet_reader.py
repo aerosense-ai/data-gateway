@@ -324,7 +324,7 @@ if __name__ == "__main__":
 
     for line in sys.stdin:
         if line == "stop\n":
-            stop = True
+            packet_reader.stop = True
             break
-        else:
-            serial_port.write(line.encode("utf_8"))
+
+        serial_port.write(line.encode("utf_8"))
