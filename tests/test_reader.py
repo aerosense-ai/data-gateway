@@ -33,7 +33,8 @@ class TestPacketReader(unittest.TestCase):
     def tearDownClass(cls):
         cls.storage_emulator.stop()
 
-    def _generate_filenames(self, directory_path):
+    def _generate_file_paths(self, directory_path):
+        """Generate paths for the expected output files."""
         return {
             "Mics": os.path.join(directory_path, "mics.csv"),
             "Baros": os.path.join(directory_path, "baros.csv"),
@@ -44,6 +45,7 @@ class TestPacketReader(unittest.TestCase):
         }
 
     def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_name):
+        """Check that non-trivial batches from a packet reader for a particular sensor are uploaded to cloud storage."""
         number_of_batches = packet_reader.uploader.streams[sensor_name]["batch_number"]
         self.assertTrue(number_of_batches > 0)
 
@@ -62,13 +64,15 @@ class TestPacketReader(unittest.TestCase):
                     self.assertTrue(len(outputs) > 1)
                     self.assertTrue(len(outputs[0].split(",")) > 1)
 
-    def _check_files_are_written(self, temporary_directory, filename):
+    def _check_data_is_written_to_files(self, temporary_directory, filename):
+        """Check that non-trivial data is written to the given file."""
         with open(os.path.join(temporary_directory, filename)) as f:
             outputs = f.read().split("\n")
             self.assertTrue(len(outputs) > 1)
             self.assertTrue(len(outputs[0].split(",")) > 1)
 
     def test_packet_reader_with_baro_sensor(self):
+        """Test that the packet reader works with the baro sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([34])
 
@@ -78,13 +82,14 @@ class TestPacketReader(unittest.TestCase):
         packet_reader = PacketReader()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            filenames = self._generate_filenames(temporary_directory)
+            filenames = self._generate_file_paths(temporary_directory)
             packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
-            self._check_files_are_written(temporary_directory, "baros.csv")
+            self._check_data_is_written_to_files(temporary_directory, "baros.csv")
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Baros")
 
     def test_packet_reader_with_mic_sensor(self):
+        """Test that the packet reader works with the mic sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([54])
 
@@ -94,13 +99,14 @@ class TestPacketReader(unittest.TestCase):
         packet_reader = PacketReader()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            filenames = self._generate_filenames(temporary_directory)
+            filenames = self._generate_file_paths(temporary_directory)
             packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
-            self._check_files_are_written(temporary_directory, "mics.csv")
+            self._check_data_is_written_to_files(temporary_directory, "mics.csv")
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Mics")
 
     def test_packet_reader_with_acc_sensor(self):
+        """Test that the packet reader works with the acc sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([74])
 
@@ -110,13 +116,14 @@ class TestPacketReader(unittest.TestCase):
         packet_reader = PacketReader()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            filenames = self._generate_filenames(temporary_directory)
+            filenames = self._generate_file_paths(temporary_directory)
             packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
-            self._check_files_are_written(temporary_directory, "acc.csv")
+            self._check_data_is_written_to_files(temporary_directory, "acc.csv")
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Acc")
 
     def test_packet_reader_with_gyro_sensor(self):
+        """Test that the packet reader works with the gyro sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([76])
 
@@ -126,13 +133,14 @@ class TestPacketReader(unittest.TestCase):
         packet_reader = PacketReader()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            filenames = self._generate_filenames(temporary_directory)
+            filenames = self._generate_file_paths(temporary_directory)
             packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
-            self._check_files_are_written(temporary_directory, "gyro.csv")
+            self._check_data_is_written_to_files(temporary_directory, "gyro.csv")
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Gyro")
 
     def test_packet_reader_with_mag_sensor(self):
+        """Test that the packet reader works with the mag sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([78])
 
@@ -142,13 +150,14 @@ class TestPacketReader(unittest.TestCase):
         packet_reader = PacketReader()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            filenames = self._generate_filenames(temporary_directory)
+            filenames = self._generate_file_paths(temporary_directory)
             packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
-            self._check_files_are_written(temporary_directory, "mag.csv")
+            self._check_data_is_written_to_files(temporary_directory, "mag.csv")
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Mag")
 
     def test_packet_reader_with_analog_sensor(self):
+        """Test that the packet reader works with the analog sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([80])
 
@@ -158,9 +167,9 @@ class TestPacketReader(unittest.TestCase):
         packet_reader = PacketReader()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            filenames = self._generate_filenames(temporary_directory)
+            filenames = self._generate_file_paths(temporary_directory)
             packet_reader.read_packets(serial_port, filenames, stop_when_no_more_data=True)
-            self._check_files_are_written(temporary_directory, "analog.csv")
+            self._check_data_is_written_to_files(temporary_directory, "analog.csv")
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Analog")
 
