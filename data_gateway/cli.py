@@ -101,13 +101,10 @@ def supervisord_conf(config_file):
     Daemonising a process ensures it automatically restarts after a failure and on startup of the operating system
     failure.
     """
+    supervisord_conf_str = f"""
 
-    supervisord_conf_str = """
-
-[program:{prg_name}]
-command=gateway --config-file {cfg_file}""".format(
-        prg_name=SUPERVISORD_PROGRAM_NAME, cfg_file=os.path.abspath(config_file)
-    )
+[program:{SUPERVISORD_PROGRAM_NAME,}]
+command=gateway start --config-file {os.path.abspath(config_file)}"""
 
     print(supervisord_conf_str)
     return 0
