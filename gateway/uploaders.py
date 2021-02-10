@@ -44,7 +44,7 @@ class Uploader:
 class StreamingUploader:
     def __init__(self, sensor_types, project_name, bucket_name, batch_size=100):
         self.streams = {
-            sensor_type["name"]: {"data": [], "counts": 0, "extension": sensor_type["extension"]}
+            sensor_type["name"]: {"data": [], "batch_number": 0, "extension": sensor_type["extension"]}
             for sensor_type in sensor_types
         }
         self.batch_size = batch_size
@@ -57,10 +57,10 @@ class StreamingUploader:
         # Send a batch to the cloud if enough data has been collected.
         if len(self.streams[sensor_type]["data"]) >= self.batch_size:
             sensor = self.streams[sensor_type]
-            path_in_bucket = f"{CLOUD_DIRECTORY_NAME}/{sensor_type}/batch-{sensor['counts']}{sensor['extension']}"
+            path_in_bucket = f"{CLOUD_DIRECTORY_NAME}/{sensor_type}/batch-{sensor['batch_number']}{sensor['extension']}"
             self._upload(data=sensor["data"][: self.batch_size], path_in_bucket=path_in_bucket)
             self.streams[sensor_type]["data"] = sensor["data"][self.batch_size :]
-            self.streams[sensor_type]["counts"] += 1
+            self.streams[sensor_type]["batch_number"] += 1
 
     def _upload(self, data, path_in_bucket):
         self.client.upload_from_string(
