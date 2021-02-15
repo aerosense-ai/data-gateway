@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 import time
 from queue import Empty, SimpleQueue
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
@@ -8,7 +9,7 @@ from octue.utils.cloud.persistence import GoogleCloudStorageClient
 logger = logging.getLogger(__name__)
 
 
-CLOUD_DIRECTORY_NAME = "data_gateway"
+BATCH_DIRECTORY_NAME = "data_gateway"
 
 
 class TimeBatcher:
@@ -54,9 +55,83 @@ class TimeBatcher:
         return self.ready_batches[sensor_name].get(block=False)
 
 
+class BatchingFileWriter:
+    def __init__(self, sensor_specifications, directory_path, write_interval):
+        """Initialise a BatchingFileWriter.
+
+        :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
+        :param float write_interval: time in seconds between cloud uploads
+        :return None:
+        """
+        self.batcher = TimeBatcher(sensor_specifications, batch_interval=write_interval)
+        self.directory_path = directory_path
+        self.upload_interval = write_interval
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.force_write()
+
+    def add_to_current_batch(self, sensor_name, data):
+        """Add serialised data (a string) to the current batch for the given sensor name.
+
+        :param str sensor_name:
+        :param str data:
+        :return None:
+        """
+        self.batcher.add_to_current_batch(sensor_name, data)
+
+        # Write a batch to disk if one is ready.
+        try:
+            ready_batch = self.batcher.pop_next_ready_batch(sensor_name)
+        except Empty:
+            return
+
+        self._write_batch(batch=ready_batch)
+
+    def force_write(self):
+        """Write all current batches to disk, regardless of whether a complete upload interval has passed."""
+        for sensor_name in self.batcher.current_batches:
+            self.batcher.finalise_current_batch(sensor_name)
+            self._write_batch(batch=self.batcher.pop_next_ready_batch(sensor_name))
+
+    def _write_batch(self, batch):
+        """Write a batch of serialised data to disk.
+
+        :param dict batch:
+        :return None:
+        """
+        if len(batch["data"]) == 0:
+            logger.warning(f"No data to upload for {batch['name']} during force upload.")
+            return
+
+        path = self._generate_write_path(batch)
+        directory = os.path.split(path)[0]
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        with open(path, "w") as f:
+            f.write("".join(batch["data"]))
+
+    def _generate_write_path(self, batch):
+        """Generate the path the batch should be written to.
+
+        :param dict batch:
+        :return str:
+        """
+        return os.path.join(
+            self.directory_path,
+            BATCH_DIRECTORY_NAME,
+            batch["name"],
+            f"batch-{batch['batch_number']}{batch['extension']}",
+        )
+
+
 class BatchingUploader:
     def __init__(self, sensor_specifications, project_name, bucket_name, upload_interval):
-        """Initialise a StreamingUploader with a bucket from a given GCP project.
+        """Initialise a BatchingUploader with a bucket from a given GCP project.
 
         :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
         :param str project_name:
@@ -84,7 +159,7 @@ class BatchingUploader:
         """
         self.batcher.add_to_current_batch(sensor_name, data)
 
-        # Send a batch to the cloud if enough time has elapsed.
+        # Send a batch to the cloud if one is ready.
         try:
             ready_batch = self.batcher.pop_next_ready_batch(sensor_name)
         except Empty:
@@ -120,4 +195,4 @@ class BatchingUploader:
         :param dict batch:
         :return str:
         """
-        return f"{CLOUD_DIRECTORY_NAME}/{batch['name']}/batch-{batch['batch_number']}{batch['extension']}"
+        return f"{BATCH_DIRECTORY_NAME}/{batch['name']}/batch-{batch['batch_number']}{batch['extension']}"

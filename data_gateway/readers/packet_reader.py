@@ -1,36 +1,44 @@
 import logging
 import os
-from datetime import datetime
 
 from data_gateway import exceptions
 from data_gateway.readers import constants
-from data_gateway.uploaders import BatchingUploader
+from data_gateway.uploaders import BatchingFileWriter, BatchingUploader
 
 
 logger = logging.getLogger(__name__)
 
 
 class PacketReader:
-    def __init__(self, save_locally, upload_to_cloud, upload_interval=600):
+    def __init__(self, save_locally, upload_to_cloud, local_save_directory=None, batch_interval=600):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.handles = constants.DEFAULT_HANDLES
-        self.uploader = BatchingUploader(
-            sensor_specifications=(
-                {"name": "Mics", "extension": ".csv"},
-                {"name": "Baros", "extension": ".csv"},
-                {"name": "Acc", "extension": ".csv"},
-                {"name": "Gyro", "extension": ".csv"},
-                {"name": "Mag", "extension": ".csv"},
-                {"name": "Analog", "extension": ".csv"},
-            ),
-            project_name=os.environ["TEST_PROJECT_NAME"],
-            bucket_name=os.environ["TEST_BUCKET_NAME"],
-            upload_interval=upload_interval,
-        )
         self.stop = False
 
-    def read_packets(self, serial_port, filenames=None, stop_when_no_more_data=False):
+        sensor_specifications = (
+            {"name": "Mics", "extension": ".csv"},
+            {"name": "Baros", "extension": ".csv"},
+            {"name": "Acc", "extension": ".csv"},
+            {"name": "Gyro", "extension": ".csv"},
+            {"name": "Mag", "extension": ".csv"},
+            {"name": "Analog", "extension": ".csv"},
+        )
+
+        self.uploader = BatchingUploader(
+            sensor_specifications=sensor_specifications,
+            project_name=os.environ["TEST_PROJECT_NAME"],
+            bucket_name=os.environ["TEST_BUCKET_NAME"],
+            upload_interval=batch_interval,
+        )
+
+        self.writer = BatchingFileWriter(
+            sensor_specifications=sensor_specifications,
+            directory_path=local_save_directory,
+            write_interval=batch_interval,
+        )
+
+    def read_packets(self, serial_port, stop_when_no_more_data=False):
         current_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
         previous_ideal_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
@@ -44,33 +52,33 @@ class PacketReader:
         }
 
         with self.uploader:
+            with self.writer:
 
-            while not self.stop:
-                r = serial_port.read()
-                if len(r) == 0:
-                    if stop_when_no_more_data:
-                        break
-                    continue
+                while not self.stop:
+                    r = serial_port.read()
+                    if len(r) == 0:
+                        if stop_when_no_more_data:
+                            break
+                        continue
 
-                if r[0] != constants.PACKET_KEY:
-                    continue
+                    if r[0] != constants.PACKET_KEY:
+                        continue
 
-                packet_type = int.from_bytes(serial_port.read(), constants.ENDIAN)
-                length = int.from_bytes(serial_port.read(), constants.ENDIAN)
-                payload = serial_port.read(length)
+                    packet_type = int.from_bytes(serial_port.read(), constants.ENDIAN)
+                    length = int.from_bytes(serial_port.read(), constants.ENDIAN)
+                    payload = serial_port.read(length)
 
-                if packet_type == constants.TYPE_HANDLE_DEF:
-                    self.update_handles(payload)
-                    continue
+                    if packet_type == constants.TYPE_HANDLE_DEF:
+                        self.update_handles(payload)
+                        continue
 
-                self._parse_sensor_packet(
-                    sensor_type=packet_type,
-                    payload=payload,
-                    filenames=filenames or self._generate_default_filenames(),
-                    data=data,
-                    current_timestamp=current_timestamp,
-                    previous_ideal_timestamp=previous_ideal_timestamp,
-                )
+                    self._parse_sensor_packet(
+                        sensor_type=packet_type,
+                        payload=payload,
+                        data=data,
+                        current_timestamp=current_timestamp,
+                        previous_ideal_timestamp=previous_ideal_timestamp,
+                    )
 
     def update_handles(self, payload):
         start_handle = int.from_bytes(payload[0:1], constants.ENDIAN)
@@ -109,7 +117,7 @@ class PacketReader:
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
 
-    def _parse_sensor_packet(self, sensor_type, payload, filenames, data, current_timestamp, previous_ideal_timestamp):
+    def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
         if sensor_type not in self.handles:
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
@@ -117,7 +125,7 @@ class PacketReader:
 
         if self.handles[sensor_type].startswith("Baro group"):
             # Write data to files when set is complete.
-            self._wait_until_set_is_complete("Baros", t, filenames, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Baros", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             baro_group_number = int(self.handles[sensor_type][11:])
@@ -138,7 +146,7 @@ class PacketReader:
                     )
 
         elif self.handles[sensor_type].startswith("Mic"):
-            self._wait_until_set_is_complete("Mics", t, filenames, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Mics", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             mic_number = int(self.handles[sensor_type][4:])
@@ -148,7 +156,7 @@ class PacketReader:
                 )
 
         elif self.handles[sensor_type].startswith("IMU Accel"):
-            self._wait_until_set_is_complete("Acc", t, filenames, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Acc", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             for i in range(constants.IMU_SAMPLES_PER_PACKET):
@@ -157,7 +165,7 @@ class PacketReader:
                 data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], constants.ENDIAN, signed=True)
 
         elif self.handles[sensor_type] == "IMU Gyro":
-            self._wait_until_set_is_complete("Gyro", t, filenames, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Gyro", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             for i in range(constants.IMU_SAMPLES_PER_PACKET):
@@ -166,7 +174,7 @@ class PacketReader:
                 data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], constants.ENDIAN, signed=True)
 
         elif self.handles[sensor_type] == "IMU Magnetometer":
-            self._wait_until_set_is_complete("Mag", t, filenames, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Mag", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             for i in range(constants.IMU_SAMPLES_PER_PACKET):
@@ -175,7 +183,7 @@ class PacketReader:
                 data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], constants.ENDIAN, signed=True)
 
         elif self.handles[sensor_type] == "Analog":
-            self._wait_until_set_is_complete("Analog", t, filenames, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Analog", t, data, current_timestamp, previous_ideal_timestamp)
 
             def val_to_v(val):
                 return (val << 6) / 1e6
@@ -190,7 +198,7 @@ class PacketReader:
 
             # logger.info(data["Analog"][0][0])
 
-    def _wait_until_set_is_complete(self, sensor_type, t, filenames, data, current_timestamp, prev_ideal_timestamp):
+    def _wait_until_set_is_complete(self, sensor_type, t, data, current_timestamp, prev_ideal_timestamp):
         """timestamp in 1/(2**16) s
 
         :param sensor_type:
@@ -221,9 +229,7 @@ class PacketReader:
 
                     ideal_new_timestamp = current_timestamp[sensor_type]
 
-                self._write_data(
-                    data, sensor_type, ideal_new_timestamp / (2 ** 16), constants.period[sensor_type], filenames
-                )
+                self._write_data(data, sensor_type, ideal_new_timestamp / (2 ** 16), constants.period[sensor_type])
 
                 # clean up data buffer(?)
                 data[sensor_type] = [
@@ -262,12 +268,12 @@ class PacketReader:
                 else:
                     logger.info("Received first %s packet", sensor_type)
 
-                self._write_data(data, sensor_type, t / (2 ** 16), constants.period[sensor_type], filenames)
+                self._write_data(data, sensor_type, t / (2 ** 16), constants.period[sensor_type])
 
             prev_ideal_timestamp[sensor_type] = current_timestamp[sensor_type]
             current_timestamp[sensor_type] = t
 
-    def _write_data(self, data, sensor_type, timestamp, period, filenames):
+    def _write_data(self, data, sensor_type, timestamp, period):
         """Dump data to files.
 
         :param sensor_type:
@@ -282,37 +288,20 @@ class PacketReader:
             time = timestamp - (number_of_samples - i) * period
 
             if self.save_locally:
-                with open(filenames[sensor_type], "a") as f:
-                    f.write(str(time) + ",")
+                self.writer.add_to_current_batch(sensor_type, str(time) + ",")
 
             if self.upload_to_cloud:
                 self.uploader.add_to_current_batch(sensor_type, str(time) + ",")
 
             for meas in data[sensor_type]:
                 if self.save_locally:
-                    with open(filenames[sensor_type], "a") as f:
-                        f.write(str(meas[i]) + ",")
+                    self.writer.add_to_current_batch(sensor_type, str(meas[i]) + ",")
 
                 if self.upload_to_cloud:
                     self.uploader.add_to_current_batch(sensor_type, str(meas[i]) + ",")
 
             if self.save_locally:
-                with open(filenames[sensor_type], "a") as f:
-                    f.write("\n")
+                self.writer.add_to_current_batch(sensor_type, "\n")
 
             if self.upload_to_cloud:
                 self.uploader.add_to_current_batch(sensor_type, "\n")
-
-    @staticmethod
-    def _generate_default_filenames():
-        folder_name = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-        os.mkdir(folder_name)
-
-        return {
-            "Mics": os.path.join(folder_name, "mics.csv"),
-            "Baros": os.path.join(folder_name, "baros.csv"),
-            "Acc": os.path.join(folder_name, "acc.csv"),
-            "Gyro": os.path.join(folder_name, "gyro.csv"),
-            "Mag": os.path.join(folder_name, "mag.csv"),
-            "Analog": os.path.join(folder_name, "analog.csv"),
-        }

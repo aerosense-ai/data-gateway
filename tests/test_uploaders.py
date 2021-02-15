@@ -1,4 +1,5 @@
 import os
+import tempfile
 import time
 import unittest
 from gcloud_storage_emulator.server import create_server
@@ -6,10 +7,10 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.uploaders import CLOUD_DIRECTORY_NAME, BatchingUploader
+from data_gateway.uploaders import BATCH_DIRECTORY_NAME, BatchingFileWriter, BatchingUploader
 
 
-class TestStreamingUploader(unittest.TestCase):
+class TestBatchingUploader(unittest.TestCase):
 
     TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
@@ -26,7 +27,7 @@ class TestStreamingUploader(unittest.TestCase):
     def tearDownClass(cls):
         cls.storage_emulator.stop()
 
-    def test_data_is_added_to_stream(self):
+    def test_data_is_batched(self):
         """Test that data is added to the correct stream as expected."""
         uploader = BatchingUploader(
             sensor_specifications=[{"name": "test", "extension": ".csv"}],
@@ -72,7 +73,7 @@ class TestStreamingUploader(unittest.TestCase):
         self.assertEqual(
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/test/batch-0.csv",
+                path_in_bucket=f"{BATCH_DIRECTORY_NAME}/test/batch-0.csv",
             ),
             "ping,pong,\nding,",
         )
@@ -80,7 +81,56 @@ class TestStreamingUploader(unittest.TestCase):
         self.assertEqual(
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/test/batch-1.csv",
+                path_in_bucket=f"{BATCH_DIRECTORY_NAME}/test/batch-1.csv",
             ),
             "dong,\n",
         )
+
+
+class TestBatchingWriter(unittest.TestCase):
+    def test_data_is_batched(self):
+        """Test that data is added to the correct stream as expected."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            writer = BatchingFileWriter(
+                sensor_specifications=[{"name": "test", "extension": ".csv"}],
+                directory_path=temporary_directory,
+                write_interval=600,
+            )
+
+        stream = writer.batcher.current_batches["test"]
+        self.assertEqual(stream["name"], "test"),
+        self.assertEqual(stream["data"], [])
+        self.assertEqual(stream["batch_number"], 0),
+        self.assertEqual(stream["extension"], ".csv")
+
+        writer.add_to_current_batch(sensor_name="test", data="blah,")
+        self.assertEqual(writer.batcher.current_batches["test"]["data"], ["blah,"])
+
+    def test_data_is_written_to_disk_in_batches(self):
+        """Test that data is written to disk in batches of whatever units it is added to the stream in."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            writer = BatchingFileWriter(
+                sensor_specifications=[{"name": "test", "extension": ".csv"}],
+                directory_path=temporary_directory,
+                write_interval=0.01,
+            )
+
+            with writer:
+                writer.add_to_current_batch(sensor_name="test", data="ping,")
+                writer.add_to_current_batch(sensor_name="test", data="pong,\n")
+                self.assertEqual(len(writer.batcher.current_batches["test"]["data"]), 2)
+                time.sleep(0.01)
+
+                writer.add_to_current_batch(sensor_name="test", data="ding,")
+                self.assertEqual(len(writer.batcher.current_batches["test"]["data"]), 0)
+
+                writer.add_to_current_batch(sensor_name="test", data="dong,\n")
+                time.sleep(0.01)
+
+            self.assertEqual(len(writer.batcher.current_batches["test"]["data"]), 0)
+
+            with open(os.path.join(temporary_directory, BATCH_DIRECTORY_NAME, "test", "batch-0.csv")) as f:
+                self.assertEqual(f.read(), "ping,pong,\nding,")
+
+            with open(os.path.join(temporary_directory, BATCH_DIRECTORY_NAME, "test", "batch-1.csv")) as f:
+                self.assertEqual(f.read(), "dong,\n")
