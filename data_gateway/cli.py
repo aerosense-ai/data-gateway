@@ -102,7 +102,10 @@ def start(config_file, interactive, output_dir, batch_interval):
         return
 
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
-    packet_reader = PacketReader(save_locally=True, upload_to_cloud=False)
+    packet_reader = PacketReader(
+        save_locally=True, upload_to_cloud=False, output_directory=output_dir, batch_interval=batch_interval
+    )
+
     threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
     print("Starting gateway.")
 
