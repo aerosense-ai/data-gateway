@@ -34,7 +34,7 @@ class PacketReader:
 
         self.writer = BatchingFileWriter(
             sensor_specifications=sensor_specifications,
-            directory_path=output_directory,
+            output_directory=output_directory,
             batch_interval=batch_interval,
         )
 

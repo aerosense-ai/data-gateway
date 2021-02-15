@@ -6,7 +6,6 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.persistence import BATCH_DIRECTORY_NAME
 from data_gateway.readers.constants import PACKET_KEY
 from data_gateway.readers.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
@@ -56,7 +55,7 @@ class TestPacketReader(unittest.TestCase):
         for i in range(number_of_batches_to_check):
             data = client.download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=f"{BATCH_DIRECTORY_NAME}/{sensor_name}/batch-{i}.csv",
+                path_in_bucket=f"{packet_reader.uploader.output_directory}/{sensor_name}/batch-{i}.csv",
             )
 
             lines = data.split("\n")
@@ -65,7 +64,7 @@ class TestPacketReader(unittest.TestCase):
 
     def _check_data_is_written_to_files(self, temporary_directory, sensor_name):
         """Check that non-trivial data is written to the given file."""
-        path = os.path.join(temporary_directory, BATCH_DIRECTORY_NAME, sensor_name)
+        path = os.path.join(temporary_directory, sensor_name)
         batches = [file for file in os.listdir(path)]
         self.assertTrue(len(batches) > 0)
 

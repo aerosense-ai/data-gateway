@@ -11,18 +11,20 @@ import abc
 logger = logging.getLogger(__name__)
 
 
-BATCH_DIRECTORY_NAME = "data_gateway"
+DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
 class TimeBatcher:
-    def __init__(self, sensor_specifications, batch_interval):
+    def __init__(self, sensor_specifications, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
         """Instantiate a TimeBatcher. The batcher will group the data given to it into batches of the duration of the
         time interval.
 
         :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
         :param float batch_interval: time interval with which to batch data (in seconds)
+        :param str output_directory: directory to write batches to
         :return None:
         """
+        self.output_directory = output_directory
         self.current_batches = {}
         self.ready_batches = {}
 
@@ -99,19 +101,19 @@ class TimeBatcher:
         """
         pass
 
+    def _generate_batch_path(self, batch):
+        """Generate the path that the batch should be persisted to.
+
+        :param dict batch:
+        :return str:
+        """
+        return "/".join((self.output_directory, batch["name"], f"batch-{batch['batch_number']}{batch['extension']}"))
+
 
 class BatchingFileWriter(TimeBatcher):
-    def __init__(self, sensor_specifications, directory_path, batch_interval):
-        """Initialise a BatchingFileWriter. The writer will save the data given to it to disk at the given interval of
-        time.
-
-        :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
-        :param str directory_path: directory to write batches to
-        :param float batch_interval: time interval with which to batch data (in seconds)
-        :return None:
-        """
-        self.directory_path = directory_path
-        super().__init__(sensor_specifications, batch_interval)
+    """A writer that batches the data given to it over time into batches of the duration of the given time interval,
+    saving each batch to disk.
+    """
 
     def _persist(self, batch):
         """Write a batch of serialised data to disk.
@@ -123,7 +125,7 @@ class BatchingFileWriter(TimeBatcher):
             logger.warning(f"No data to upload for {batch['name']} during force upload.")
             return
 
-        path = self._generate_write_path(batch)
+        path = os.path.abspath(self._generate_batch_path(batch))
         directory = os.path.split(path)[0]
 
         if not os.path.exists(directory):
@@ -132,22 +134,16 @@ class BatchingFileWriter(TimeBatcher):
         with open(path, "w") as f:
             f.write("".join(batch["data"]))
 
-    def _generate_write_path(self, batch):
-        """Generate the path the batch should be written to.
-
-        :param dict batch:
-        :return str:
-        """
-        return os.path.join(
-            self.directory_path,
-            BATCH_DIRECTORY_NAME,
-            batch["name"],
-            f"batch-{batch['batch_number']}{batch['extension']}",
-        )
-
 
 class BatchingUploader(TimeBatcher):
-    def __init__(self, sensor_specifications, project_name, bucket_name, batch_interval):
+    def __init__(
+        self,
+        sensor_specifications,
+        project_name,
+        bucket_name,
+        batch_interval,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
+    ):
         """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
         to it to a GCP storage bucket at the given interval of time.
 
@@ -159,7 +155,7 @@ class BatchingUploader(TimeBatcher):
         """
         self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
-        super().__init__(sensor_specifications, batch_interval=batch_interval)
+        super().__init__(sensor_specifications, batch_interval, output_directory=output_directory)
 
     def _persist(self, batch):
         """Upload serialised data to a path in the bucket.
@@ -174,13 +170,5 @@ class BatchingUploader(TimeBatcher):
         self.client.upload_from_string(
             serialised_data="".join(batch["data"]),
             bucket_name=self.bucket_name,
-            path_in_bucket=self._generate_path_in_bucket(batch),
+            path_in_bucket=self._generate_batch_path(batch),
         )
-
-    def _generate_path_in_bucket(self, batch):
-        """Generate the path in the bucket that the batch should be uploaded to.
-
-        :param dict batch:
-        :return str:
-        """
-        return f"{BATCH_DIRECTORY_NAME}/{batch['name']}/batch-{batch['batch_number']}{batch['extension']}"

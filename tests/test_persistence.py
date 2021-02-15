@@ -7,7 +7,7 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.persistence import BATCH_DIRECTORY_NAME, BatchingFileWriter, BatchingUploader
+from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 
 
 class TestBatchingWriter(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestBatchingWriter(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_specifications=[{"name": "test", "extension": ".csv"}],
-                directory_path=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=600,
             )
 
@@ -34,7 +34,7 @@ class TestBatchingWriter(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_specifications=[{"name": "test", "extension": ".csv"}],
-                directory_path=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=0.01,
             )
 
@@ -52,10 +52,10 @@ class TestBatchingWriter(unittest.TestCase):
 
             self.assertEqual(len(writer.current_batches["test"]["data"]), 0)
 
-            with open(os.path.join(temporary_directory, BATCH_DIRECTORY_NAME, "test", "batch-0.csv")) as f:
+            with open(os.path.join(temporary_directory, "test", "batch-0.csv")) as f:
                 self.assertEqual(f.read(), "ping,pong,\nding,")
 
-            with open(os.path.join(temporary_directory, BATCH_DIRECTORY_NAME, "test", "batch-1.csv")) as f:
+            with open(os.path.join(temporary_directory, "test", "batch-1.csv")) as f:
                 self.assertEqual(f.read(), "dong,\n")
 
 
@@ -122,7 +122,7 @@ class TestBatchingUploader(unittest.TestCase):
         self.assertEqual(
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=f"{BATCH_DIRECTORY_NAME}/test/batch-0.csv",
+                path_in_bucket=f"{uploader.output_directory}/test/batch-0.csv",
             ),
             "ping,pong,\nding,",
         )
@@ -130,7 +130,7 @@ class TestBatchingUploader(unittest.TestCase):
         self.assertEqual(
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=f"{BATCH_DIRECTORY_NAME}/test/batch-1.csv",
+                path_in_bucket=f"{uploader.output_directory}/test/batch-1.csv",
             ),
             "dong,\n",
         )
