@@ -117,14 +117,15 @@ def start(config_file, interactive, output_dir, batch_interval):
             for line in sys.stdin:
                 if line == "stop\n":
                     packet_reader.stop = True
-                    print("Stopping gateway.")
                     break
 
                 serial_port.write(line.encode("utf_8"))
 
     except KeyboardInterrupt:
         packet_reader.stop = True
-        packet_reader.writer.force_persist()
+
+    print("Stopping gateway.")
+    packet_reader.writer.force_persist()
 
 
 @gateway_cli.command()
