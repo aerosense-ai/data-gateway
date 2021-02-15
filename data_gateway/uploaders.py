@@ -94,36 +94,34 @@ class StreamingUploader:
         except Empty:
             return
 
-        self._upload_batch(stream=ready_batch)
+        self._upload_batch(batch=ready_batch)
 
     def force_upload(self):
         """Upload all the streams, regardless of whether a complete upload interval has passed."""
-        for stream in self.batcher.streams.values():
+        for sensor_type, stream in self.batcher.streams.items():
             self.batcher.prepare_next_batch(stream)
-            self._upload_batch(stream=stream)
+            self._upload_batch(batch=self.batcher.pop_next_batch(sensor_type))
 
-    def _upload_batch(self, stream):
+    def _upload_batch(self, batch):
         """Upload serialised data to a path in the bucket.
 
-        :param dict stream:
+        :param dict batch:
         :return None:
         """
-        batch = stream["data"]
-
         if len(batch) == 0:
-            logger.warning(f"No data to upload for {stream['name']} during force upload.")
+            logger.warning(f"No data to upload for {batch['name']} during force upload.")
             return
 
         self.client.upload_from_string(
-            serialised_data="".join(batch),
+            serialised_data="".join(batch["data"]),
             bucket_name=self.bucket_name,
-            path_in_bucket=self._generate_path_in_bucket(stream),
+            path_in_bucket=self._generate_path_in_bucket(batch),
         )
 
-    def _generate_path_in_bucket(self, stream):
+    def _generate_path_in_bucket(self, batch):
         """Generate the path in the bucket that the next batch of the stream should be uploaded to.
 
-        :param dict stream:
+        :param dict batch:
         :return str:
         """
-        return f"{CLOUD_DIRECTORY_NAME}/{stream['name']}/batch-{stream['batch_number']}{stream['extension']}"
+        return f"{CLOUD_DIRECTORY_NAME}/{batch['name']}/batch-{batch['batch_number']}{batch['extension']}"

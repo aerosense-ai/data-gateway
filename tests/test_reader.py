@@ -51,11 +51,14 @@ class TestPacketReader(unittest.TestCase):
         number_of_batches = packet_reader.uploader.batcher.streams[sensor_name]["batch_number"]
         self.assertTrue(number_of_batches > 0)
 
+        client = GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME)
+
         for i in range(number_of_batches_to_check):
-            data = GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+            data = client.download_as_string(
                 bucket_name=self.TEST_BUCKET_NAME,
                 path_in_bucket=f"{CLOUD_DIRECTORY_NAME}/{sensor_name}/batch-{i}.csv",
             )
+
             lines = data.split("\n")
             self.assertTrue(len(lines) > 1)
             self.assertTrue(len(lines[0].split(",")) > 1)
