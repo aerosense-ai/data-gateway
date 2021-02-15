@@ -39,6 +39,12 @@ class TimeBatcher:
         self.batch_interval = batch_interval
         self._start_time = time.perf_counter()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.force_persist()
+
     def add_to_current_batch(self, sensor_name, data):
         """Add serialised data (a string) to the current batch for the given sensor name.
 
@@ -75,6 +81,15 @@ class TimeBatcher:
         """
         return self.ready_batches[sensor_name].get(block=False)
 
+    def force_persist(self):
+        """Persist all current batches, regardless of whether a complete batch interval has passed.
+
+        :return None:
+        """
+        for sensor_name in self.current_batches:
+            self.finalise_current_batch(sensor_name)
+            self._persist(batch=self.pop_next_ready_batch(sensor_name))
+
     @abc.abstractmethod
     def _persist(self, batch):
         """Persist the batch to whatever medium is required (e.g. to disk, to a database, or to the cloud).
@@ -97,21 +112,6 @@ class BatchingFileWriter(TimeBatcher):
         """
         self.directory_path = directory_path
         super().__init__(sensor_specifications, batch_interval)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.force_write()
-
-    def force_write(self):
-        """Write all current batches to disk, regardless of whether a complete upload interval has passed.
-
-        :return None:
-        """
-        for sensor_name in self.current_batches:
-            self.finalise_current_batch(sensor_name)
-            self._persist(batch=self.pop_next_ready_batch(sensor_name))
 
     def _persist(self, batch):
         """Write a batch of serialised data to disk.
@@ -160,21 +160,6 @@ class BatchingUploader(TimeBatcher):
         self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
         super().__init__(sensor_specifications, batch_interval=batch_interval)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.force_upload()
-
-    def force_upload(self):
-        """Upload all current batches, regardless of whether a complete upload interval has passed.
-
-        :return None:
-        """
-        for sensor_name in self.current_batches:
-            self.finalise_current_batch(sensor_name)
-            self._persist(batch=self.pop_next_ready_batch(sensor_name))
 
     def _persist(self, batch):
         """Upload serialised data to a path in the bucket.
