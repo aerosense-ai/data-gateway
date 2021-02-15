@@ -7,7 +7,7 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.uploaders import BATCH_DIRECTORY_NAME, BatchingFileWriter, BatchingUploader
+from data_gateway.persistence import BATCH_DIRECTORY_NAME, BatchingFileWriter, BatchingUploader
 
 
 class TestBatchingUploader(unittest.TestCase):

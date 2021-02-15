@@ -2,8 +2,8 @@ import logging
 import os
 
 from data_gateway import exceptions
+from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 from data_gateway.readers import constants
-from data_gateway.uploaders import BatchingFileWriter, BatchingUploader
 
 
 logger = logging.getLogger(__name__)
