@@ -229,7 +229,7 @@ class PacketReader:
 
                     ideal_new_timestamp = current_timestamp[sensor_type]
 
-                self._write_data(data, sensor_type, ideal_new_timestamp / (2 ** 16), constants.period[sensor_type])
+                self._persist_data(data, sensor_type, ideal_new_timestamp / (2 ** 16), constants.period[sensor_type])
 
                 # clean up data buffer(?)
                 data[sensor_type] = [
@@ -268,40 +268,42 @@ class PacketReader:
                 else:
                     logger.info("Received first %s packet", sensor_type)
 
-                self._write_data(data, sensor_type, t / (2 ** 16), constants.period[sensor_type])
+                self._persist_data(data, sensor_type, t / (2 ** 16), constants.period[sensor_type])
 
             prev_ideal_timestamp[sensor_type] = current_timestamp[sensor_type]
             current_timestamp[sensor_type] = t
 
-    def _write_data(self, data, sensor_type, timestamp, period):
-        """Dump data to files.
+    def _persist_data(self, data, sensor_type, timestamp, period):
+        """Persist data to the required storage media.
 
-        :param sensor_type:
+        :param dict data:
+        :param str sensor_type:
         :param timestamp: timestamp in s
         :param period:
-        :return:
+        :return None:
         """
         number_of_samples = len(data[sensor_type][0])
 
         # Iterate through all sample times.
         for i in range(len(data[sensor_type][0])):
             time = timestamp - (number_of_samples - i) * period
-
-            if self.save_locally:
-                self.writer.add_to_current_batch(sensor_type, str(time) + ",")
-
-            if self.upload_to_cloud:
-                self.uploader.add_to_current_batch(sensor_type, str(time) + ",")
+            self._add_to_required_storage_media_batches(sensor_type, data=str(time) + ",")
 
             for meas in data[sensor_type]:
-                if self.save_locally:
-                    self.writer.add_to_current_batch(sensor_type, str(meas[i]) + ",")
+                self._add_to_required_storage_media_batches(sensor_type, data=str(meas[i]) + ",")
 
-                if self.upload_to_cloud:
-                    self.uploader.add_to_current_batch(sensor_type, str(meas[i]) + ",")
+            self._add_to_required_storage_media_batches(sensor_type, data="\n")
 
-            if self.save_locally:
-                self.writer.add_to_current_batch(sensor_type, "\n")
+    def _add_to_required_storage_media_batches(self, sensor_type, data):
+        """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader
+        batch).
 
-            if self.upload_to_cloud:
-                self.uploader.add_to_current_batch(sensor_type, "\n")
+        :param str sensor_type:
+        :param str data:
+        :return None:
+        """
+        if self.save_locally:
+            self.writer.add_to_current_batch(sensor_type, data)
+
+        if self.upload_to_cloud:
+            self.uploader.add_to_current_batch(sensor_type, data)
