@@ -89,10 +89,9 @@ def start(config_file, interactive, output_dir, batch_interval):
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
 
     if not interactive:
-        logger.info(
+        print(
             "Starting packet reader in non-interactive mode - files will be uploaded to cloud storage at intervals of "
-            "%s",
-            batch_interval,
+            f"{batch_interval} seconds."
         )
 
         PacketReader(
@@ -107,7 +106,11 @@ def start(config_file, interactive, output_dir, batch_interval):
     )
 
     threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
-    print("Starting gateway.")
+    print(
+        "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
+        f" to disk at {os.path.join('.', packet_reader.writer.output_directory)!r} at intervals of {batch_interval} "
+        "seconds."
+    )
 
     while not packet_reader.stop:
         for line in sys.stdin:
