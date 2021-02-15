@@ -125,7 +125,7 @@ class BatchingFileWriter(TimeBatcher):
             logger.warning("No data to write for %r.", batch["name"])
             return
 
-        path = os.path.abspath(self._generate_batch_path(batch))
+        path = os.path.abspath(os.path.join(".", self._generate_batch_path(batch)))
         directory = os.path.split(path)[0]
 
         if not os.path.exists(directory):
