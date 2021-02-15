@@ -4,7 +4,7 @@ from datetime import datetime
 
 from data_gateway import exceptions
 from data_gateway.readers import constants
-from data_gateway.uploaders import StreamingUploader
+from data_gateway.uploaders import BatchingUploader
 
 
 logger = logging.getLogger(__name__)
@@ -15,8 +15,8 @@ class PacketReader:
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.handles = constants.DEFAULT_HANDLES
-        self.uploader = StreamingUploader(
-            sensor_types=(
+        self.uploader = BatchingUploader(
+            sensor_specifications=(
                 {"name": "Mics", "extension": ".csv"},
                 {"name": "Baros", "extension": ".csv"},
                 {"name": "Acc", "extension": ".csv"},
@@ -286,7 +286,7 @@ class PacketReader:
                     f.write(str(time) + ",")
 
             if self.upload_to_cloud:
-                self.uploader.add_to_stream(sensor_type, str(time) + ",")
+                self.uploader.add_to_current_batch(sensor_type, str(time) + ",")
 
             for meas in data[sensor_type]:
                 if self.save_locally:
@@ -294,14 +294,14 @@ class PacketReader:
                         f.write(str(meas[i]) + ",")
 
                 if self.upload_to_cloud:
-                    self.uploader.add_to_stream(sensor_type, str(meas[i]) + ",")
+                    self.uploader.add_to_current_batch(sensor_type, str(meas[i]) + ",")
 
             if self.save_locally:
                 with open(filenames[sensor_type], "a") as f:
                     f.write("\n")
 
             if self.upload_to_cloud:
-                self.uploader.add_to_stream(sensor_type, "\n")
+                self.uploader.add_to_current_batch(sensor_type, "\n")
 
     @staticmethod
     def _generate_default_filenames():

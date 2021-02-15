@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 from queue import Empty, SimpleQueue
@@ -11,64 +12,59 @@ CLOUD_DIRECTORY_NAME = "data_gateway"
 
 
 class TimeBatcher:
-    def __init__(self, sensor_types, batch_interval):
-        self.streams = {
-            sensor_type["name"]: {
-                "name": sensor_type["name"],
+    def __init__(self, sensor_specifications, batch_interval):
+        self.current_batches = {}
+        self.ready_batches = {}
+
+        for sensor_specification in sensor_specifications:
+            self.current_batches[sensor_specification["name"]] = {
+                "name": sensor_specification["name"],
                 "data": [],
                 "batch_number": 0,
-                "extension": sensor_type["extension"],
-                "ready_batches": SimpleQueue(),
+                "extension": sensor_specification["extension"],
             }
-            for sensor_type in sensor_types
-        }
+
+            self.ready_batches[sensor_specification["name"]] = SimpleQueue()
+
         self.batch_interval = batch_interval
         self._start_time = time.perf_counter()
 
-    def add_to_stream(self, sensor_type, data):
-        """Add serialised data (a string) to the stream for the given sensor type.
+    def add_to_current_batch(self, sensor_name, data):
+        """Add serialised data (a string) to the current batch for the given sensor name.
 
-        :param str sensor_type:
+        :param str sensor_name:
         :param str data:
         :return None:
         """
-        stream = self.streams[sensor_type]
-        stream["data"].append(data)
+        current_batch = self.current_batches[sensor_name]
+        current_batch["data"].append(data)
 
         # Move to the next batch if enough time has elapsed.
         if time.perf_counter() - self._start_time >= self.batch_interval:
-            self.prepare_next_batch(stream)
+            self.finalise_current_batch(sensor_name)
 
-    def prepare_next_batch(self, stream):
+    def finalise_current_batch(self, sensor_name):
         self._start_time = time.perf_counter()
+        batch = self.current_batches[sensor_name]
+        self.ready_batches[sensor_name].put(copy.deepcopy(batch))
+        batch["data"].clear()
+        batch["batch_number"] += 1
 
-        batch = {
-            "name": stream["name"],
-            "data": stream["data"].copy(),
-            "batch_number": stream["batch_number"],
-            "extension": stream["extension"],
-        }
-
-        stream["ready_batches"].put(batch)
-
-        stream["data"].clear()
-        stream["batch_number"] += 1
-
-    def pop_next_batch(self, sensor_type):
-        return self.streams[sensor_type]["ready_batches"].get(block=False)
+    def pop_next_ready_batch(self, sensor_name):
+        return self.ready_batches[sensor_name].get(block=False)
 
 
-class StreamingUploader:
-    def __init__(self, sensor_types, project_name, bucket_name, upload_interval):
+class BatchingUploader:
+    def __init__(self, sensor_specifications, project_name, bucket_name, upload_interval):
         """Initialise a StreamingUploader with a bucket from a given GCP project.
 
-        :param iter(dict) sensor_types: a dictionary with "name" and "extension" entries
+        :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
         :param str project_name:
         :param str bucket_name:
         :param float upload_interval: time in seconds between cloud uploads
         :return None:
         """
-        self.batcher = TimeBatcher(sensor_types, batch_interval=upload_interval)
+        self.batcher = TimeBatcher(sensor_specifications, batch_interval=upload_interval)
         self.bucket_name = bucket_name
         self.upload_interval = upload_interval
         self.client = GoogleCloudStorageClient(project_name=project_name)
@@ -79,28 +75,28 @@ class StreamingUploader:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.force_upload()
 
-    def add_to_stream(self, sensor_type, data):
-        """Add serialised data (a string) to the stream for the given sensor type.
+    def add_to_current_batch(self, sensor_name, data):
+        """Add serialised data (a string) to the current batch for the given sensor name.
 
-        :param str sensor_type:
+        :param str sensor_name:
         :param str data:
         :return None:
         """
-        self.batcher.add_to_stream(sensor_type, data)
+        self.batcher.add_to_current_batch(sensor_name, data)
 
         # Send a batch to the cloud if enough time has elapsed.
         try:
-            ready_batch = self.batcher.pop_next_batch(sensor_type)
+            ready_batch = self.batcher.pop_next_ready_batch(sensor_name)
         except Empty:
             return
 
         self._upload_batch(batch=ready_batch)
 
     def force_upload(self):
-        """Upload all the streams, regardless of whether a complete upload interval has passed."""
-        for sensor_type, stream in self.batcher.streams.items():
-            self.batcher.prepare_next_batch(stream)
-            self._upload_batch(batch=self.batcher.pop_next_batch(sensor_type))
+        """Upload all current batches, regardless of whether a complete upload interval has passed."""
+        for sensor_name in self.batcher.current_batches:
+            self.batcher.finalise_current_batch(sensor_name)
+            self._upload_batch(batch=self.batcher.pop_next_ready_batch(sensor_name))
 
     def _upload_batch(self, batch):
         """Upload serialised data to a path in the bucket.
@@ -119,7 +115,7 @@ class StreamingUploader:
         )
 
     def _generate_path_in_bucket(self, batch):
-        """Generate the path in the bucket that the next batch of the stream should be uploaded to.
+        """Generate the path in the bucket that the batch should be uploaded to.
 
         :param dict batch:
         :return str:
