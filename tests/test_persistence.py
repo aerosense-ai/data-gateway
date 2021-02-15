@@ -134,3 +134,24 @@ class TestBatchingUploader(unittest.TestCase):
             ),
             "dong,\n",
         )
+
+    def test_batch_is_written_to_disk_if_upload_fails(self):
+        """Test that a batch is written to disk if it fails to upload to the cloud."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            uploader = BatchingUploader(
+                sensor_specifications=[{"name": "test", "extension": ".csv"}],
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
+                batch_interval=0.01,
+                output_directory=temporary_directory,
+                upload_timeout=0.00001,
+            )
+
+            with uploader:
+                uploader.add_to_current_batch(sensor_name="test", data="ping,")
+                uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+
+            self.assertEqual(len(uploader.current_batches["test"]["data"]), 0)
+
+            with open(os.path.join(temporary_directory, "test", "batch-0.csv")) as f:
+                self.assertEqual(f.read(), "ping,pong,\n")

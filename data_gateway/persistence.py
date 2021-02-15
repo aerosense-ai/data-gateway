@@ -122,7 +122,7 @@ class BatchingFileWriter(TimeBatcher):
         :return None:
         """
         if len(batch["data"]) == 0:
-            logger.warning(f"No data to upload for {batch['name']} during force upload.")
+            logger.warning("No data to write for %r.", batch["name"])
             return
 
         path = os.path.abspath(self._generate_batch_path(batch))
@@ -143,6 +143,7 @@ class BatchingUploader(TimeBatcher):
         bucket_name,
         batch_interval,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
+        upload_timeout=60,
     ):
         """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
         to it to a GCP storage bucket at the given interval of time.
@@ -155,20 +156,33 @@ class BatchingUploader(TimeBatcher):
         """
         self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
-        super().__init__(sensor_specifications, batch_interval, output_directory=output_directory)
+        self.upload_timeout = upload_timeout
+        self._backup_writer = BatchingFileWriter(sensor_specifications, batch_interval, output_directory)
+        super().__init__(sensor_specifications, batch_interval, output_directory)
 
     def _persist(self, batch):
-        """Upload serialised data to a path in the bucket.
+        """Upload serialised data to a path in the bucket. If the batch fails to upload, it is instead written to disk.
 
         :param dict batch:
         :return None:
         """
         if len(batch) == 0:
-            logger.warning(f"No data to upload for {batch['name']} during force upload.")
+            logger.warning("No data to upload for %r.", batch["name"])
             return
 
-        self.client.upload_from_string(
-            serialised_data="".join(batch["data"]),
-            bucket_name=self.bucket_name,
-            path_in_bucket=self._generate_batch_path(batch),
-        )
+        try:
+            self.client.upload_from_string(
+                serialised_data="".join(batch["data"]),
+                bucket_name=self.bucket_name,
+                path_in_bucket=self._generate_batch_path(batch),
+                timeout=self.upload_timeout,
+            )
+
+        except Exception:
+            logger.warning(
+                "Upload of batch %r failed - written to disk at %r instead.",
+                batch,
+                self._backup_writer._generate_batch_path(batch),
+            )
+
+            self._backup_writer._persist(batch)
