@@ -1,5 +1,4 @@
 import logging
-import os
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
@@ -10,7 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 class PacketReader:
-    def __init__(self, save_locally, upload_to_cloud, output_directory=None, batch_interval=600):
+    def __init__(
+        self,
+        save_locally,
+        upload_to_cloud,
+        output_directory=None,
+        batch_interval=600,
+        project_name=None,
+        bucket_name=None,
+    ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.handles = constants.DEFAULT_HANDLES
@@ -27,8 +34,8 @@ class PacketReader:
 
         self.uploader = BatchingUploader(
             sensor_specifications=sensor_specifications,
-            project_name=os.environ["TEST_PROJECT_NAME"],
-            bucket_name=os.environ["TEST_BUCKET_NAME"],
+            project_name=project_name,
+            bucket_name=bucket_name,
             batch_interval=batch_interval,
         )
 

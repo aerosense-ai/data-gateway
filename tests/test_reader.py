@@ -88,6 +88,8 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
             self._check_data_is_written_to_files(temporary_directory, sensor_name="Baros")
@@ -108,6 +110,8 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
             self._check_data_is_written_to_files(temporary_directory, sensor_name="Mics")
@@ -128,6 +132,8 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
             self._check_data_is_written_to_files(temporary_directory, sensor_name="Acc")
@@ -148,6 +154,8 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
             self._check_data_is_written_to_files(temporary_directory, sensor_name="Gyro")
@@ -168,6 +176,8 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
             self._check_data_is_written_to_files(temporary_directory, sensor_name="Mag")
@@ -188,6 +198,8 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
             self._check_data_is_written_to_files(temporary_directory, sensor_name="Analog")
