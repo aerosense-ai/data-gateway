@@ -166,7 +166,7 @@ class BatchingUploader(TimeBatcher):
         :param dict batch:
         :return None:
         """
-        if len(batch) == 0:
+        if len(batch["data"]) == 0:
             logger.warning("No data to upload for %r.", batch["name"])
             return
 
@@ -180,7 +180,7 @@ class BatchingUploader(TimeBatcher):
 
         except Exception:
             logger.warning(
-                "Upload of batch %r failed - written to disk at %r instead.",
+                "Upload of batch %r failed - writing to disk at %r instead.",
                 batch,
                 self._backup_writer._generate_batch_path(batch),
             )
