@@ -35,7 +35,7 @@ class PacketReader:
         self.writer = BatchingFileWriter(
             sensor_specifications=sensor_specifications,
             directory_path=local_save_directory,
-            write_interval=batch_interval,
+            batch_interval=batch_interval,
         )
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):

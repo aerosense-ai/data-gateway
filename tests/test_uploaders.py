@@ -36,14 +36,14 @@ class TestBatchingUploader(unittest.TestCase):
             upload_interval=600,
         )
 
-        stream = uploader.batcher.current_batches["test"]
+        stream = uploader.current_batches["test"]
         self.assertEqual(stream["name"], "test"),
         self.assertEqual(stream["data"], [])
         self.assertEqual(stream["batch_number"], 0),
         self.assertEqual(stream["extension"], ".csv")
 
         uploader.add_to_current_batch(sensor_name="test", data="blah,")
-        self.assertEqual(uploader.batcher.current_batches["test"]["data"], ["blah,"])
+        self.assertEqual(uploader.current_batches["test"]["data"], ["blah,"])
 
     def test_data_is_uploaded_in_batches_and_can_be_retrieved_from_cloud_storage(self):
         """Test that data is uploaded in batches of whatever units it is added to the stream in, and that it can be
@@ -59,16 +59,16 @@ class TestBatchingUploader(unittest.TestCase):
         with uploader:
             uploader.add_to_current_batch(sensor_name="test", data="ping,")
             uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
-            self.assertEqual(len(uploader.batcher.current_batches["test"]["data"]), 2)
+            self.assertEqual(len(uploader.current_batches["test"]["data"]), 2)
             time.sleep(0.01)
 
             uploader.add_to_current_batch(sensor_name="test", data="ding,")
-            self.assertEqual(len(uploader.batcher.current_batches["test"]["data"]), 0)
+            self.assertEqual(len(uploader.current_batches["test"]["data"]), 0)
 
             uploader.add_to_current_batch(sensor_name="test", data="dong,\n")
             time.sleep(0.01)
 
-        self.assertEqual(len(uploader.batcher.current_batches["test"]["data"]), 0)
+        self.assertEqual(len(uploader.current_batches["test"]["data"]), 0)
 
         self.assertEqual(
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
@@ -94,17 +94,17 @@ class TestBatchingWriter(unittest.TestCase):
             writer = BatchingFileWriter(
                 sensor_specifications=[{"name": "test", "extension": ".csv"}],
                 directory_path=temporary_directory,
-                write_interval=600,
+                batch_interval=600,
             )
 
-        stream = writer.batcher.current_batches["test"]
+        stream = writer.current_batches["test"]
         self.assertEqual(stream["name"], "test"),
         self.assertEqual(stream["data"], [])
         self.assertEqual(stream["batch_number"], 0),
         self.assertEqual(stream["extension"], ".csv")
 
         writer.add_to_current_batch(sensor_name="test", data="blah,")
-        self.assertEqual(writer.batcher.current_batches["test"]["data"], ["blah,"])
+        self.assertEqual(writer.current_batches["test"]["data"], ["blah,"])
 
     def test_data_is_written_to_disk_in_batches(self):
         """Test that data is written to disk in batches of whatever units it is added to the stream in."""
@@ -112,22 +112,22 @@ class TestBatchingWriter(unittest.TestCase):
             writer = BatchingFileWriter(
                 sensor_specifications=[{"name": "test", "extension": ".csv"}],
                 directory_path=temporary_directory,
-                write_interval=0.01,
+                batch_interval=0.01,
             )
 
             with writer:
                 writer.add_to_current_batch(sensor_name="test", data="ping,")
                 writer.add_to_current_batch(sensor_name="test", data="pong,\n")
-                self.assertEqual(len(writer.batcher.current_batches["test"]["data"]), 2)
+                self.assertEqual(len(writer.current_batches["test"]["data"]), 2)
                 time.sleep(0.01)
 
                 writer.add_to_current_batch(sensor_name="test", data="ding,")
-                self.assertEqual(len(writer.batcher.current_batches["test"]["data"]), 0)
+                self.assertEqual(len(writer.current_batches["test"]["data"]), 0)
 
                 writer.add_to_current_batch(sensor_name="test", data="dong,\n")
                 time.sleep(0.01)
 
-            self.assertEqual(len(writer.batcher.current_batches["test"]["data"]), 0)
+            self.assertEqual(len(writer.current_batches["test"]["data"]), 0)
 
             with open(os.path.join(temporary_directory, BATCH_DIRECTORY_NAME, "test", "batch-0.csv")) as f:
                 self.assertEqual(f.read(), "ping,pong,\nding,")

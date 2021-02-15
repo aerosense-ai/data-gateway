@@ -2,8 +2,10 @@ import copy
 import logging
 import os
 import time
-from queue import Empty, SimpleQueue
+from queue import SimpleQueue
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
+
+import abc
 
 
 logger = logging.getLogger(__name__)
@@ -40,9 +42,10 @@ class TimeBatcher:
         current_batch = self.current_batches[sensor_name]
         current_batch["data"].append(data)
 
-        # Move to the next batch if enough time has elapsed.
+        # Finalise the batch and persist it if enough time has elapsed.
         if time.perf_counter() - self._start_time >= self.batch_interval:
             self.finalise_current_batch(sensor_name)
+            self._persist(batch=self.pop_next_ready_batch(sensor_name))
 
     def finalise_current_batch(self, sensor_name):
         self._start_time = time.perf_counter()
@@ -54,18 +57,21 @@ class TimeBatcher:
     def pop_next_ready_batch(self, sensor_name):
         return self.ready_batches[sensor_name].get(block=False)
 
+    @abc.abstractmethod
+    def _persist(self, batch):
+        pass
 
-class BatchingFileWriter:
-    def __init__(self, sensor_specifications, directory_path, write_interval):
+
+class BatchingFileWriter(TimeBatcher):
+    def __init__(self, sensor_specifications, directory_path, batch_interval):
         """Initialise a BatchingFileWriter.
 
         :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
-        :param float write_interval: time in seconds between cloud uploads
+        :param float batch_interval: time in seconds between cloud uploads
         :return None:
         """
-        self.batcher = TimeBatcher(sensor_specifications, batch_interval=write_interval)
         self.directory_path = directory_path
-        self.upload_interval = write_interval
+        super().__init__(sensor_specifications, batch_interval)
 
     def __enter__(self):
         return self
@@ -73,30 +79,13 @@ class BatchingFileWriter:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.force_write()
 
-    def add_to_current_batch(self, sensor_name, data):
-        """Add serialised data (a string) to the current batch for the given sensor name.
-
-        :param str sensor_name:
-        :param str data:
-        :return None:
-        """
-        self.batcher.add_to_current_batch(sensor_name, data)
-
-        # Write a batch to disk if one is ready.
-        try:
-            ready_batch = self.batcher.pop_next_ready_batch(sensor_name)
-        except Empty:
-            return
-
-        self._write_batch(batch=ready_batch)
-
     def force_write(self):
         """Write all current batches to disk, regardless of whether a complete upload interval has passed."""
-        for sensor_name in self.batcher.current_batches:
-            self.batcher.finalise_current_batch(sensor_name)
-            self._write_batch(batch=self.batcher.pop_next_ready_batch(sensor_name))
+        for sensor_name in self.current_batches:
+            self.finalise_current_batch(sensor_name)
+            self._persist(batch=self.pop_next_ready_batch(sensor_name))
 
-    def _write_batch(self, batch):
+    def _persist(self, batch):
         """Write a batch of serialised data to disk.
 
         :param dict batch:
@@ -129,7 +118,7 @@ class BatchingFileWriter:
         )
 
 
-class BatchingUploader:
+class BatchingUploader(TimeBatcher):
     def __init__(self, sensor_specifications, project_name, bucket_name, upload_interval):
         """Initialise a BatchingUploader with a bucket from a given GCP project.
 
@@ -139,10 +128,9 @@ class BatchingUploader:
         :param float upload_interval: time in seconds between cloud uploads
         :return None:
         """
-        self.batcher = TimeBatcher(sensor_specifications, batch_interval=upload_interval)
         self.bucket_name = bucket_name
-        self.upload_interval = upload_interval
         self.client = GoogleCloudStorageClient(project_name=project_name)
+        super().__init__(sensor_specifications, batch_interval=upload_interval)
 
     def __enter__(self):
         return self
@@ -150,30 +138,13 @@ class BatchingUploader:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.force_upload()
 
-    def add_to_current_batch(self, sensor_name, data):
-        """Add serialised data (a string) to the current batch for the given sensor name.
-
-        :param str sensor_name:
-        :param str data:
-        :return None:
-        """
-        self.batcher.add_to_current_batch(sensor_name, data)
-
-        # Send a batch to the cloud if one is ready.
-        try:
-            ready_batch = self.batcher.pop_next_ready_batch(sensor_name)
-        except Empty:
-            return
-
-        self._upload_batch(batch=ready_batch)
-
     def force_upload(self):
         """Upload all current batches, regardless of whether a complete upload interval has passed."""
-        for sensor_name in self.batcher.current_batches:
-            self.batcher.finalise_current_batch(sensor_name)
-            self._upload_batch(batch=self.batcher.pop_next_ready_batch(sensor_name))
+        for sensor_name in self.current_batches:
+            self.finalise_current_batch(sensor_name)
+            self._persist(batch=self.pop_next_ready_batch(sensor_name))
 
-    def _upload_batch(self, batch):
+    def _persist(self, batch):
         """Upload serialised data to a path in the bucket.
 
         :param dict batch:
