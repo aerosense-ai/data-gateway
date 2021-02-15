@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class PacketReader:
-    def __init__(self, save_locally, upload_to_cloud, local_save_directory=None, batch_interval=600):
+    def __init__(self, save_locally, upload_to_cloud, output_directory=None, batch_interval=600):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.handles = constants.DEFAULT_HANDLES
@@ -34,7 +34,7 @@ class PacketReader:
 
         self.writer = BatchingFileWriter(
             sensor_specifications=sensor_specifications,
-            directory_path=local_save_directory,
+            directory_path=output_directory,
             batch_interval=batch_interval,
         )
 

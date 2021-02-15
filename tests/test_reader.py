@@ -87,7 +87,7 @@ class TestPacketReader(unittest.TestCase):
             packet_reader = PacketReader(
                 save_locally=True,
                 upload_to_cloud=True,
-                local_save_directory=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -107,7 +107,7 @@ class TestPacketReader(unittest.TestCase):
             packet_reader = PacketReader(
                 save_locally=True,
                 upload_to_cloud=True,
-                local_save_directory=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -127,7 +127,7 @@ class TestPacketReader(unittest.TestCase):
             packet_reader = PacketReader(
                 save_locally=True,
                 upload_to_cloud=True,
-                local_save_directory=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -147,7 +147,7 @@ class TestPacketReader(unittest.TestCase):
             packet_reader = PacketReader(
                 save_locally=True,
                 upload_to_cloud=True,
-                local_save_directory=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -167,7 +167,7 @@ class TestPacketReader(unittest.TestCase):
             packet_reader = PacketReader(
                 save_locally=True,
                 upload_to_cloud=True,
-                local_save_directory=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -187,7 +187,7 @@ class TestPacketReader(unittest.TestCase):
             packet_reader = PacketReader(
                 save_locally=True,
                 upload_to_cloud=True,
-                local_save_directory=temporary_directory,
+                output_directory=temporary_directory,
                 batch_interval=self.UPLOAD_INTERVAL,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)

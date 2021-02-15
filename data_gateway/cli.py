@@ -70,13 +70,20 @@ def gateway_cli(logger_uri, log_level):
     """,
 )
 @click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False),
+    default="data_gateway",
+    show_default=True,
+    help="The directory in which to save the batch files.",
+)
+@click.option(
     "--batch-interval",
     type=click.FLOAT,
     default=600,
     show_default=True,
     help="The time interval in which to batch data into to be persisted locally or to the cloud.",
 )
-def start(config_file, interactive, batch_interval):
+def start(config_file, interactive, output_dir, batch_interval):
     """Start the gateway service (daemonise this for a deployment)."""
     serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
@@ -87,7 +94,11 @@ def start(config_file, interactive, batch_interval):
             "%s",
             batch_interval,
         )
-        PacketReader(save_locally=False, upload_to_cloud=True, batch_interval=batch_interval).read_packets(serial_port)
+
+        PacketReader(
+            save_locally=False, upload_to_cloud=True, output_directory=output_dir, batch_interval=batch_interval
+        ).read_packets(serial_port)
+
         return
 
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
