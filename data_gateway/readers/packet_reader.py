@@ -29,7 +29,7 @@ class PacketReader:
             sensor_specifications=sensor_specifications,
             project_name=os.environ["TEST_PROJECT_NAME"],
             bucket_name=os.environ["TEST_BUCKET_NAME"],
-            upload_interval=batch_interval,
+            batch_interval=batch_interval,
         )
 
         self.writer = BatchingFileWriter(

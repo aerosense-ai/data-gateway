@@ -16,6 +16,13 @@ BATCH_DIRECTORY_NAME = "data_gateway"
 
 class TimeBatcher:
     def __init__(self, sensor_specifications, batch_interval):
+        """Instantiate a TimeBatcher. The batcher will group the data given to it into batches of the duration of the
+        time interval.
+
+        :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
+        :param float batch_interval: time interval with which to batch data (in seconds)
+        :return None:
+        """
         self.current_batches = {}
         self.ready_batches = {}
 
@@ -48,6 +55,12 @@ class TimeBatcher:
             self._persist(batch=self.pop_next_ready_batch(sensor_name))
 
     def finalise_current_batch(self, sensor_name):
+        """Finalise the current batch for the given sensor name. This puts the current batch into the queue of ready
+        batches, resets the clock for the next batch, and increases the batch number for it.
+
+        :param str sensor_name:
+        :return None:
+        """
         self._start_time = time.perf_counter()
         batch = self.current_batches[sensor_name]
         self.ready_batches[sensor_name].put(copy.deepcopy(batch))
@@ -55,19 +68,31 @@ class TimeBatcher:
         batch["batch_number"] += 1
 
     def pop_next_ready_batch(self, sensor_name):
+        """Pop the next ready batch from the queue of ready batches for the given sensor name.
+
+        :param str sensor_name:
+        :return dict:
+        """
         return self.ready_batches[sensor_name].get(block=False)
 
     @abc.abstractmethod
     def _persist(self, batch):
+        """Persist the batch to whatever medium is required (e.g. to disk, to a database, or to the cloud).
+
+        :param dict batch:
+        :return None:
+        """
         pass
 
 
 class BatchingFileWriter(TimeBatcher):
     def __init__(self, sensor_specifications, directory_path, batch_interval):
-        """Initialise a BatchingFileWriter.
+        """Initialise a BatchingFileWriter. The writer will save the data given to it to disk at the given interval of
+        time.
 
         :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
-        :param float batch_interval: time in seconds between cloud uploads
+        :param str directory_path: directory to write batches to
+        :param float batch_interval: time interval with which to batch data (in seconds)
         :return None:
         """
         self.directory_path = directory_path
@@ -80,7 +105,10 @@ class BatchingFileWriter(TimeBatcher):
         self.force_write()
 
     def force_write(self):
-        """Write all current batches to disk, regardless of whether a complete upload interval has passed."""
+        """Write all current batches to disk, regardless of whether a complete upload interval has passed.
+
+        :return None:
+        """
         for sensor_name in self.current_batches:
             self.finalise_current_batch(sensor_name)
             self._persist(batch=self.pop_next_ready_batch(sensor_name))
@@ -119,18 +147,19 @@ class BatchingFileWriter(TimeBatcher):
 
 
 class BatchingUploader(TimeBatcher):
-    def __init__(self, sensor_specifications, project_name, bucket_name, upload_interval):
-        """Initialise a BatchingUploader with a bucket from a given GCP project.
+    def __init__(self, sensor_specifications, project_name, bucket_name, batch_interval):
+        """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
+        to it to a GCP storage bucket at the given interval of time.
 
         :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
         :param str project_name:
         :param str bucket_name:
-        :param float upload_interval: time in seconds between cloud uploads
+        :param float batch_interval: time interval with which to batch data (in seconds)
         :return None:
         """
         self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
-        super().__init__(sensor_specifications, batch_interval=upload_interval)
+        super().__init__(sensor_specifications, batch_interval=batch_interval)
 
     def __enter__(self):
         return self
@@ -139,7 +168,10 @@ class BatchingUploader(TimeBatcher):
         self.force_upload()
 
     def force_upload(self):
-        """Upload all current batches, regardless of whether a complete upload interval has passed."""
+        """Upload all current batches, regardless of whether a complete upload interval has passed.
+
+        :return None:
+        """
         for sensor_name in self.current_batches:
             self.finalise_current_batch(sensor_name)
             self._persist(batch=self.pop_next_ready_batch(sensor_name))

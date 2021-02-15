@@ -33,7 +33,7 @@ class TestBatchingUploader(unittest.TestCase):
             sensor_specifications=[{"name": "test", "extension": ".csv"}],
             project_name=self.TEST_PROJECT_NAME,
             bucket_name=self.TEST_BUCKET_NAME,
-            upload_interval=600,
+            batch_interval=600,
         )
 
         stream = uploader.current_batches["test"]
@@ -53,7 +53,7 @@ class TestBatchingUploader(unittest.TestCase):
             sensor_specifications=[{"name": "test", "extension": ".csv"}],
             project_name=self.TEST_PROJECT_NAME,
             bucket_name=self.TEST_BUCKET_NAME,
-            upload_interval=0.01,
+            batch_interval=0.01,
         )
 
         with uploader:
