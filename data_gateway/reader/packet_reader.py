@@ -29,17 +29,10 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
 
-        sensor_specifications = (
-            {"name": "Mics", "extension": ".csv"},
-            {"name": "Baros", "extension": ".csv"},
-            {"name": "Acc", "extension": ".csv"},
-            {"name": "Gyro", "extension": ".csv"},
-            {"name": "Mag", "extension": ".csv"},
-            {"name": "Analog", "extension": ".csv"},
-        )
+        sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
 
         self.uploader = BatchingUploader(
-            sensor_names=sensor_specifications,
+            sensor_names=sensor_names,
             project_name=project_name,
             bucket_name=bucket_name,
             batch_interval=batch_interval,
@@ -47,7 +40,7 @@ class PacketReader:
         )
 
         self.writer = BatchingFileWriter(
-            sensor_specifications=sensor_specifications,
+            sensor_names=sensor_names,
             batch_interval=batch_interval,
             output_directory=output_directory,
         )
