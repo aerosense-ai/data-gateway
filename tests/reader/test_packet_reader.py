@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -73,6 +74,39 @@ class TestPacketReader(unittest.TestCase):
                 outputs = f.read().split("\n")
                 self.assertTrue(len(outputs) > 1)
                 self.assertTrue(len(outputs[0].split(",")) > 1)
+
+    def test_configuration_file_is_persisted(self):
+        """Test that the configuration file is persisted"""
+        serial_port = DummySerial(port="test")
+        sensor_type = bytes([34])
+
+        for _ in range(2):
+            serial_port.write(data=self.PACKET_KEY + sensor_type + self.LENGTH + random_bytes(256))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=True,
+                output_directory=temporary_directory,
+                batch_interval=self.UPLOAD_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
+            )
+            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+
+            configuration_path = os.path.join(temporary_directory, "configuration.json")
+
+            # Check configuration file is present and valid locally.
+            with open(configuration_path) as f:
+                Configuration.from_dict(json.load(f))
+
+        # Check configuration file is present and valid on the cloud.
+        configuration = GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+            bucket_name=self.TEST_BUCKET_NAME,
+            path_in_bucket=f"{packet_reader.uploader.output_directory}/configuration.json",
+        )
+
+        Configuration.from_dict(json.loads(configuration))
 
     def test_packet_reader_with_baro_sensor(self):
         """Test that the packet reader works with the baro sensor."""
