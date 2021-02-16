@@ -102,12 +102,14 @@ def gateway_cli(logger_uri, log_level):
 def start(config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name):
     """Start the gateway service (daemonise this for a deployment)."""
     if os.path.exists(config_file):
-        config = Configuration.from_dict(json.load(config_file))
+        with open(config_file) as f:
+            config = Configuration.from_dict(json.load(f))
+        logger.info("Loaded configuration file from %r.", config_file)
     else:
         config = None
 
-    serial_port = serial.Serial(port=config.SERIAL_PORT, baudrate=config.BAUDRATE)
-    serial_port.set_buffer_size(rx_size=config.SERIAL_BUFFER_RX_SIZE, tx_size=config.SERIAL_BUFFER_TX_SIZE)
+    serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+    serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
 
     if not interactive:
         print(
