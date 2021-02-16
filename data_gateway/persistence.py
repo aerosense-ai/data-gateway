@@ -101,13 +101,19 @@ class TimeBatcher:
         """
         pass
 
-    def _generate_batch_path(self, batch):
+    def _generate_batch_path(self, batch, backup=False):
         """Generate the path that the batch should be persisted to.
 
         :param dict batch:
+        :param bool backup:
         :return str:
         """
-        return "/".join((self.output_directory, batch["name"], f"batch-{batch['batch_number']}{batch['extension']}"))
+        path_list = [self.output_directory, batch["name"], f"batch-{batch['batch_number']}{batch['extension']}"]
+
+        if backup:
+            path_list.insert(1, ".backup")
+
+        return "/".join(path_list)
 
 
 class BatchingFileWriter(TimeBatcher):
@@ -115,17 +121,18 @@ class BatchingFileWriter(TimeBatcher):
     saving each batch to disk.
     """
 
-    def _persist(self, batch):
+    def _persist(self, batch, backup=False):
         """Write a batch of serialised data to disk.
 
         :param dict batch:
+        :param bool backup:
         :return None:
         """
         if len(batch["data"]) == 0:
             logger.warning("No data to write for %r.", batch["name"])
             return
 
-        path = os.path.abspath(os.path.join(".", self._generate_batch_path(batch)))
+        path = os.path.abspath(os.path.join(".", self._generate_batch_path(batch, backup=backup)))
         directory = os.path.split(path)[0]
 
         if not os.path.exists(directory):
@@ -183,7 +190,8 @@ class BatchingUploader(TimeBatcher):
             logger.warning(
                 "Upload of batch %r failed - writing to disk at %r instead.",
                 batch,
-                self._backup_writer._generate_batch_path(batch),
+                self._backup_writer._generate_batch_path(batch, backup=True),
             )
 
-            self._backup_writer._persist(batch)
+            self._backup_writer._persist(batch, backup=True)
+            return

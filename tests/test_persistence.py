@@ -153,5 +153,5 @@ class TestBatchingUploader(unittest.TestCase):
 
             self.assertEqual(len(uploader.current_batches["test"]["data"]), 0)
 
-            with open(os.path.join(temporary_directory, "test", "batch-0.csv")) as f:
+            with open(os.path.join(temporary_directory, ".backup", "test", "batch-0.csv")) as f:
                 self.assertEqual(f.read(), "ping,pong,\n")
