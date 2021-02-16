@@ -5,7 +5,7 @@ import threading
 import click
 import pkg_resources
 import serial
-from octue.logging_handlers import get_remote_handler
+from octue.logging_handlers import apply_log_handler, get_remote_handler
 
 import sys
 from data_gateway.reader import PacketReader
@@ -40,15 +40,12 @@ def gateway_cli(logger_uri, log_level):
 
     Runs the on-nacelle gateway service to read data from the bluetooth receivers and send it to AeroSense Cloud.
     """
-    global_cli_context["logger_uri"] = logger_uri
-    global_cli_context["log_handler"] = None
-    global_cli_context["log_level"] = log_level.upper()
+    if logger_uri:
+        handler = get_remote_handler(logger_uri=logger_uri, log_level=log_level)
+    else:
+        handler = None
 
-    # Stealing a remote logging trick from the octue library
-    if global_cli_context["logger_uri"]:
-        global_cli_context["log_handler"] = get_remote_handler(
-            logger_uri=global_cli_context["logger_uri"], log_level=global_cli_context["log_level"]
-        )
+    apply_log_handler(logger, handler, log_level=log_level.upper())
 
 
 @gateway_cli.command()
