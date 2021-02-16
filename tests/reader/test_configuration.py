@@ -25,3 +25,8 @@ class TestConfiguration(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             Configuration.from_dict(invalid_configuration)
+
+    def test_to_dict(self):
+        """Test that a configuration can be serialised to a dictionary."""
+        configuration = Configuration.from_dict(self.VALID_CONFIGURATION)
+        self.assertEqual(configuration.to_dict(), self.VALID_CONFIGURATION)

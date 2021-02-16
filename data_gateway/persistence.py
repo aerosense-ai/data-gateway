@@ -154,6 +154,7 @@ class BatchingUploader(TimeBatcher):
         :param float batch_interval: time interval with which to batch data (in seconds)
         :return None:
         """
+        self.project_name = project_name
         self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
         self.upload_timeout = upload_timeout

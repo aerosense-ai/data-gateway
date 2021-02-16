@@ -123,3 +123,7 @@ class Configuration:
         :return Configuration:
         """
         return cls(**{attribute_name: dictionary[attribute_name] for attribute_name in vars(Configuration())})
+
+    def to_dict(self):
+        """Serialise the configuration to a dictionary."""
+        return vars(self)

@@ -1,4 +1,7 @@
+import json
 import logging
+import os
+from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
@@ -21,6 +24,7 @@ class PacketReader:
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
+        self.output_directory = output_directory
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.stop = False
@@ -48,6 +52,8 @@ class PacketReader:
         )
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):
+        self._persist_configuration()
+
         current_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
         previous_ideal_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
 
@@ -127,6 +133,25 @@ class PacketReader:
             return
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
+
+    def _persist_configuration(self):
+        """Persist the configuration to disk and/or cloud storage.
+
+        :return None:
+        """
+        relative_path = "/".join((self.output_directory, "configuration.json"))
+        configuration_dictionary = self.config.to_dict()
+
+        if self.save_locally:
+            with open(os.path.abspath(os.path.join(".", relative_path)), "w") as f:
+                json.dump(configuration_dictionary, f)
+
+        if self.upload_to_cloud:
+            GoogleCloudStorageClient(project_name=self.uploader.project_name).upload_from_string(
+                serialised_data=json.dumps(configuration_dictionary),
+                bucket_name=self.uploader.bucket_name,
+                path_in_bucket=relative_path,
+            )
 
     def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
         if sensor_type not in self.handles:
