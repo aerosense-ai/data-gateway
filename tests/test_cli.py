@@ -1,4 +1,5 @@
 import os
+import tempfile
 from unittest import TestCase, mock
 from click.testing import CliRunner
 
@@ -19,6 +20,19 @@ class TestCLI(TestCase):
 
         h_result = CliRunner().invoke(gateway_cli, ["-h"])
         assert help_result.output == h_result.output
+
+    def test_commands_are_recorded_in_interactive_mode(self):
+        """Ensure commands given in interactive mode are recorded."""
+        commands = "here\nit\nis\nstop\n"
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch("serial.Serial", new=DummySerial):
+                CliRunner().invoke(
+                    gateway_cli, f"start --interactive --output-dir={temporary_directory}", input=commands
+                )
+
+            with open(os.path.join(temporary_directory, "commands.txt")) as f:
+                self.assertEqual(f.read(), commands)
 
     def test_start_and_stop_in_interactive_mode(self):
         """Ensure the gateway can be started and stopped via the CLI in interactive mode."""

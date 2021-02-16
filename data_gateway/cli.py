@@ -143,9 +143,16 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
         "seconds."
     )
 
+    commands_record_file = os.path.join(".", output_dir, "commands.txt")
+
     try:
         while not packet_reader.stop:
             for line in sys.stdin:
+
+                # Keep a record of the commands given.
+                with open(commands_record_file, "a") as f:
+                    f.write(line)
+
                 if line == "stop\n":
                     packet_reader.stop = True
                     break
