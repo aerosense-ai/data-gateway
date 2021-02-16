@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -8,6 +9,7 @@ from octue.logging_handlers import get_remote_handler
 
 import sys
 from data_gateway.readers import PacketReader, constants
+from data_gateway.readers.configuration import Configuration
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -102,6 +104,11 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
     serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
     serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
 
+    if os.path.exists(config_file):
+        configuration = Configuration.from_dict(json.load(config_file))
+    else:
+        configuration = None
+
     if not interactive:
         print(
             "Starting packet reader in non-interactive mode - files will be uploaded to cloud storage at intervals of "
@@ -115,13 +122,18 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
             batch_interval=batch_interval,
             project_name=gcp_project_name,
             bucket_name=gcp_bucket_name,
+            configuration=configuration,
         ).read_packets(serial_port)
 
         return
 
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
     packet_reader = PacketReader(
-        save_locally=True, upload_to_cloud=False, output_directory=output_dir, batch_interval=batch_interval
+        save_locally=True,
+        upload_to_cloud=False,
+        output_directory=output_dir,
+        batch_interval=batch_interval,
+        configuration=configuration,
     )
 
     threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
