@@ -43,12 +43,13 @@ class PacketReader:
             project_name=project_name,
             bucket_name=bucket_name,
             batch_interval=batch_interval,
+            output_directory=output_directory,
         )
 
         self.writer = BatchingFileWriter(
             sensor_specifications=sensor_specifications,
-            output_directory=output_directory,
             batch_interval=batch_interval,
+            output_directory=output_directory,
         )
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):
