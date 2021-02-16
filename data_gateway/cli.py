@@ -103,7 +103,8 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
             config = Configuration.from_dict(json.load(f))
         logger.info("Loaded configuration file from %r.", config_file)
     else:
-        config = None
+        config = Configuration()
+        logger.info("Using default configuration.", config_file)
 
     serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
     serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
