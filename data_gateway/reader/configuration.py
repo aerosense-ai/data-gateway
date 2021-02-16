@@ -1,4 +1,6 @@
 class Configuration:
+    """A data class containing the configuration values for the firmware and hardware used by the data gateway."""
+
     def __init__(
         self,
         mics_freq=5000,
@@ -115,7 +117,7 @@ class Configuration:
     @classmethod
     def from_dict(cls, dictionary):
         """Construct a configuration from a dictionary. Note that all the configuration values are required - the
-        construction will fail if any are missing.
+        construction will fail if any are missing (i.e. default arguments are disabled for this alternative constructor)
 
         :param dict dictionary:
         :return Configuration:
