@@ -39,7 +39,7 @@ class PacketReader:
         )
 
         self.uploader = BatchingUploader(
-            sensor_specifications=sensor_specifications,
+            sensor_names=sensor_specifications,
             project_name=project_name,
             bucket_name=bucket_name,
             batch_interval=batch_interval,

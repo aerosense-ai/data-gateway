@@ -1,8 +1,8 @@
 import copy
+import json
 import logging
 import os
 import time
-from queue import SimpleQueue
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 import abc
@@ -15,30 +15,20 @@ DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
 class TimeBatcher:
-    def __init__(self, sensor_specifications, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+    def __init__(self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
         """Instantiate a TimeBatcher. The batcher will group the data given to it into batches of the duration of the
         time interval.
 
-        :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
+        :param iter(str) sensor_names:
         :param float batch_interval: time interval with which to batch data (in seconds)
         :param str output_directory: directory to write batches to
         :return None:
         """
-        self.output_directory = output_directory
-        self.current_batches = {}
-        self.ready_batches = {}
-
-        for sensor_specification in sensor_specifications:
-            self.current_batches[sensor_specification["name"]] = {
-                "name": sensor_specification["name"],
-                "data": [],
-                "batch_number": 0,
-                "extension": sensor_specification["extension"],
-            }
-
-            self.ready_batches[sensor_specification["name"]] = SimpleQueue()
-
+        self.current_batch = {name: [] for name in sensor_names}
         self.batch_interval = batch_interval
+        self.output_directory = output_directory
+        self.ready_batch = {}
+        self._batch_number = 0
         self._start_time = time.perf_counter()
 
     def __enter__(self):
@@ -54,61 +44,49 @@ class TimeBatcher:
         :param str data:
         :return None:
         """
-        current_batch = self.current_batches[sensor_name]
-        current_batch["data"].append(data)
-
         # Finalise the batch and persist it if enough time has elapsed.
         if time.perf_counter() - self._start_time >= self.batch_interval:
-            self.finalise_current_batch(sensor_name)
-            self._persist(batch=self.pop_next_ready_batch(sensor_name))
+            self.finalise_current_batch()
+            self._persist_batch()
+            self._batch_number += 1
 
-    def finalise_current_batch(self, sensor_name):
+        # Then add data to the current/new batch.
+        self.current_batch[sensor_name].append(data)
+        self._start_time = time.perf_counter()
+
+    def finalise_current_batch(self):
         """Finalise the current batch for the given sensor name. This puts the current batch into the queue of ready
         batches, resets the clock for the next batch, and increases the batch number for it.
 
-        :param str sensor_name:
         :return None:
         """
-        self._start_time = time.perf_counter()
-        batch = self.current_batches[sensor_name]
-        self.ready_batches[sensor_name].put(copy.deepcopy(batch))
-        batch["data"].clear()
-        batch["batch_number"] += 1
-
-    def pop_next_ready_batch(self, sensor_name):
-        """Pop the next ready batch from the queue of ready batches for the given sensor name.
-
-        :param str sensor_name:
-        :return dict:
-        """
-        return self.ready_batches[sensor_name].get(block=False)
+        for sensor_name, data in self.current_batch.items():
+            self.ready_batch[sensor_name] = "".join(copy.deepcopy(data))
+            data.clear()
 
     def force_persist(self):
         """Persist all current batches, regardless of whether a complete batch interval has passed.
 
         :return None:
         """
-        for sensor_name in self.current_batches:
-            self.finalise_current_batch(sensor_name)
-            self._persist(batch=self.pop_next_ready_batch(sensor_name))
+        self.finalise_current_batch()
+        self._persist_batch()
 
     @abc.abstractmethod
-    def _persist(self, batch):
+    def _persist_batch(self):
         """Persist the batch to whatever medium is required (e.g. to disk, to a database, or to the cloud).
 
-        :param dict batch:
         :return None:
         """
         pass
 
-    def _generate_batch_path(self, batch, backup=False):
+    def _generate_batch_path(self, backup=False):
         """Generate the path that the batch should be persisted to.
 
-        :param dict batch:
         :param bool backup:
         :return str:
         """
-        path_list = [self.output_directory, batch["name"], f"batch-{batch['batch_number']}{batch['extension']}"]
+        path_list = [self.output_directory, f"batch-{self._batch_number}.json"]
 
         if backup:
             path_list.insert(1, ".backup")
@@ -121,31 +99,29 @@ class BatchingFileWriter(TimeBatcher):
     saving each batch to disk.
     """
 
-    def _persist(self, batch, backup=False):
+    def _persist_batch(self, batch=None, backup=False):
         """Write a batch of serialised data to disk.
 
-        :param dict batch:
         :param bool backup:
         :return None:
         """
-        if len(batch["data"]) == 0:
-            logger.warning("No data to write for %r.", batch["name"])
-            return
+        batch_path = os.path.abspath(os.path.join(".", self._generate_batch_path(backup=backup)))
+        batch_directory = os.path.split(batch_path)[0]
 
-        path = os.path.abspath(os.path.join(".", self._generate_batch_path(batch, backup=backup)))
-        directory = os.path.split(path)[0]
+        if not os.path.exists(batch_directory):
+            os.makedirs(batch_directory)
 
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        with open(batch_path, "w") as f:
+            json.dump(batch or self.ready_batch, f)
 
-        with open(path, "w") as f:
-            f.write("".join(batch["data"]))
+        if batch is None:
+            self.ready_batch = {}
 
 
 class BatchingUploader(TimeBatcher):
     def __init__(
         self,
-        sensor_specifications,
+        sensor_names,
         project_name,
         bucket_name,
         batch_interval,
@@ -155,7 +131,7 @@ class BatchingUploader(TimeBatcher):
         """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
         to it to a GCP storage bucket at the given interval of time.
 
-        :param iter(dict) sensor_specifications: a dictionary with "name" and "extension" entries
+        :param iter(dict) sensor_names: a dictionary with "name" and "extension" entries
         :param str project_name:
         :param str bucket_name:
         :param float batch_interval: time interval with which to batch data (in seconds)
@@ -165,33 +141,28 @@ class BatchingUploader(TimeBatcher):
         self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
         self.upload_timeout = upload_timeout
-        self._backup_writer = BatchingFileWriter(sensor_specifications, batch_interval, output_directory)
-        super().__init__(sensor_specifications, batch_interval, output_directory)
+        self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, output_directory)
+        super().__init__(sensor_names, batch_interval, output_directory)
 
-    def _persist(self, batch):
+    def _persist_batch(self):
         """Upload serialised data to a path in the bucket. If the batch fails to upload, it is instead written to disk.
 
-        :param dict batch:
         :return None:
         """
-        if len(batch["data"]) == 0:
-            logger.warning("No data to upload for %r.", batch["name"])
-            return
-
         try:
             self.client.upload_from_string(
-                serialised_data="".join(batch["data"]),
+                serialised_data=json.dumps(self.ready_batch),
                 bucket_name=self.bucket_name,
-                path_in_bucket=self._generate_batch_path(batch),
+                path_in_bucket=self._generate_batch_path(),
                 timeout=self.upload_timeout,
             )
 
         except Exception:
             logger.warning(
-                "Upload of batch %r failed - writing to disk at %r instead.",
-                batch,
-                self._backup_writer._generate_batch_path(batch, backup=True),
+                "Upload of batch failed - writing to disk at %r instead.",
+                self._backup_writer._generate_batch_path(backup=True),
             )
 
-            self._backup_writer._persist(batch, backup=True)
-            return
+            self._backup_writer._persist_batch(batch=self.ready_batch, backup=True)
+
+        self.ready_batch = {}
