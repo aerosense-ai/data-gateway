@@ -8,7 +8,7 @@ import serial
 from octue.logging_handlers import get_remote_handler
 
 import sys
-from data_gateway.readers import PacketReader, constants
+from data_gateway.readers import PacketReader
 from data_gateway.readers.configuration import Configuration
 
 
@@ -101,13 +101,13 @@ def gateway_cli(logger_uri, log_level):
 )
 def start(config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name):
     """Start the gateway service (daemonise this for a deployment)."""
-    serial_port = serial.Serial(port=constants.SERIAL_PORT, baudrate=constants.BAUDRATE)
-    serial_port.set_buffer_size(rx_size=constants.SERIAL_BUFFER_RX_SIZE, tx_size=constants.SERIAL_BUFFER_TX_SIZE)
-
     if os.path.exists(config_file):
-        configuration = Configuration.from_dict(json.load(config_file))
+        config = Configuration.from_dict(json.load(config_file))
     else:
-        configuration = None
+        config = None
+
+    serial_port = serial.Serial(port=config.SERIAL_PORT, baudrate=config.BAUDRATE)
+    serial_port.set_buffer_size(rx_size=config.SERIAL_BUFFER_RX_SIZE, tx_size=config.SERIAL_BUFFER_TX_SIZE)
 
     if not interactive:
         print(
@@ -122,7 +122,7 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
             batch_interval=batch_interval,
             project_name=gcp_project_name,
             bucket_name=gcp_bucket_name,
-            configuration=configuration,
+            configuration=config,
         ).read_packets(serial_port)
 
         return
@@ -133,7 +133,7 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
         upload_to_cloud=False,
         output_directory=output_dir,
         batch_interval=batch_interval,
-        configuration=configuration,
+        configuration=config,
     )
 
     threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)

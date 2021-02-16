@@ -6,7 +6,7 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.readers.constants import PACKET_KEY
+from data_gateway.readers.configuration import Configuration
 from data_gateway.readers.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
@@ -17,7 +17,7 @@ class TestPacketReader(unittest.TestCase):
 
     TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
-    PACKET_KEY = PACKET_KEY.to_bytes(1, "little")
+    PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")
     LENGTH = bytes([244])
     UPLOAD_INTERVAL = 10
     storage_emulator = create_server("localhost", 9090, in_memory=True)
