@@ -11,6 +11,56 @@
 
 ## Developer notes
 
+### Installation
+For development, run the following from the repository root.
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Usage
+The `gateway` CLI is the main entry point.
+```bash
+gateway -h
+```
+
+```
+Usage: gateway [OPTIONS] COMMAND [ARGS]...
+
+  AeroSense Gateway CLI.
+
+  Runs the on-nacelle gateway service to read data from the bluetooth
+  receivers and send it to AeroSense Cloud.
+
+Options:
+  --logger-uri TEXT               Stream logs to a websocket at the given URI
+                                  (useful for monitoring what's happening
+                                  remotely)
+
+  --log-level [debug|info|warning|error]
+                                  Log level used for the analysis.  [default:
+                                  info]
+
+  --version                       Show the version and exit.
+  -h, --help                      Show this message and exit.
+
+Commands:
+  start             Start the gateway service (daemonise this for a...
+  supervisord-conf  Print conf entry for use with supervisord Daemonising a...
+
+```
+
+### Testing
+These environment variables are needed to run the tests:
+* `GCP_SERVICE_ACCOUNT=/path/to/service/account/file.json`
+* `STORAGE_EMULATOR_HOST=http://localhost:9090`
+* `TEST_PROJECT_NAME=<gcp_project_name>`
+* `TEST_BUCKET_NAME=<gcp_bucket_name>`
+
+Then, trom the repository root, run
+```bash
+python3 -m unittest
+```
+
 ### Features
 
 This library is written with:
