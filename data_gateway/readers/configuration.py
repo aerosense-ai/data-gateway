@@ -112,9 +112,6 @@ class Configuration:
 
         self.user_data = user_data or {}
 
-    def __getattr__(self, item):
-        return vars(self)[item]
-
     @classmethod
     def from_dict(cls, dictionary):
         """Construct a configuration from a dictionary. Note that all the configuration values are required - the
