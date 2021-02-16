@@ -20,7 +20,7 @@ class TestPacketReader(unittest.TestCase):
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
     PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")
     LENGTH = bytes([244])
-    UPLOAD_INTERVAL = 10
+    BATCH_INTERVAL = 10
     storage_emulator = create_server("localhost", 9090, in_memory=True)
 
     @classmethod
@@ -34,46 +34,39 @@ class TestPacketReader(unittest.TestCase):
     def tearDownClass(cls):
         cls.storage_emulator.stop()
 
-    @staticmethod
-    def _generate_file_paths(directory_path):
-        """Generate paths for the expected output files."""
-        return {
-            "Mics": os.path.join(directory_path, "mics.csv"),
-            "Baros": os.path.join(directory_path, "baros.csv"),
-            "Acc": os.path.join(directory_path, "acc.csv"),
-            "Gyro": os.path.join(directory_path, "gyro.csv"),
-            "Mag": os.path.join(directory_path, "mag.csv"),
-            "Analog": os.path.join(directory_path, "analog.csv"),
-        }
-
-    def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_name, number_of_batches_to_check=5):
+    def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_batches_to_check=5):
         """Check that non-trivial batches from a packet reader for a particular sensor are uploaded to cloud storage."""
-        number_of_batches = packet_reader.uploader.current_batch[sensor_name]["batch_number"]
+        number_of_batches = packet_reader.uploader._batch_number
         self.assertTrue(number_of_batches > 0)
 
         client = GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME)
 
         for i in range(number_of_batches_to_check):
-            data = client.download_as_string(
-                bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=f"{packet_reader.uploader.output_directory}/{sensor_name}/batch-{i}.csv",
+            data = json.loads(
+                client.download_as_string(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{packet_reader.uploader.output_directory}/batch-{i}.json",
+                )
             )
 
-            lines = data.split("\n")
-            self.assertTrue(len(lines) > 1)
-            self.assertTrue(len(lines[0].split(",")) > 1)
+            for name in sensor_names:
+                lines = data[name].split("\n")
+                self.assertTrue(len(lines) > 1)
+                self.assertTrue(len(lines[0].split(",")) > 1)
 
-    def _check_data_is_written_to_files(self, temporary_directory, sensor_name):
+    def _check_data_is_written_to_files(self, temporary_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
-        path = os.path.join(temporary_directory, sensor_name)
-        batches = [file for file in os.listdir(path)]
+        batches = [file for file in os.listdir(temporary_directory) if file.startswith("batch")]
         self.assertTrue(len(batches) > 0)
 
         for batch in batches:
-            with open(os.path.join(path, batch)) as f:
-                outputs = f.read().split("\n")
-                self.assertTrue(len(outputs) > 1)
-                self.assertTrue(len(outputs[0].split(",")) > 1)
+            with open(os.path.join(temporary_directory, batch)) as f:
+                data = json.load(f)
+
+                for name in sensor_names:
+                    lines = data[name].split("\n")
+                    self.assertTrue(len(lines) > 1)
+                    self.assertTrue(len(lines[0].split(",")) > 1)
 
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted"""
@@ -88,7 +81,7 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
@@ -121,14 +114,14 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_name="Baros")
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Baros", number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros"], number_of_batches_to_check=1)
 
     def test_packet_reader_with_mic_sensor(self):
         """Test that the packet reader works with the mic sensor."""
@@ -143,14 +136,14 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_name="Mics")
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mics"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Mics", number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Mics"], number_of_batches_to_check=1)
 
     def test_packet_reader_with_acc_sensor(self):
         """Test that the packet reader works with the acc sensor."""
@@ -165,14 +158,14 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_name="Acc")
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Acc"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Acc", number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Acc"], number_of_batches_to_check=1)
 
     def test_packet_reader_with_gyro_sensor(self):
         """Test that the packet reader works with the gyro sensor."""
@@ -187,14 +180,14 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_name="Gyro")
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Gyro"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Gyro", number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Gyro"], number_of_batches_to_check=1)
 
     def test_packet_reader_with_mag_sensor(self):
         """Test that the packet reader works with the mag sensor."""
@@ -209,14 +202,14 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_name="Mag")
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mag"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Mag", number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Mag"], number_of_batches_to_check=1)
 
     def test_packet_reader_with_analog_sensor(self):
         """Test that the packet reader works with the analog sensor."""
@@ -231,14 +224,14 @@ class TestPacketReader(unittest.TestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.UPLOAD_INTERVAL,
+                batch_interval=self.BATCH_INTERVAL,
                 project_name=self.TEST_PROJECT_NAME,
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_name="Analog")
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Analog"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_name="Analog", number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Analog"], number_of_batches_to_check=1)
 
 
 if __name__ == "__main__":
