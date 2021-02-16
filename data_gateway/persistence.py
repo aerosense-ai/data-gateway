@@ -48,11 +48,10 @@ class TimeBatcher:
         if time.perf_counter() - self._start_time >= self.batch_interval:
             self.finalise_current_batch()
             self._persist_batch()
-            self._batch_number += 1
+            self._prepare_for_next_batch()
 
         # Then add data to the current/new batch.
         self.current_batch[sensor_name].append(data)
-        self._start_time = time.perf_counter()
 
     def finalise_current_batch(self):
         """Finalise the current batch for the given sensor name. This puts the current batch into the queue of ready
@@ -71,6 +70,7 @@ class TimeBatcher:
         """
         self.finalise_current_batch()
         self._persist_batch()
+        self._prepare_for_next_batch()
 
     @abc.abstractmethod
     def _persist_batch(self):
@@ -79,6 +79,11 @@ class TimeBatcher:
         :return None:
         """
         pass
+
+    def _prepare_for_next_batch(self):
+        self._batch_number += 1
+        self.ready_batch = {}
+        self._start_time = time.perf_counter()
 
     def _generate_batch_path(self, backup=False):
         """Generate the path that the batch should be persisted to.
@@ -113,9 +118,6 @@ class BatchingFileWriter(TimeBatcher):
 
         with open(batch_path, "w") as f:
             json.dump(batch or self.ready_batch, f)
-
-        if batch is None:
-            self.ready_batch = {}
 
 
 class BatchingUploader(TimeBatcher):
@@ -164,5 +166,3 @@ class BatchingUploader(TimeBatcher):
             )
 
             self._backup_writer._persist_batch(batch=self.ready_batch, backup=True)
-
-        self.ready_batch = {}
