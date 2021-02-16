@@ -6,8 +6,8 @@ from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.readers.configuration import Configuration
-from data_gateway.readers.packet_reader import PacketReader
+from data_gateway.reader.configuration import Configuration
+from data_gateway.reader.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
 from dummy_serial.utils import random_bytes
 

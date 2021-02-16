@@ -2,7 +2,7 @@ import logging
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
-from data_gateway.readers.configuration import Configuration
+from data_gateway.reader.configuration import Configuration
 
 
 logger = logging.getLogger(__name__)

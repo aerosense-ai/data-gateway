@@ -8,8 +8,8 @@ import serial
 from octue.logging_handlers import get_remote_handler
 
 import sys
-from data_gateway.readers import PacketReader
-from data_gateway.readers.configuration import Configuration
+from data_gateway.reader import PacketReader
+from data_gateway.reader.configuration import Configuration
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
