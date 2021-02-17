@@ -19,14 +19,24 @@ from data_gateway.persistence import (
 )
 
 
+def _create_file_of_size(path, size):
+    """Create a file at the given path of the given size in bytes.
+
+    :param str path:
+    :param int size:
+    :return None:
+    """
+    with open(path, "wb") as f:
+        f.truncate(size)
+
+
 class TestCalculateDiskUsage(unittest.TestCase):
     def test_calculate_disk_usage_with_single_file(self):
         """Test that the disk usage of a single file is calculated correctly."""
         with tempfile.TemporaryDirectory() as temporary_directory:
 
             dummy_file_path = os.path.join(temporary_directory, "dummy_file")
-            with open(dummy_file_path, "wb") as f:
-                f.truncate(1)
+            _create_file_of_size(dummy_file_path, 1)
 
             self.assertEqual(calculate_disk_usage(dummy_file_path), 1)
 
@@ -35,8 +45,7 @@ class TestCalculateDiskUsage(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
 
             dummy_file_path = os.path.join(temporary_directory, "dummy_file")
-            with open(dummy_file_path, "wb") as f:
-                f.truncate(1)
+            _create_file_of_size(dummy_file_path, 1)
 
             self.assertEqual(
                 calculate_disk_usage(dummy_file_path, filter=lambda path: os.path.split(path)[-1].startswith("dummy")),
@@ -48,8 +57,7 @@ class TestCalculateDiskUsage(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
 
             dummy_file_path = os.path.join(temporary_directory, "dummy_file")
-            with open(dummy_file_path, "wb") as f:
-                f.truncate(1)
+            _create_file_of_size(dummy_file_path, 1)
 
             self.assertEqual(
                 calculate_disk_usage(dummy_file_path, filter=lambda path: os.path.split(path)[-1].startswith("hello")),
@@ -62,8 +70,7 @@ class TestCalculateDiskUsage(unittest.TestCase):
 
             for i in range(5):
                 path = os.path.join(temporary_directory, f"dummy_file_{i}")
-                with open(path, "wb") as f:
-                    f.truncate(1)
+                _create_file_of_size(path, 1)
 
             self.assertEqual(calculate_disk_usage(temporary_directory), 5)
 
@@ -77,8 +84,7 @@ class TestCalculateDiskUsage(unittest.TestCase):
 
                 for i in range(5):
                     file_path = os.path.join(directory_path, f"dummy_file_{i}")
-                    with open(file_path, "wb") as f:
-                        f.truncate(1)
+                    _create_file_of_size(file_path, 1)
 
             self.assertEqual(calculate_disk_usage(temporary_directory), 25)
 
@@ -93,13 +99,11 @@ class TestCalculateDiskUsage(unittest.TestCase):
                 os.mkdir(directory_path)
 
                 adjacent_file_path = os.path.join(temporary_directory, f"adjacent_dummy_file_{i}")
-                with open(adjacent_file_path, "wb") as f:
-                    f.truncate(2)
+                _create_file_of_size(adjacent_file_path, 2)
 
                 for i in range(5):
                     file_path = os.path.join(directory_path, f"dummy_file_{i}")
-                    with open(file_path, "wb") as f:
-                        f.truncate(1)
+                    _create_file_of_size(file_path, 1)
 
             self.assertEqual(calculate_disk_usage(temporary_directory), 35)
 
