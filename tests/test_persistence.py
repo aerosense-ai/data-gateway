@@ -162,3 +162,62 @@ class TestBatchingUploader(unittest.TestCase):
             with open(os.path.join(temporary_directory, ".backup", "batch-0.json")) as f:
                 data = json.load(f)
                 self.assertEqual(data, {"test": "ping,pong,\n"})
+
+    def test_backup_files_are_uploaded_on_next_upload_attempt(self):
+        """Test that backup files from a failed upload are uploaded on the next upload attempt."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            with mock.patch.object(Blob, "upload_from_string", Exception):
+                uploader = BatchingUploader(
+                    sensor_names=["test"],
+                    project_name=self.TEST_PROJECT_NAME,
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    batch_interval=1,
+                    output_directory=temporary_directory,
+                    upload_backup_files=True,
+                )
+
+                with uploader:
+                    uploader.add_to_current_batch(sensor_name="test", data="ping,")
+                    uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+
+            # Check that the upload has failed.
+            with self.assertRaises(google.api_core.exceptions.NotFound):
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                )
+
+            backup_path = os.path.join(temporary_directory, ".backup", "batch-0.json")
+
+            # Check that a backup file has been written.
+            with open(backup_path) as f:
+                data = json.load(f)
+                self.assertEqual(data, {"test": "ping,pong,\n"})
+
+            with uploader:
+                uploader.add_to_current_batch(sensor_name="test", data="ding,dong,\n")
+
+            # Check that the backup file has now been removed after it's been uploaded to cloud storage.
+            self.assertFalse(os.path.exists(backup_path))
+
+        # Check that both batches are now in cloud storage.
+        self.assertEqual(
+            json.loads(
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                )
+            ),
+            {"test": "ping,pong,\n"},
+        )
+
+        self.assertEqual(
+            json.loads(
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{uploader.output_directory}/batch-1.json",
+                )
+            ),
+            {"test": "ding,dong,\n"},
+        )
