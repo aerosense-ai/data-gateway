@@ -14,16 +14,23 @@ logger = logging.getLogger(__name__)
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
-def calculate_disk_usage(path):
+def calculate_disk_usage(path, filter=None):
     """Calculate the the disk usage in bytes of the file or directory at the given path. The disk usage is calculated
     recursively (i.e. if a directory is given, it includes the usage of all the files and subdirectories and so on of
-    the directory).
+    the directory). The files considered can be filtered by a callable that returns True for paths that should be
+    considered and False for those that shouldn't.
 
     :param str path:
+    :param callable filter:
     :return float:
     """
     if os.path.isfile(path):
-        return os.path.getsize(path)
+        if not filter:
+            return os.path.getsize(path)
+
+        if filter(path):
+            return os.path.getsize(path)
+        return 0
 
     return sum(calculate_disk_usage(item.path) for item in os.scandir(path))
 

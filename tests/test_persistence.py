@@ -30,6 +30,32 @@ class TestCalculateDiskUsage(unittest.TestCase):
 
             self.assertEqual(calculate_disk_usage(dummy_file_path), 1)
 
+    def test_with_filter_satisfied(self):
+        """Test that files meeting a filter are included in the calculated size."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            dummy_file_path = os.path.join(temporary_directory, "dummy_file")
+            with open(dummy_file_path, "wb") as f:
+                f.truncate(1)
+
+            self.assertEqual(
+                calculate_disk_usage(dummy_file_path, filter=lambda path: os.path.split(path)[-1].startswith("dummy")),
+                1,
+            )
+
+    def test_with_filter_unsatisfied(self):
+        """Test that files not meeting a filter are not included in the calculated size."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            dummy_file_path = os.path.join(temporary_directory, "dummy_file")
+            with open(dummy_file_path, "wb") as f:
+                f.truncate(1)
+
+            self.assertEqual(
+                calculate_disk_usage(dummy_file_path, filter=lambda path: os.path.split(path)[-1].startswith("hello")),
+                0,
+            )
+
     def test_calculate_disk_usage_with_shallow_directory(self):
         """Test that the disk usage of a directory with only files in is calculated correctly."""
         with tempfile.TemporaryDirectory() as temporary_directory:
