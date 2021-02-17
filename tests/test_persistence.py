@@ -3,8 +3,11 @@ import os
 import tempfile
 import time
 import unittest
+from unittest import mock
+import google.api_core.exceptions
 from gcloud_storage_emulator.server import create_server
 from google.cloud import storage
+from google.cloud.storage.blob import Blob
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
@@ -133,21 +136,29 @@ class TestBatchingUploader(unittest.TestCase):
     def test_batch_is_written_to_disk_if_upload_fails(self):
         """Test that a batch is written to disk if it fails to upload to the cloud."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            uploader = BatchingUploader(
-                sensor_names=["test"],
-                project_name=self.TEST_PROJECT_NAME,
-                bucket_name=self.TEST_BUCKET_NAME,
-                batch_interval=0.01,
-                output_directory=temporary_directory,
-                upload_timeout=1e-10,
-            )
 
-            with uploader:
-                uploader.add_to_current_batch(sensor_name="test", data="ping,")
-                uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+            with mock.patch.object(Blob, "upload_from_string", Exception):
+                uploader = BatchingUploader(
+                    sensor_names=["test"],
+                    project_name=self.TEST_PROJECT_NAME,
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    batch_interval=0.01,
+                    output_directory=temporary_directory,
+                    upload_backup_files=False,
+                )
 
-            self.assertEqual(len(uploader.current_batch["test"]), 0)
+                with uploader:
+                    uploader.add_to_current_batch(sensor_name="test", data="ping,")
+                    uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
 
+            # Check that the upload has failed.
+            with self.assertRaises(google.api_core.exceptions.NotFound):
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                )
+
+            # Check that a backup file has been written.
             with open(os.path.join(temporary_directory, ".backup", "batch-0.json")) as f:
                 data = json.load(f)
                 self.assertEqual(data, {"test": "ping,pong,\n"})
