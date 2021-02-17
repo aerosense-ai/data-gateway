@@ -135,6 +135,20 @@ class TestGetOldestFileInDirectory(unittest.TestCase):
 
             self.assertEqual(get_oldest_file_in_directory(temporary_directory), None)
 
+    def test_only_files_satisfying_filter_are_considered(self):
+        """Test that only files satisfying the filter are considered when getting the oldest file."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            _create_file_of_size(os.path.join(temporary_directory, "file_not_to_consider"), 1)
+            _create_file_of_size(os.path.join(temporary_directory, "dummy_file"), 1)
+
+            self.assertEqual(
+                get_oldest_file_in_directory(
+                    temporary_directory, filter=lambda path: os.path.split(path)[-1].startswith("dummy")
+                ),
+                os.path.join(temporary_directory, "dummy_file"),
+            )
+
 
 class TestBatchingWriter(unittest.TestCase):
     def test_data_is_batched(self):
