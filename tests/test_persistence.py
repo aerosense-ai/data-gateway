@@ -109,7 +109,7 @@ class TestCalculateDiskUsage(unittest.TestCase):
 
 
 class TestGetOldestFileInDirectory(unittest.TestCase):
-    def test_get_oldest_file_in_directory(self):
+    def test_oldest_file_is_retrieved(self):
         """Test that the path of the oldest file in a directory is retrieved."""
         with tempfile.TemporaryDirectory() as temporary_directory:
 
@@ -124,6 +124,15 @@ class TestGetOldestFileInDirectory(unittest.TestCase):
     def test_empty_directory_results_in_none(self):
         """Test that None is returned for an empty directory."""
         with tempfile.TemporaryDirectory() as temporary_directory:
+            self.assertEqual(get_oldest_file_in_directory(temporary_directory), None)
+
+    def test_directories_ignored(self):
+        """Test that directories are ignored."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            for i in range(5):
+                os.mkdir(os.path.join(temporary_directory, f"directory_{i}"))
+
             self.assertEqual(get_oldest_file_in_directory(temporary_directory), None)
 
 
