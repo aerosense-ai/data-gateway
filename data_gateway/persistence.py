@@ -15,7 +15,9 @@ DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
 def calculate_disk_usage(path):
-    """Calculate the the disk usage of the given path in bytes.
+    """Calculate the the disk usage in bytes of the file or directory at the given path. The disk usage is calculated
+    recursively (i.e. if a directory is given, it includes the usage of all the files and subdirectories and so on of
+    the directory).
 
     :param str path:
     :return float:
@@ -24,6 +26,18 @@ def calculate_disk_usage(path):
         return os.path.getsize(path)
 
     return sum(calculate_disk_usage(item.path) for item in os.scandir(path))
+
+
+def get_oldest_file_in_directory(path):
+    """Get the oldest file in a directory. This is not a recursive function.
+
+    :param str path:
+    :return str|None:
+    """
+    try:
+        return min(os.scandir(path), key=os.path.getctime).path
+    except ValueError:
+        return None
 
 
 class TimeBatcher:
@@ -43,7 +57,7 @@ class TimeBatcher:
         self._batch_number = 0
         self._start_time = time.perf_counter()
         self._batch_prefix = "batch"
-        self._backup_path = os.path.join(self.output_directory, ".backup")
+        self._backup_directory = os.path.join(self.output_directory, ".backup")
 
     def __enter__(self):
         return self
@@ -109,22 +123,36 @@ class TimeBatcher:
         filename = f"batch-{self._batch_number}.json"
 
         if backup:
-            return "/".join((self._backup_path, filename))
+            return "/".join((self._backup_directory, filename))
 
         return "/".join((self.output_directory, filename))
 
 
 class BatchingFileWriter(TimeBatcher):
-    """A writer that batches the data given to it over time into batches of the duration of the given time interval,
-    saving each batch to disk.
-    """
+    def __init__(
+        self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY, storage_limit=1024 ** 3
+    ):
+        """Initialise a file writer that batches the data given to it over time into batches of the duration of the
+        given time interval, saving each batch to disk.
+
+        :param iter(str) sensor_names:
+        :param float batch_interval:
+        :param str output_directory:
+        :param int storage_limit: storage limit in bytes (default is 1 GB)
+        :return None:
+        """
+        self.storage_limit = storage_limit
+        super().__init__(sensor_names, batch_interval, output_directory)
 
     def _persist_batch(self, batch=None, backup=False):
-        """Write a batch of serialised data to disk.
+        """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
+        reached.
 
+        :param dict batch:
         :param bool backup:
         :return None:
         """
+        self._manage_storage(backup=backup)
         batch_path = os.path.abspath(os.path.join(".", self._generate_batch_path(backup=backup)))
         batch_directory = os.path.split(batch_path)[0]
 
@@ -133,6 +161,26 @@ class BatchingFileWriter(TimeBatcher):
 
         with open(batch_path, "w") as f:
             json.dump(batch or self.ready_batch, f)
+
+    def _manage_storage(self, backup=False):
+        """Check if the output or backup directory has reached its storage limit and, if it has, delete the oldest
+        batch.
+
+        :param bool backup:
+        :return None:
+        """
+        if backup:
+            directory_to_check = self._backup_directory
+        else:
+            directory_to_check = self.output_directory
+
+        if calculate_disk_usage(self.output_directory) >= self.storage_limit:
+            logger.warning("Storage limit reached (%s MB) - deleting oldest batch.", self.storage_limit / 1024 ** 2)
+            oldest_file = get_oldest_file_in_directory(directory_to_check)
+            os.remove(oldest_file)
+
+        elif calculate_disk_usage(self.output_directory) >= 0.9 * self.storage_limit:
+            logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * self.storage_limit / 1024 ** 2)
 
 
 class BatchingUploader(TimeBatcher):
@@ -193,8 +241,8 @@ class BatchingUploader(TimeBatcher):
 
     def _attempt_to_upload_backup_files(self):
         """Check for backup files and attempt to upload them to cloud storage again."""
-        if os.path.exists(self._backup_path):
-            backup_filenames = os.listdir(self._backup_path)
+        if os.path.exists(self._backup_directory):
+            backup_filenames = os.listdir(self._backup_directory)
 
             if not backup_filenames:
                 return
@@ -204,7 +252,7 @@ class BatchingUploader(TimeBatcher):
                 if not filename.startswith(self._batch_prefix):
                     continue
 
-                local_path = os.path.join(self._backup_path, filename)
+                local_path = os.path.join(self._backup_directory, filename)
                 path_in_bucket = "/".join((self.output_directory, filename))
 
                 try:

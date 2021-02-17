@@ -11,7 +11,12 @@ from google.cloud.storage.blob import Blob
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.persistence import BatchingFileWriter, BatchingUploader, calculate_disk_usage
+from data_gateway.persistence import (
+    BatchingFileWriter,
+    BatchingUploader,
+    calculate_disk_usage,
+    get_oldest_file_in_directory,
+)
 
 
 class TestCalculateDiskUsage(unittest.TestCase):
@@ -71,6 +76,25 @@ class TestCalculateDiskUsage(unittest.TestCase):
                         f.truncate(1)
 
             self.assertEqual(calculate_disk_usage(temporary_directory), 35)
+
+
+class TestGetOldestFileInDirectory(unittest.TestCase):
+    def test_get_oldest_file_in_directory(self):
+        """Test that the path of the oldest file in a directory is retrieved."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            for i in range(5):
+                directory_path = os.path.join(temporary_directory, f"directory_{i}")
+                os.mkdir(directory_path)
+
+            self.assertEqual(
+                get_oldest_file_in_directory(temporary_directory), os.path.join(temporary_directory, "directory_0")
+            )
+
+    def test_empty_directory_results_in_none(self):
+        """Test that None is returned for an empty directory."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            self.assertEqual(get_oldest_file_in_directory(temporary_directory), None)
 
 
 class TestBatchingWriter(unittest.TestCase):
