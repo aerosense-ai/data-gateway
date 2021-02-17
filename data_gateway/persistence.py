@@ -41,8 +41,10 @@ def get_oldest_file_in_directory(path):
     :param str path:
     :return str|None:
     """
+    contents = [item for item in os.scandir(path) if item.is_file()]
+
     try:
-        return min(os.scandir(path), key=os.path.getctime).path
+        return min(contents, key=os.path.getctime).path
     except ValueError:
         return None
 

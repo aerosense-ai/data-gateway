@@ -114,11 +114,11 @@ class TestGetOldestFileInDirectory(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
 
             for i in range(5):
-                directory_path = os.path.join(temporary_directory, f"directory_{i}")
-                os.mkdir(directory_path)
+                path = os.path.join(temporary_directory, f"file_{i}")
+                _create_file_of_size(path, 1)
 
             self.assertEqual(
-                get_oldest_file_in_directory(temporary_directory), os.path.join(temporary_directory, "directory_0")
+                get_oldest_file_in_directory(temporary_directory), os.path.join(temporary_directory, "file_0")
             )
 
     def test_empty_directory_results_in_none(self):
