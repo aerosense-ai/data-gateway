@@ -180,6 +180,30 @@ class TestBatchingWriter(unittest.TestCase):
                 data = json.load(f)
                 self.assertEqual(data, {"test": "ding,dong,\n"})
 
+    def test_oldest_batch_is_deleted_when_storage_limit_reached(self):
+        """Check that (only) the oldest batch is deleted when the storage limit is reached."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            writer = BatchingFileWriter(
+                sensor_names=["test"], output_directory=temporary_directory, batch_interval=0.01, storage_limit=1
+            )
+
+            with writer:
+                writer.add_to_current_batch(sensor_name="test", data="ping,")
+
+            first_batch_path = os.path.join(temporary_directory, "batch-0.json")
+            with open(first_batch_path) as f:
+                self.assertEqual(json.load(f), {"test": "ping,"})
+
+            with writer:
+                writer.add_to_current_batch(sensor_name="test", data="pong,\n")
+
+            # Check first (oldest) file has been deleted.
+            self.assertFalse(os.path.exists(first_batch_path))
+
+            # Check the other file has not been deleted.
+            with open(os.path.join(temporary_directory, "batch-1.json")) as f:
+                self.assertEqual(json.load(f), {"test": "pong,\n"})
+
 
 class TestBatchingUploader(unittest.TestCase):
 
