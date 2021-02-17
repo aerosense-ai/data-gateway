@@ -191,7 +191,7 @@ class BatchingFileWriter(TimeBatcher):
         filter = lambda path: os.path.split(path)[-1].startswith("batch")  # noqa
 
         if calculate_disk_usage(self.output_directory, filter) >= self.storage_limit:
-            oldest_batch = get_oldest_file_in_directory(directory_to_check)
+            oldest_batch = get_oldest_file_in_directory(directory_to_check, filter)
 
             logger.warning(
                 "Storage limit reached (%s MB) - deleting oldest batch (%r).",
