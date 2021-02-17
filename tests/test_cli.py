@@ -36,8 +36,12 @@ class TestCLI(TestCase):
 
     def test_start_and_stop_in_interactive_mode(self):
         """Ensure the gateway can be started and stopped via the CLI in interactive mode."""
-        with mock.patch("serial.Serial", new=DummySerial):
-            result = CliRunner().invoke(gateway_cli, "start --interactive", input="stop\n")
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch("serial.Serial", new=DummySerial):
+                result = CliRunner().invoke(
+                    gateway_cli, f"start --interactive --output-dir={temporary_directory}", input="stop\n"
+                )
+
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
             self.assertTrue("Stopping gateway." in result.output)
@@ -45,7 +49,13 @@ class TestCLI(TestCase):
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI."""
         config_path = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
-        with mock.patch("serial.Serial", new=DummySerial):
-            result = CliRunner().invoke(gateway_cli, f"start --interactive --config-file={config_path}", input="stop\n")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch("serial.Serial", new=DummySerial):
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    f"start --interactive --config-file={config_path} --output-dir={temporary_directory}",
+                    input="stop\n",
+                )
 
         self.assertTrue("Loaded configuration file" in result.output)
