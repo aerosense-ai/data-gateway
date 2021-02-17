@@ -30,6 +30,8 @@ class TimeBatcher:
         self.ready_batch = {}
         self._batch_number = 0
         self._start_time = time.perf_counter()
+        self._batch_prefix = "batch"
+        self._backup_path = os.path.join(self.output_directory, ".backup")
 
     def __enter__(self):
         return self
@@ -60,7 +62,8 @@ class TimeBatcher:
         :return None:
         """
         for sensor_name, data in self.current_batch.items():
-            self.ready_batch[sensor_name] = "".join(copy.deepcopy(data))
+            if data:
+                self.ready_batch[sensor_name] = "".join(copy.deepcopy(data))
             data.clear()
 
     def force_persist(self):
@@ -91,12 +94,12 @@ class TimeBatcher:
         :param bool backup:
         :return str:
         """
-        path_list = [self.output_directory, f"batch-{self._batch_number}.json"]
+        filename = f"batch-{self._batch_number}.json"
 
         if backup:
-            path_list.insert(1, ".backup")
+            return "/".join((self._backup_path, filename))
 
-        return "/".join(path_list)
+        return "/".join((self.output_directory, filename))
 
 
 class BatchingFileWriter(TimeBatcher):
@@ -129,6 +132,7 @@ class BatchingUploader(TimeBatcher):
         batch_interval,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         upload_timeout=60,
+        upload_backup_files=True,
     ):
         """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
         to it to a GCP storage bucket at the given interval of time.
@@ -137,12 +141,16 @@ class BatchingUploader(TimeBatcher):
         :param str project_name:
         :param str bucket_name:
         :param float batch_interval: time interval with which to batch data (in seconds)
+        :param str output_directory:
+        :param float upload_timeout:
+        :param bool upload_backup_files:
         :return None:
         """
         self.project_name = project_name
-        self.bucket_name = bucket_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
+        self.bucket_name = bucket_name
         self.upload_timeout = upload_timeout
+        self.upload_backup_files = upload_backup_files
         self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, output_directory)
         super().__init__(sensor_names, batch_interval, output_directory)
 
@@ -166,3 +174,36 @@ class BatchingUploader(TimeBatcher):
             )
 
             self._backup_writer._persist_batch(batch=self.ready_batch, backup=True)
+            return
+
+        if self.upload_backup_files:
+            self._attempt_to_upload_backup_files()
+
+    def _attempt_to_upload_backup_files(self):
+        """Check for backup files and attempt to upload them to cloud storage again."""
+        if os.path.exists(self._backup_path):
+            backup_filenames = os.listdir(self._backup_path)
+
+            if not backup_filenames:
+                return
+
+            for filename in backup_filenames:
+
+                if not filename.startswith(self._batch_prefix):
+                    continue
+
+                local_path = os.path.join(self._backup_path, filename)
+                path_in_bucket = "/".join((self.output_directory, filename))
+
+                try:
+                    self.client.upload_file(
+                        local_path=local_path,
+                        bucket_name=self.bucket_name,
+                        path_in_bucket=path_in_bucket,
+                        timeout=self.upload_timeout,
+                    )
+
+                except Exception:
+                    return
+
+                os.remove(local_path)
