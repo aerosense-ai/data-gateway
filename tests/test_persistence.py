@@ -11,7 +11,66 @@ from google.cloud.storage.blob import Blob
 from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
-from data_gateway.persistence import BatchingFileWriter, BatchingUploader
+from data_gateway.persistence import BatchingFileWriter, BatchingUploader, calculate_disk_usage
+
+
+class TestCalculateDiskUsage(unittest.TestCase):
+    def test_calculate_disk_usage_with_single_file(self):
+        """Test that the disk usage of a single file is calculated correctly."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            dummy_file_path = os.path.join(temporary_directory, "dummy_file")
+            with open(dummy_file_path, "wb") as f:
+                f.truncate(1)
+
+            self.assertEqual(calculate_disk_usage(dummy_file_path), 1)
+
+    def test_calculate_disk_usage_with_shallow_directory(self):
+        """Test that the disk usage of a directory with only files in is calculated correctly."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            for i in range(5):
+                path = os.path.join(temporary_directory, f"dummy_file_{i}")
+                with open(path, "wb") as f:
+                    f.truncate(1)
+
+            self.assertEqual(calculate_disk_usage(temporary_directory), 5)
+
+    def test_calculate_disk_usage_with_directory_of_directories(self):
+        """Test that the disk usage of a directory of directories with files in is calculated correctly."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            for i in range(5):
+                directory_path = os.path.join(temporary_directory, f"directory_{i}")
+                os.mkdir(directory_path)
+
+                for i in range(5):
+                    file_path = os.path.join(directory_path, f"dummy_file_{i}")
+                    with open(file_path, "wb") as f:
+                        f.truncate(1)
+
+            self.assertEqual(calculate_disk_usage(temporary_directory), 25)
+
+    def test_calculate_disk_usage_with_directory_of_directories_and_files(self):
+        """Test that the disk usage of a directory of directories with files in and files next to the directories is
+        calculated correctly.
+        """
+        with tempfile.TemporaryDirectory() as temporary_directory:
+
+            for i in range(5):
+                directory_path = os.path.join(temporary_directory, f"directory_{i}")
+                os.mkdir(directory_path)
+
+                adjacent_file_path = os.path.join(temporary_directory, f"adjacent_dummy_file_{i}")
+                with open(adjacent_file_path, "wb") as f:
+                    f.truncate(2)
+
+                for i in range(5):
+                    file_path = os.path.join(directory_path, f"dummy_file_{i}")
+                    with open(file_path, "wb") as f:
+                        f.truncate(1)
+
+            self.assertEqual(calculate_disk_usage(temporary_directory), 35)
 
 
 class TestBatchingWriter(unittest.TestCase):

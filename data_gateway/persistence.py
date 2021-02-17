@@ -14,6 +14,18 @@ logger = logging.getLogger(__name__)
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
+def calculate_disk_usage(path):
+    """Calculate the the disk usage of the given path in bytes.
+
+    :param str path:
+    :return float:
+    """
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
+    return sum(calculate_disk_usage(item.path) for item in os.scandir(path))
+
+
 class TimeBatcher:
     def __init__(self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
         """Instantiate a TimeBatcher. The batcher will group the data given to it into batches of the duration of the
