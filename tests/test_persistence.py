@@ -139,7 +139,7 @@ class TestBatchingUploader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
                 batch_interval=0.01,
                 output_directory=temporary_directory,
-                upload_timeout=0.00001,
+                upload_timeout=1e-10,
             )
 
             with uploader:
