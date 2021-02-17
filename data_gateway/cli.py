@@ -104,7 +104,7 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
         logger.info("Loaded configuration file from %r.", config_file)
     else:
         config = Configuration()
-        logger.info("Using default configuration.", config_file)
+        logger.info("Using default configuration.")
 
     serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
     serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
@@ -143,13 +143,19 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
         "seconds."
     )
 
-    commands_record_file = os.path.join(".", output_dir, "commands.txt")
+    if not output_dir.startswith("/"):
+        output_dir = os.path.join(".", output_dir)
+
+    commands_record_file = os.path.join(output_dir, "commands.txt")
 
     try:
         while not packet_reader.stop:
             for line in sys.stdin:
 
                 # Keep a record of the commands given.
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+
                 with open(commands_record_file, "a") as f:
                     f.write(line)
 
