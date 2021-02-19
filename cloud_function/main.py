@@ -37,4 +37,5 @@ def clean(batch, event):
     :param dict event:
     :return dict:
     """
-    pass
+    batch["cleaned"] = True
+    return batch
