@@ -10,7 +10,7 @@ from octue.utils.cloud.persistence import GoogleCloudStorageClient
 from cloud_function import main
 
 
-class TestCloudFunction(unittest.TestCase):
+class TestCleanAndUploadBatch(unittest.TestCase):
 
     TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
