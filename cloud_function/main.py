@@ -17,7 +17,7 @@ def clean_and_upload_batch(event, context):
     destination_project_name = os.environ["DESTINATION_PROJECT_NAME"]
     destination_bucket = os.environ["DESTINATION_BUCKET"]
 
-    client = GoogleCloudStorageClient(project_name=destination_project_name)
+    client = GoogleCloudStorageClient(project_name=destination_project_name, credentials=None)
 
     batch = json.loads(client.download_as_string(bucket_name=event["bucket"], path_in_bucket=event["name"]))
     logger.debug("Received batch %r from bucket %r for cleaning.", event["name"], event["bucket"])
