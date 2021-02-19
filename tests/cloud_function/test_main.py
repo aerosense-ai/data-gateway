@@ -2,6 +2,7 @@ import json
 import os
 import unittest
 from unittest import mock
+import google.api_core.exceptions
 from gcloud_storage_emulator.server import create_server
 from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
@@ -27,6 +28,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             project=cls.TEST_PROJECT_NAME, credentials=GCPCredentialsManager().get_credentials()
         ).create_bucket(bucket_or_name=cls.TEST_BUCKET_NAME)
 
+        # Create trigger file.
         GoogleCloudStorageClient(cls.TEST_PROJECT_NAME).upload_from_string(
             serialised_data=json.dumps({"Baros": "blah,blah,hello,\n"}),
             bucket_name=cls.TEST_BUCKET_NAME,
@@ -55,15 +57,25 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         context.event_id = "some-id"
         context.event_type = "gcs-event"
 
-        with mock.patch("cloud_function.main.clean", return_value={"baros": "hello,\n"}):
-            main.clean_and_upload_batch(event, context)
+        cleaned_batch_name = "cleaned-batch-0.json"
 
+        with mock.patch("cloud_function.main.clean", return_value={"baros": "hello,\n"}):
+            main.clean_and_upload_batch(event, context, cleaned_batch_name=cleaned_batch_name)
+
+        # Check that cleaned batch is in the right place.
         self.assertEqual(
             json.loads(
                 GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket="batch-0.json",
+                    path_in_bucket=cleaned_batch_name,
                 )
             ),
             {"baros": "hello,\n"},
         )
+
+        # Check that uncleaned batch is deleted.
+        with self.assertRaises(google.api_core.exceptions.NotFound):
+            GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                bucket_name=self.TEST_BUCKET_NAME,
+                path_in_bucket=event["name"],
+            )
