@@ -18,7 +18,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ["PROJECT_NAME"] = cls.TEST_PROJECT_NAME
+        os.environ["DESTINATION_PROJECT_NAME"] = cls.TEST_PROJECT_NAME
         os.environ["DESTINATION_BUCKET"] = cls.TEST_BUCKET_NAME
 
         cls.storage_emulator.start()
@@ -36,6 +36,8 @@ class TestCleanAndUploadBatch(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.storage_emulator.stop()
+        del os.environ["DESTINATION_PROJECT_NAME"]
+        del os.environ["DESTINATION_BUCKET"]
 
     def test_clean_and_upload_batch(self):
         """Test that a finalise event from a Google Cloud Storage bucket triggers cleaning of a batch file and its
