@@ -27,9 +27,10 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
     client = GoogleCloudStorageClient(project_name=destination_project_name, credentials=None)
 
     batch = json.loads(client.download_as_string(bucket_name=source_bucket_name, path_in_bucket=batch_path))
+    batch_metadata = client.get_metadata(bucket_name=source_bucket_name, path_in_bucket=batch_path)
     logger.debug("Received batch %r from bucket %r for cleaning.", batch_path, source_bucket_name)
 
-    cleaned_batch = clean(batch, event)
+    cleaned_batch = clean(batch, batch_metadata, event)
 
     client.upload_from_string(
         serialised_data=json.dumps(cleaned_batch),
@@ -37,12 +38,15 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
         path_in_bucket=cleaned_batch_path,
     )
 
-    serialised_datafile = _make_serialised_google_cloud_storage_datafile(
-        cleaned_batch, cleaned_batch_path, destination_bucket_name
+    datafile = Datafile.from_google_cloud_storage(
+        project_name=destination_project_name,
+        bucket_name=destination_bucket_name,
+        path_in_bucket=cleaned_batch_path,
+        sequence=int(cleaned_batch_path.split(".")[0].split("-")[-1]),
     )
 
     client.upload_from_string(
-        serialised_data=json.dumps(serialised_datafile),
+        serialised_data=datafile.serialise(to_string=True),
         bucket_name=destination_bucket_name,
         path_in_bucket=os.path.join(os.path.split(batch_path)[0], DATAFILES_DIRECTORY, cleaned_batch_name),
     )
@@ -52,31 +56,11 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
     client.delete(bucket_name=source_bucket_name, path_in_bucket=batch_path)
 
 
-def _make_serialised_google_cloud_storage_datafile(cleaned_batch, cleaned_batch_path, destination_bucket_name):
-    """Make and return a serialised Google Cloud storage datafile.
-
-    :param dict cleaned_batch:
-    :param str cleaned_batch_path:
-    :param str destination_bucket_name:
-    :return dict:
-    """
-    with open(cleaned_batch_path, "w") as f:
-        json.dump(cleaned_batch, f)
-
-    batch_number = cleaned_batch_path.split(".")[0].split("-")[-1]
-    datafile = Datafile(path=cleaned_batch_path, sequence=batch_number)
-    serialised_datafile = datafile.serialise()
-    serialised_datafile["path"] = f"gs://{destination_bucket_name}/{cleaned_batch_path}"
-    serialised_datafile["absolute_path"] = serialised_datafile["path"]
-    os.remove(cleaned_batch_path)
-
-    return serialised_datafile
-
-
-def clean(batch, event):
+def clean(batch, batch_metadata, event):
     """Clean and return the given batch.
 
     :param dict batch:
+    :param dict batch_metadata:
     :param dict event:
     :return dict:
     """
