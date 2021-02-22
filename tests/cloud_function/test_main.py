@@ -73,6 +73,17 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             {"baros": "hello,\n"},
         )
 
+        # Check that datafile has been created.
+        self.assertEqual(
+            json.loads(
+                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                    bucket_name=self.TEST_BUCKET_NAME,
+                    path_in_bucket="/".join((main.DATAFILES_DIRECTORY, cleaned_batch_name)),
+                )
+            )["name"],
+            cleaned_batch_name,
+        )
+
         # Check that uncleaned batch is deleted.
         with self.assertRaises(google.api_core.exceptions.NotFound):
             GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
