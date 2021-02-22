@@ -9,6 +9,7 @@ tox
 pluggy
 gcloud-storage-emulator==0.3.2
 google-cloud-storage>=1.35.1
+-r cloud_function/requirements.txt
 
 # Code quality
 # ------------------------------------------------------------------------------
