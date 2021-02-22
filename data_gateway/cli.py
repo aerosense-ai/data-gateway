@@ -96,7 +96,16 @@ def gateway_cli(logger_uri, log_level):
     show_default=True,
     help="The name of the Google Cloud Platform (GCP) storage bucket to use.",
 )
-def start(config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name):
+@click.option(
+    "--stop-when-no-more-data",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
+)
+def start(
+    config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name, stop_when_no_more_data
+):
     """Start the gateway service (daemonise this for a deployment)."""
     if os.path.exists(config_file):
         with open(config_file) as f:
@@ -123,7 +132,7 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
             project_name=gcp_project_name,
             bucket_name=gcp_bucket_name,
             configuration=config,
-        ).read_packets(serial_port)
+        ).read_packets(serial_port, stop_when_no_more_data=stop_when_no_more_data)
 
         return
 
@@ -136,7 +145,7 @@ def start(config_file, interactive, output_dir, batch_interval, gcp_project_name
         configuration=config,
     )
 
-    threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
+    threading.Thread(target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True)
     print(
         "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
         f" to disk at {os.path.join('.', packet_reader.writer.output_directory)!r} at intervals of {batch_interval} "

@@ -2,12 +2,15 @@ import os
 import tempfile
 from unittest import TestCase, mock
 from click.testing import CliRunner
+from gcloud_storage_emulator.server import create_server
 
 from data_gateway.cli import gateway_cli
 from dummy_serial.dummy_serial import DummySerial
 
 
 class TestCLI(TestCase):
+    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=os.environ["TEST_BUCKET_NAME"])
+
     def test_version(self):
         """Ensure the version command works in the CLI."""
         result = CliRunner().invoke(gateway_cli, ["--version"])
@@ -20,6 +23,28 @@ class TestCLI(TestCase):
 
         h_result = CliRunner().invoke(gateway_cli, ["-h"])
         assert help_result.output == h_result.output
+
+    def test_start(self):
+        """Ensure the gateway can be started via the CLI. The "stop-when-no-more-data" option is enabled so the test
+        doesn't run forever.
+        """
+        self.storage_emulator.start()
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch("serial.Serial", new=DummySerial):
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    f"start "
+                    f"--gcp-project-name={os.environ['TEST_PROJECT_NAME']} "
+                    f"--gcp-bucket-name={os.environ['TEST_BUCKET_NAME']} "
+                    f"--output-dir={temporary_directory} "
+                    f"--stop-when-no-more-data",
+                )
+
+            self.assertIsNone(result.exception)
+            self.assertEqual(result.exit_code, 0)
+
+        self.storage_emulator.stop()
 
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded."""
