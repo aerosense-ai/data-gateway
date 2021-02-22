@@ -29,27 +29,6 @@ class DummySerialTest(unittest.TestCase):
         self.random_baudrate = random_string(5, constants.NUMBERS)
         self._logger.debug("random_serial_port=%s random_baudrate=%s", self.random_serial_port, self.random_baudrate)
 
-    def test_write_and_read(self):
-        """Tests writing-to and reading-from a DummySerial port (just strings)"""
-        rand_write_len1 = random.randint(0, 1024)
-        rand_write_len2 = random.randint(0, 1024)
-        rand_write_str1 = random_string(rand_write_len1).encode()
-        rand_write_str2 = random_string(rand_write_len2).encode()
-
-        ds_instance = DummySerial(
-            port=self.random_serial_port, baudrate=self.random_baudrate, responses={rand_write_str1: rand_write_str2}
-        )
-
-        ds_instance.write(rand_write_str1)
-        read_data = b""
-        while 1:
-            read_data = b"".join([read_data, ds_instance.read(rand_write_len2)])
-            waiting_data = ds_instance.in_waiting
-            if not waiting_data:
-                break
-
-        self.assertEqual(read_data, rand_write_str2)
-
     def test_write_closed_port(self):
         """Tests writing-to a closed DummySerial port."""
         rand_write_len1 = random.randint(0, 1024)
