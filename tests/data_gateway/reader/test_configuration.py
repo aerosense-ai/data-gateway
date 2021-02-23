@@ -6,11 +6,10 @@ from data_gateway.reader.configuration import Configuration
 
 
 class TestConfiguration(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        configuration_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")
-        with open(configuration_path) as f:
-            cls.VALID_CONFIGURATION = json.load(f)
+
+    configuration_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")
+    with open(configuration_path) as f:
+        VALID_CONFIGURATION = json.load(f)
 
     def test_constructing_from_valid_configuration_dictionary(self):
         """Ensure a valid dictionary can be used to build a configuration."""

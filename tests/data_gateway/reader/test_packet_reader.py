@@ -3,8 +3,6 @@ import os
 import tempfile
 import unittest
 from gcloud_storage_emulator.server import create_server
-from google.cloud import storage
-from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from data_gateway.reader.configuration import Configuration
@@ -13,8 +11,6 @@ from dummy_serial.dummy_serial import DummySerial
 
 
 class TestPacketReader(unittest.TestCase):
-    """Testing operation of the PacketReader class"""
-
     TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
     PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")
@@ -32,25 +28,23 @@ class TestPacketReader(unittest.TestCase):
             b"\x93\x97\xb7\xca\x0e\x12.\xcb\x067>\xd3\xebBC"
         ),
         (
-            b"r\xf8\x12=\xdc\xa73>\xbf\x84\x9d!\xb9\x1c\x18\xc4D0\xe8\xd4\x84\xf8\xd8Nao\x1f\xb0\xc6\xb1n\xe1\x90\xb6\x8a"
-            b"\xe5{\xa0\x83\x18\xc4\xaa\xdd\x81/\xa0\r\x8a\x9c\x8d\t\xa7\xf0m\xcf\x1d\x81u.\xd6\xa0\x1b\xae<\x8f\xdd"
-            b"\xd92aI\x808L\xfb\x9b\xd0p\x13\xa5E\x9d3\xab\x99X\xd7\x18Xqr \x1d\xc0 B\xf0\xb5<\x1f\x94\xdeJ2@\xed\x08\xd6"
-            b"\xd6\xbaG\xed\xf4\xb8\xcd\x94\x0b\xb98g\xdbzIj;!pBt/\xbf!\xc7\xd8?\x13\xc9\x07\x03\x86\x9e\xd3\xe0M\xfd\xb9"
-            b"\xaal\x1d9Ox\xda:\x7f\xcb\xa8\xb7\x9b\x01D\x1erM\x1dR\xb2\x8bjA]\xdc=i\xfenD\x02R \x9a\xef5N\xb9\x18\xcb"
-            b"\x837<g\x8e\xc1dya/\xa4Rxb\x9f\x11'\xa1\xe2E\xa52\x93\x02q\x9fJ\xdc\xba\xec\xf8\x8b:\x81\x8c\xe3\xe7\xfa ="
-            b"\x0e\xcdI\xefn\xe8\xed\xfe\xdd\xe6\xc0\xa8>\x18\xdek\x83\x81\x10,U+\x99\x07\xcb\xbf\xc6Mo1"
+            b"r\xf8\x12=\xdc\xa73>\xbf\x84\x9d!\xb9\x1c\x18\xc4D0\xe8\xd4\x84\xf8\xd8Nao\x1f\xb0\xc6\xb1n\xe1\x90\xb6"
+            b"\x8a\xe5{\xa0\x83\x18\xc4\xaa\xdd\x81/\xa0\r\x8a\x9c\x8d\t\xa7\xf0m\xcf\x1d\x81u.\xd6\xa0\x1b\xae<\x8f"
+            b"\xdd\xd92aI\x808L\xfb\x9b\xd0p\x13\xa5E\x9d3\xab\x99X\xd7\x18Xqr \x1d\xc0 B\xf0\xb5<\x1f\x94\xdeJ2@\xed"
+            b"\x08\xd6\xd6\xbaG\xed\xf4\xb8\xcd\x94\x0b\xb98g\xdbzIj;!pBt/\xbf!\xc7\xd8?\x13\xc9\x07\x03\x86\x9e\xd3"
+            b"\xe0M\xfd\xb9\xaal\x1d9Ox\xda:\x7f\xcb\xa8\xb7\x9b\x01D\x1erM\x1dR\xb2\x8bjA]\xdc=i\xfenD\x02R \x9a\xef5N"
+            b"\xb9\x18\xcb\x837<g\x8e\xc1dya/\xa4Rxb\x9f\x11'\xa1\xe2E\xa52\x93\x02q\x9fJ\xdc\xba\xec\xf8\x8b:\x81\x8c"
+            b"\xe3\xe7\xfa =\x0e\xcdI\xefn\xe8\xed\xfe\xdd\xe6\xc0\xa8>\x18\xdek\x83\x81\x10,U+\x99\x07\xcb\xbf\xc6Mo1"
         ),
     ]
 
     BATCH_INTERVAL = 10
-    storage_emulator = create_server("localhost", 9090, in_memory=True)
+    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=TEST_BUCKET_NAME)
+    storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     @classmethod
     def setUpClass(cls):
         cls.storage_emulator.start()
-        storage.Client(
-            project=cls.TEST_PROJECT_NAME, credentials=GCPCredentialsManager().get_credentials()
-        ).create_bucket(bucket_or_name=cls.TEST_BUCKET_NAME)
 
     @classmethod
     def tearDownClass(cls):
@@ -61,11 +55,9 @@ class TestPacketReader(unittest.TestCase):
         number_of_batches = packet_reader.uploader._batch_number
         self.assertTrue(number_of_batches > 0)
 
-        client = GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME)
-
         for i in range(number_of_batches_to_check):
             data = json.loads(
-                client.download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{packet_reader.uploader.output_directory}/batch-{i}.json",
                 )
@@ -116,11 +108,12 @@ class TestPacketReader(unittest.TestCase):
                 Configuration.from_dict(json.load(f))
 
         # Check configuration file is present and valid on the cloud.
-        configuration = GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+        configuration = self.storage_client.download_as_string(
             bucket_name=self.TEST_BUCKET_NAME,
             path_in_bucket=f"{packet_reader.uploader.output_directory}/configuration.json",
         )
 
+        # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
 
     def test_packet_reader_with_baro_sensor(self):
@@ -254,7 +247,3 @@ class TestPacketReader(unittest.TestCase):
             self._check_data_is_written_to_files(temporary_directory, sensor_names=["Analog"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Analog"], number_of_batches_to_check=1)
-
-
-if __name__ == "__main__":
-    unittest.main()
