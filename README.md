@@ -53,10 +53,8 @@ Commands:
 These environment variables are needed to run the tests:
 * `GCP_SERVICE_ACCOUNT=/path/to/service/account/file.json`
 * `STORAGE_EMULATOR_HOST=http://localhost:9090`
-* `TEST_PROJECT_NAME=<gcp_project_name>`
-* `TEST_BUCKET_NAME=<gcp_bucket_name>`
 
-Then, trom the repository root, run
+Then, from the repository root, run
 ```bash
 python3 -m unittest
 ```

@@ -9,7 +9,9 @@ from dummy_serial.dummy_serial import DummySerial
 
 
 class TestCLI(TestCase):
-    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=os.environ["TEST_BUCKET_NAME"])
+    TEST_PROJECT_NAME = "a-project-name"
+    TEST_BUCKET_NAME = "a-bucket-name"
+    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=TEST_BUCKET_NAME)
 
     @classmethod
     def setUpClass(cls):
@@ -41,8 +43,8 @@ class TestCLI(TestCase):
                 result = CliRunner().invoke(
                     gateway_cli,
                     f"start "
-                    f"--gcp-project-name={os.environ['TEST_PROJECT_NAME']} "
-                    f"--gcp-bucket-name={os.environ['TEST_BUCKET_NAME']} "
+                    f"--gcp-project-name={self.TEST_PROJECT_NAME} "
+                    f"--gcp-bucket-name={self.TEST_BUCKET_NAME} "
                     f"--output-dir={temporary_directory} "
                     f"--stop-when-no-more-data",
                 )
@@ -61,8 +63,8 @@ class TestCLI(TestCase):
                 result = CliRunner().invoke(
                     gateway_cli,
                     f"start "
-                    f"--gcp-project-name={os.environ['TEST_PROJECT_NAME']} "
-                    f"--gcp-bucket-name={os.environ['TEST_BUCKET_NAME']} "
+                    f"--gcp-project-name={self.TEST_PROJECT_NAME} "
+                    f"--gcp-bucket-name={self.TEST_BUCKET_NAME} "
                     f"--stop-when-no-more-data",
                 )
 

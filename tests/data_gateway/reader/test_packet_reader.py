@@ -11,8 +11,8 @@ from dummy_serial.dummy_serial import DummySerial
 
 
 class TestPacketReader(unittest.TestCase):
-    TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
-    TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
+    TEST_PROJECT_NAME = "a-project-name"
+    TEST_BUCKET_NAME = "a-bucket-name"
     PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")
     LENGTH = bytes([244])
 

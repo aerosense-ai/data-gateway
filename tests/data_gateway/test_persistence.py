@@ -210,9 +210,8 @@ class TestBatchingWriter(unittest.TestCase):
 
 
 class TestBatchingUploader(unittest.TestCase):
-
-    TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
-    TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
+    TEST_PROJECT_NAME = "a-project-name"
+    TEST_BUCKET_NAME = "a-bucket-name"
     storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=TEST_BUCKET_NAME)
     storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
