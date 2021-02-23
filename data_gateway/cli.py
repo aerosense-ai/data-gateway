@@ -1,15 +1,7 @@
-import json
 import logging
 import os
-import threading
 import click
 import pkg_resources
-import serial
-from octue.logging_handlers import apply_log_handler, get_remote_handler
-
-import sys
-from data_gateway.reader import PacketReader
-from data_gateway.reader.configuration import Configuration
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -37,6 +29,8 @@ def gateway_cli(logger_uri, log_level):
     """AeroSense Gateway CLI. Run the on-nacelle gateway service to read data from the bluetooth receivers and send it
     to AeroSense Cloud.
     """
+    from octue.logging_handlers import apply_log_handler, get_remote_handler
+
     if logger_uri:
         handler = get_remote_handler(logger_uri=logger_uri, log_level=log_level)
     else:
@@ -104,6 +98,14 @@ def start(
     config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name, stop_when_no_more_data
 ):
     """Start the gateway service (daemonise this for a deployment)."""
+    import json
+    import threading
+    import serial
+
+    import sys
+    from data_gateway.reader import PacketReader
+    from data_gateway.reader.configuration import Configuration
+
     if os.path.exists(config_file):
         with open(config_file) as f:
             config = Configuration.from_dict(json.load(f))
@@ -196,8 +198,3 @@ command=gateway start --config-file {os.path.abspath(config_file)}"""
 
     print(supervisord_conf_str)
     return 0
-
-
-if __name__ == "__main__":
-    args = sys.argv[1:] if len(sys.argv) > 1 else []
-    gateway_cli(args)
