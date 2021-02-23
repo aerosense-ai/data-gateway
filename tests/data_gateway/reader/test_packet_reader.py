@@ -247,3 +247,30 @@ class TestPacketReader(unittest.TestCase):
             self._check_data_is_written_to_files(temporary_directory, sensor_names=["Analog"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Analog"], number_of_batches_to_check=1)
+
+    def test_all_sensors_together(self):
+        """Test that the packet reader works with all sensors together."""
+        serial_port = DummySerial(port="test")
+        sensor_types = bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([80])
+        sensor_names = "Baros", "Mics", "Acc", "Gyro", "Mag", "Analog"
+
+        for sensor_type in sensor_types:
+            serial_port.write(data=b"".join((self.PACKET_KEY, sensor_type, self.LENGTH, self.RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((self.PACKET_KEY, sensor_type, self.LENGTH, self.RANDOM_BYTES[1])))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=True,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
+            )
+            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=sensor_names)
+
+        self._check_batches_are_uploaded_to_cloud(
+            packet_reader, sensor_names=sensor_names, number_of_batches_to_check=1
+        )
