@@ -6,9 +6,7 @@ import unittest
 from unittest import mock
 import google.api_core.exceptions
 from gcloud_storage_emulator.server import create_server
-from google.cloud import storage
 from google.cloud.storage.blob import Blob
-from octue.utils.cloud.credentials import GCPCredentialsManager
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from data_gateway.persistence import (
@@ -34,16 +32,13 @@ class TestCalculateDiskUsage(unittest.TestCase):
     def test_calculate_disk_usage_with_single_file(self):
         """Test that the disk usage of a single file is calculated correctly."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-
             dummy_file_path = os.path.join(temporary_directory, "dummy_file")
             _create_file_of_size(dummy_file_path, 1)
-
             self.assertEqual(calculate_disk_usage(dummy_file_path), 1)
 
     def test_with_filter_satisfied(self):
         """Test that files meeting a filter are included in the calculated size."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-
             dummy_file_path = os.path.join(temporary_directory, "dummy_file")
             _create_file_of_size(dummy_file_path, 1)
 
@@ -55,7 +50,6 @@ class TestCalculateDiskUsage(unittest.TestCase):
     def test_with_filter_unsatisfied(self):
         """Test that files not meeting a filter are not included in the calculated size."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-
             dummy_file_path = os.path.join(temporary_directory, "dummy_file")
             _create_file_of_size(dummy_file_path, 1)
 
@@ -82,8 +76,8 @@ class TestCalculateDiskUsage(unittest.TestCase):
                 directory_path = os.path.join(temporary_directory, f"directory_{i}")
                 os.mkdir(directory_path)
 
-                for i in range(5):
-                    file_path = os.path.join(directory_path, f"dummy_file_{i}")
+                for j in range(5):
+                    file_path = os.path.join(directory_path, f"dummy_file_{j}")
                     _create_file_of_size(file_path, 1)
 
             self.assertEqual(calculate_disk_usage(temporary_directory), 25)
@@ -101,8 +95,8 @@ class TestCalculateDiskUsage(unittest.TestCase):
                 adjacent_file_path = os.path.join(temporary_directory, f"adjacent_dummy_file_{i}")
                 _create_file_of_size(adjacent_file_path, 2)
 
-                for i in range(5):
-                    file_path = os.path.join(directory_path, f"dummy_file_{i}")
+                for j in range(5):
+                    file_path = os.path.join(directory_path, f"dummy_file_{j}")
                     _create_file_of_size(file_path, 1)
 
             self.assertEqual(calculate_disk_usage(temporary_directory), 35)
@@ -114,8 +108,7 @@ class TestGetOldestFileInDirectory(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
 
             for i in range(5):
-                path = os.path.join(temporary_directory, f"file_{i}")
-                _create_file_of_size(path, 1)
+                _create_file_of_size(path=os.path.join(temporary_directory, f"file_{i}"), size=1)
 
             self.assertEqual(
                 get_oldest_file_in_directory(temporary_directory), os.path.join(temporary_directory, "file_0")
@@ -152,7 +145,7 @@ class TestGetOldestFileInDirectory(unittest.TestCase):
 
 class TestBatchingWriter(unittest.TestCase):
     def test_data_is_batched(self):
-        """Test that data is added to the correct stream as expected."""
+        """Test that data is batched as expected."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
@@ -164,7 +157,7 @@ class TestBatchingWriter(unittest.TestCase):
         self.assertEqual(writer.current_batch["test"], ["blah,"])
 
     def test_data_is_written_to_disk_in_batches(self):
-        """Test that data is written to disk in batches of whatever units it is added to the stream in."""
+        """Test that data is written to disk in batches of whatever units it is added in."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
@@ -176,23 +169,20 @@ class TestBatchingWriter(unittest.TestCase):
                 writer.add_to_current_batch(sensor_name="test", data="ping,")
                 writer.add_to_current_batch(sensor_name="test", data="pong,\n")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(0.01)
+                time.sleep(writer.batch_interval)
 
                 writer.add_to_current_batch(sensor_name="test", data="ding,")
-                self.assertEqual(len(writer.current_batch["test"]), 1)
-
                 writer.add_to_current_batch(sensor_name="test", data="dong,\n")
-                time.sleep(0.01)
+                self.assertEqual(len(writer.current_batch["test"]), 2)
+                time.sleep(writer.batch_interval)
 
             self.assertEqual(len(writer.current_batch["test"]), 0)
 
             with open(os.path.join(temporary_directory, "batch-0.json")) as f:
-                data = json.load(f)
-                self.assertEqual(data, {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
 
             with open(os.path.join(temporary_directory, "batch-1.json")) as f:
-                data = json.load(f)
-                self.assertEqual(data, {"test": "ding,dong,\n"})
+                self.assertEqual(json.load(f), {"test": "ding,dong,\n"})
 
     def test_oldest_batch_is_deleted_when_storage_limit_reached(self):
         """Check that (only) the oldest batch is deleted when the storage limit is reached."""
@@ -205,39 +195,37 @@ class TestBatchingWriter(unittest.TestCase):
                 writer.add_to_current_batch(sensor_name="test", data="ping,")
 
             first_batch_path = os.path.join(temporary_directory, "batch-0.json")
-            with open(first_batch_path) as f:
-                self.assertEqual(json.load(f), {"test": "ping,"})
+
+            # Check first file is written to disk.
+            self.assertTrue(os.path.exists(first_batch_path))
 
             with writer:
                 writer.add_to_current_batch(sensor_name="test", data="pong,\n")
 
-            # Check first (oldest) file has been deleted.
+            # Check first (oldest) file has now been deleted.
             self.assertFalse(os.path.exists(first_batch_path))
 
-            # Check the other file has not been deleted.
-            with open(os.path.join(temporary_directory, "batch-1.json")) as f:
-                self.assertEqual(json.load(f), {"test": "pong,\n"})
+            # Check the second file has not been deleted.
+            self.assertTrue(os.path.exists(os.path.join(temporary_directory, "batch-1.json")))
 
 
 class TestBatchingUploader(unittest.TestCase):
 
     TEST_PROJECT_NAME = os.environ["TEST_PROJECT_NAME"]
     TEST_BUCKET_NAME = os.environ["TEST_BUCKET_NAME"]
-    storage_emulator = create_server("localhost", 9090, in_memory=True)
+    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=TEST_BUCKET_NAME)
+    storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     @classmethod
     def setUpClass(cls):
         cls.storage_emulator.start()
-        storage.Client(
-            project=cls.TEST_PROJECT_NAME, credentials=GCPCredentialsManager().get_credentials()
-        ).create_bucket(bucket_or_name=cls.TEST_BUCKET_NAME)
 
     @classmethod
     def tearDownClass(cls):
         cls.storage_emulator.stop()
 
     def test_data_is_batched(self):
-        """Test that data is added to the correct stream as expected."""
+        """Test that data is batched as expected."""
         uploader = BatchingUploader(
             sensor_names=["test"],
             project_name=self.TEST_PROJECT_NAME,
@@ -265,17 +253,20 @@ class TestBatchingUploader(unittest.TestCase):
             uploader.add_to_current_batch(sensor_name="test", data="ping,")
             uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
             self.assertEqual(len(uploader.current_batch["test"]), 2)
-            time.sleep(0.01)
+
+            time.sleep(uploader.batch_interval)
 
             uploader.add_to_current_batch(sensor_name="test", data="ding,")
             uploader.add_to_current_batch(sensor_name="test", data="dong,\n")
-            time.sleep(0.01)
+            self.assertEqual(len(uploader.current_batch["test"]), 2)
+
+            time.sleep(uploader.batch_interval)
 
         self.assertEqual(len(uploader.current_batch["test"]), 0)
 
         self.assertEqual(
             json.loads(
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{uploader.output_directory}/batch-0.json",
                 )
@@ -285,7 +276,7 @@ class TestBatchingUploader(unittest.TestCase):
 
         self.assertEqual(
             json.loads(
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{uploader.output_directory}/batch-1.json",
                 )
@@ -313,15 +304,14 @@ class TestBatchingUploader(unittest.TestCase):
 
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{uploader.output_directory}/batch-0.json",
                 )
 
             # Check that a backup file has been written.
             with open(os.path.join(temporary_directory, ".backup", "batch-0.json")) as f:
-                data = json.load(f)
-                self.assertEqual(data, {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
 
     def test_backup_files_are_uploaded_on_next_upload_attempt(self):
         """Test that backup files from a failed upload are uploaded on the next upload attempt."""
@@ -343,7 +333,7 @@ class TestBatchingUploader(unittest.TestCase):
 
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{uploader.output_directory}/batch-0.json",
                 )
@@ -352,19 +342,15 @@ class TestBatchingUploader(unittest.TestCase):
 
             # Check that a backup file has been written.
             with open(backup_path) as f:
-                data = json.load(f)
-                self.assertEqual(data, {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
 
             with uploader:
                 uploader.add_to_current_batch(sensor_name="test", data="ding,dong,\n")
 
-            # Check that the backup file has now been removed after it's been uploaded to cloud storage.
-            self.assertFalse(os.path.exists(backup_path))
-
         # Check that both batches are now in cloud storage.
         self.assertEqual(
             json.loads(
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{uploader.output_directory}/batch-0.json",
                 )
@@ -374,10 +360,13 @@ class TestBatchingUploader(unittest.TestCase):
 
         self.assertEqual(
             json.loads(
-                GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
+                self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
                     path_in_bucket=f"{uploader.output_directory}/batch-1.json",
                 )
             ),
             {"test": "ding,dong,\n"},
         )
+
+        # Check that the backup file has been removed now it's been uploaded to cloud storage.
+        self.assertFalse(os.path.exists(backup_path))
