@@ -30,6 +30,7 @@ def calculate_disk_usage(path, filter=None):
 
         if filter(path):
             return os.path.getsize(path)
+
         return 0
 
     return sum(calculate_disk_usage(item.path) for item in os.scandir(path))
@@ -124,6 +125,10 @@ class TimeBatcher:
         pass
 
     def _prepare_for_next_batch(self):
+        """Prepare the batcher for the next batch.
+
+        :return None:
+        """
         self._batch_number += 1
         self.ready_batch = {}
         self._start_time = time.perf_counter()
@@ -134,7 +139,7 @@ class TimeBatcher:
         :param bool backup:
         :return str:
         """
-        filename = f"batch-{self._batch_number}.json"
+        filename = f"{self._batch_prefix}-{self._batch_number}.json"
 
         if backup:
             return "/".join((self._backup_directory, filename))
@@ -162,7 +167,7 @@ class BatchingFileWriter(TimeBatcher):
         """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
         reached.
 
-        :param dict batch:
+        :param dict|None batch:
         :param bool backup:
         :return None:
         """
@@ -189,20 +194,21 @@ class BatchingFileWriter(TimeBatcher):
             directory_to_check = self.output_directory
 
         filter = lambda path: os.path.split(path)[-1].startswith("batch")  # noqa
+        storage_limit_in_mb = self.storage_limit / 1024 ** 2
 
         if calculate_disk_usage(self.output_directory, filter) >= self.storage_limit:
             oldest_batch = get_oldest_file_in_directory(directory_to_check, filter)
 
             logger.warning(
                 "Storage limit reached (%s MB) - deleting oldest batch (%r).",
-                self.storage_limit / 1024 ** 2,
+                storage_limit_in_mb,
                 oldest_batch,
             )
 
             os.remove(oldest_batch)
 
         elif calculate_disk_usage(self.output_directory, filter) >= 0.9 * self.storage_limit:
-            logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * self.storage_limit / 1024 ** 2)
+            logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * storage_limit_in_mb)
 
 
 class BatchingUploader(TimeBatcher):
@@ -217,9 +223,11 @@ class BatchingUploader(TimeBatcher):
         upload_backup_files=True,
     ):
         """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
-        to it to a GCP storage bucket at the given interval of time.
+        to it to a GCP storage bucket at the given interval of time. If upload fails for a batch, it will be written to
+        the backup directory. If the `upload_backup_files` flag is `True`, its upload will then be reattempted after the
+        upload of each subsequent batch.
 
-        :param iter(dict) sensor_names: a dictionary with "name" and "extension" entries
+        :param iter(str) sensor_names:
         :param str project_name:
         :param str bucket_name:
         :param float batch_interval: time interval with which to batch data (in seconds)
@@ -237,7 +245,7 @@ class BatchingUploader(TimeBatcher):
         super().__init__(sensor_names, batch_interval, output_directory)
 
     def _persist_batch(self):
-        """Upload serialised data to a path in the bucket. If the batch fails to upload, it is instead written to disk.
+        """Upload a batch to Google Cloud storage. If the batch fails to upload, it is instead written to disk.
 
         :return None:
         """
@@ -262,7 +270,10 @@ class BatchingUploader(TimeBatcher):
             self._attempt_to_upload_backup_files()
 
     def _attempt_to_upload_backup_files(self):
-        """Check for backup files and attempt to upload them to cloud storage again."""
+        """Check for backup files and attempt to upload them to cloud storage again.
+
+        :return None:
+        """
         if os.path.exists(self._backup_directory):
             backup_filenames = os.listdir(self._backup_directory)
 
