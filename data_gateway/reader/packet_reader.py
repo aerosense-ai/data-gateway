@@ -40,10 +40,10 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
 
-        sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
+        self.sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
 
         self.uploader = BatchingUploader(
-            sensor_names=sensor_names,
+            sensor_names=self.sensor_names,
             project_name=project_name,
             bucket_name=bucket_name,
             batch_interval=batch_interval,
@@ -51,7 +51,7 @@ class PacketReader:
         )
 
         self.writer = BatchingFileWriter(
-            sensor_names=sensor_names,
+            sensor_names=self.sensor_names,
             batch_interval=batch_interval,
             output_directory=output_directory,
         )
@@ -66,19 +66,16 @@ class PacketReader:
         """
         self._persist_configuration()
 
-        current_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
-        previous_ideal_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
+        current_timestamp = {}
+        previous_ideal_timestamp = {}
+        data = {}
 
-        data = {
-            "Mics": [([0] * self.config.samples_per_packet["Mics"]) for _ in range(self.config.n_meas_qty["Mics"])],
-            "Baros": [([0] * self.config.samples_per_packet["Baros"]) for _ in range(self.config.n_meas_qty["Baros"])],
-            "Acc": [([0] * self.config.samples_per_packet["Acc"]) for _ in range(self.config.n_meas_qty["Acc"])],
-            "Gyro": [([0] * self.config.samples_per_packet["Gyro"]) for _ in range(self.config.n_meas_qty["Gyro"])],
-            "Mag": [([0] * self.config.samples_per_packet["Mag"]) for _ in range(self.config.n_meas_qty["Mag"])],
-            "Analog": [
-                ([0] * self.config.samples_per_packet["Analog"]) for _ in range(self.config.n_meas_qty["Analog"])
-            ],
-        }
+        for sensor_name in self.sensor_names:
+            current_timestamp[sensor_name] = 0
+            previous_ideal_timestamp[sensor_name] = 0
+            data[sensor_name] = [
+                ([0] * self.config.samples_per_packet[sensor_name]) for _ in range(self.config.n_meas_qty[sensor_name])
+            ]
 
         with self.uploader:
             with self.writer:
@@ -110,7 +107,7 @@ class PacketReader:
                     )
 
     def update_handles(self, payload):
-        """Update the Bluetooh handles object.
+        """Update the Bluetooth handles object.
 
         :param iter payload:
         :return None:
@@ -263,7 +260,7 @@ class PacketReader:
     def _wait_until_set_is_complete(self, sensor_type, t, data, current_timestamp, prev_ideal_timestamp):
         """timestamp in 1/(2**16) s
 
-        :param int sensor_type:
+        :param str sensor_type:
         :param t:
         :param dict data:
         :param dict current_timestamp:
