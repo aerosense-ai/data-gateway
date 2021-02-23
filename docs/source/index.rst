@@ -40,5 +40,6 @@ outages.
    installation
    using_the_gateway
    deployment
+   cloud_function
    api
    version_history
