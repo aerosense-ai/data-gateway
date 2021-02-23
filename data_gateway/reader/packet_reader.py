@@ -79,15 +79,16 @@ class PacketReader:
 
         with self.uploader:
             with self.writer:
-
                 while not self.stop:
-                    r = serial_port.read()
-                    if len(r) == 0:
+
+                    serial_data = serial_port.read()
+
+                    if len(serial_data) == 0:
                         if stop_when_no_more_data:
                             break
                         continue
 
-                    if r[0] != self.config.packet_key:
+                    if serial_data[0] != self.config.packet_key:
                         continue
 
                     packet_type = int.from_bytes(serial_port.read(), self.config.endian)
