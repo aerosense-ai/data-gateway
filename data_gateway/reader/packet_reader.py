@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
@@ -162,7 +161,7 @@ class PacketReader:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
-            GoogleCloudStorageClient(project_name=self.uploader.project_name).upload_from_string(
+            self.uploader.client.upload_from_string(
                 serialised_data=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
                 path_in_bucket=relative_path,
@@ -271,8 +270,8 @@ class PacketReader:
         if sensor_type in {"Mics", "Baros", "Analog"}:
             # For those measurement types, the samples are inherently synchronized to the CPU time already. The
             # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
-            # only to check if a packet has been dropped Also, for mics and baros, there exist packet sets: Several
-            # packets arrive with the same timestamp
+            # only to check if a packet has been dropped. Also, for mics and baros, there exist packet sets: Several
+            # packets arrive with the same timestamp.
             if t != current_timestamp[sensor_type] and current_timestamp[sensor_type] != 0:
 
                 ideal_new_timestamp = prev_ideal_timestamp[sensor_type] + self.config.samples_per_packet[
