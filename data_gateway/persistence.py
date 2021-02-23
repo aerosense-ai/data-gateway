@@ -163,6 +163,9 @@ class BatchingFileWriter(TimeBatcher):
         self.storage_limit = storage_limit
         super().__init__(sensor_names, batch_interval, output_directory)
 
+        if not os.path.exists(self.output_directory):
+            os.makedirs(self.output_directory)
+
     def _persist_batch(self, batch=None, backup=False):
         """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
         reached.
@@ -173,10 +176,6 @@ class BatchingFileWriter(TimeBatcher):
         """
         self._manage_storage(backup=backup)
         batch_path = os.path.abspath(os.path.join(".", self._generate_batch_path(backup=backup)))
-        batch_directory = os.path.split(batch_path)[0]
-
-        if not os.path.exists(batch_directory):
-            os.makedirs(batch_directory)
 
         with open(batch_path, "w") as f:
             json.dump(batch or self.ready_batch, f)
@@ -244,6 +243,9 @@ class BatchingUploader(TimeBatcher):
         self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, output_directory)
         super().__init__(sensor_names, batch_interval, output_directory)
 
+        if not os.path.exists(self._backup_directory):
+            os.makedirs(self._backup_directory)
+
     def _persist_batch(self):
         """Upload a batch to Google Cloud storage. If the batch fails to upload, it is instead written to disk.
 
@@ -274,29 +276,28 @@ class BatchingUploader(TimeBatcher):
 
         :return None:
         """
-        if os.path.exists(self._backup_directory):
-            backup_filenames = os.listdir(self._backup_directory)
+        backup_filenames = os.listdir(self._backup_directory)
 
-            if not backup_filenames:
+        if not backup_filenames:
+            return
+
+        for filename in backup_filenames:
+
+            if not filename.startswith(self._batch_prefix):
+                continue
+
+            local_path = os.path.join(self._backup_directory, filename)
+            path_in_bucket = "/".join((self.output_directory, filename))
+
+            try:
+                self.client.upload_file(
+                    local_path=local_path,
+                    bucket_name=self.bucket_name,
+                    path_in_bucket=path_in_bucket,
+                    timeout=self.upload_timeout,
+                )
+
+            except Exception:
                 return
 
-            for filename in backup_filenames:
-
-                if not filename.startswith(self._batch_prefix):
-                    continue
-
-                local_path = os.path.join(self._backup_directory, filename)
-                path_in_bucket = "/".join((self.output_directory, filename))
-
-                try:
-                    self.client.upload_file(
-                        local_path=local_path,
-                        bucket_name=self.bucket_name,
-                        path_in_bucket=path_in_bucket,
-                        timeout=self.upload_timeout,
-                    )
-
-                except Exception:
-                    return
-
-                os.remove(local_path)
+            os.remove(local_path)
