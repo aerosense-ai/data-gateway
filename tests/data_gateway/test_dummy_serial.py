@@ -1,4 +1,3 @@
-import logging.handlers
 import random
 import unittest
 from serial.serialutil import SerialException
@@ -7,17 +6,6 @@ from dummy_serial import DummySerial, constants, exceptions, random_bytes, rando
 
 
 class DummySerialTest(unittest.TestCase):
-    """Tests for DummySerial."""
-
-    _logger = logging.getLogger(__name__)
-    if not _logger.handlers:
-        _logger.setLevel(constants.LOG_LEVEL)
-        _console_handler = logging.StreamHandler()
-        _console_handler.setLevel(constants.LOG_LEVEL)
-        _console_handler.setFormatter(constants.LOG_FORMAT)
-        _logger.addHandler(_console_handler)
-        _logger.propagate = False
-
     def setUp(self):
         """
         Sets up test environment:
@@ -27,7 +15,6 @@ class DummySerialTest(unittest.TestCase):
         """
         self.random_serial_port = random_string()
         self.random_baudrate = random_string(5, constants.NUMBERS)
-        self._logger.debug("random_serial_port=%s random_baudrate=%s", self.random_serial_port, self.random_baudrate)
 
     def test_write_closed_port(self):
         """Tests writing-to a closed DummySerial port."""
@@ -162,7 +149,6 @@ class DummySerialTest(unittest.TestCase):
         ds.write(rand_write_bytes)
 
         result = ds.read(rand_write_len + 2)
-        self._logger.info(result)
         self.assertEqual(len(result), rand_write_len)
 
     def test_partial_read(self):
