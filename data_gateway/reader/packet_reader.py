@@ -22,6 +22,17 @@ class PacketReader:
         bucket_name=None,
         configuration=None,
     ):
+        """A serial port packet reader.
+
+        :param bool save_locally:
+        :param bool upload_to_cloud:
+        :param str output_directory:
+        :param float batch_interval:
+        :param str project_name:
+        :param str bucket_name:
+        :param data_gateway.reader.configuration.Configuration configuration:
+        :return None:
+        """
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.output_directory = output_directory
@@ -46,6 +57,13 @@ class PacketReader:
         )
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):
+        """Read and process packets from a serial port, uploading them to Google Cloud storage and/or writing them to
+        disk.
+
+        :param serial.Serial serial_port:
+        :param bool stop_when_no_more_data:
+        :return None:
+        """
         self._persist_configuration()
 
         current_timestamp = {"Mics": 0, "Baros": 0, "Acc": 0, "Gyro": 0, "Mag": 0, "Analog": 0}
@@ -92,6 +110,11 @@ class PacketReader:
                     )
 
     def update_handles(self, payload):
+        """Update the Bluetooh handles object.
+
+        :param iter payload:
+        :return None:
+        """
         start_handle = int.from_bytes(payload[0:1], self.config.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.endian)
 
@@ -148,6 +171,15 @@ class PacketReader:
             )
 
     def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
+        """Parse a packet from a sensor.
+
+        :param int sensor_type:
+        :param iter payload:
+        :param dict data:
+        :param dict current_timestamp:
+        :param dict previous_ideal_timestamp:
+        :return None:
+        """
         if sensor_type not in self.handles:
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
@@ -231,9 +263,12 @@ class PacketReader:
     def _wait_until_set_is_complete(self, sensor_type, t, data, current_timestamp, prev_ideal_timestamp):
         """timestamp in 1/(2**16) s
 
-        :param sensor_type:
+        :param int sensor_type:
         :param t:
-        :return:
+        :param dict data:
+        :param dict current_timestamp:
+        :param dict prev_ideal_timestamp:
+        :return None:
         """
         if sensor_type in {"Mics", "Baros", "Analog"}:
             # For those measurement types, the samples are inherently synchronized to the CPU time already. The
