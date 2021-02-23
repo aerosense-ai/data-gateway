@@ -31,6 +31,44 @@ You can see help about this command by executing:
    gateway start -h
 
 
+Automatic (non-interactive) mode
+--------------------------------
+Running the gateway in automatic (non-interactive) mode doesn't allow further commands to be passed to the serial port.
+Data from the serial port is processed, batched, and uploaded to an ingress Google Cloud storage bucket where it is
+cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in production.
+
+Before starting this mode, this environment variable must be defined to allow a cloud connection:
+``GCP_SERVICE_ACCOUNT=/absolute/path/to/service/account/file.json``
+
+To start this mode, type:
+
+.. code-block::
+
+    gateway start \
+        --gcp-project-name=<name-of-google-cloud-project> \
+        --gcp-bucket-name=<name-of-google-cloud-bucket> \
+        --output-dir=<path/to/output-directory-in-cloud-bucket> \
+
+
+Interactive (manual) mode
+-------------------------
+Running the gateway in interactive (manual) mode allows commands to be sent to the serial port while the gateway is
+running. Typing ``stop`` will stop the session. Commands are logged to a ``commands.txt`` file in the output directory.
+Data from the serial port is not uploaded to Google Cloud but instead written to the given output directory
+(``./data_gateway`` by default) in the same format as in automatic mode.
+
+To start this mode, type:
+
+.. code-block::
+
+    gateway start --interactive --output-dir=<path/to/output-directory>
+
+
+Other options
+-------------
+* The batch interval (default 600 seconds) can be set by using ``--batch-interval=<number_of_seconds>`` after the `start` command
+
+
 .. _configuring:
 
 Configuring the Gateway
