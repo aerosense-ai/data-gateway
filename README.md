@@ -50,8 +50,8 @@ Commands:
 ```
 
 ### Testing
-These environment variables are needed to run the tests:
-* `GCP_SERVICE_ACCOUNT=/path/to/service/account/file.json`
+These environment variables need to be set to run the tests:
+* `GCP_SERVICE_ACCOUNT=/absolute/path/to/service/account/file.json`
 * `STORAGE_EMULATOR_HOST=http://localhost:9090`
 
 Then, from the repository root, run
