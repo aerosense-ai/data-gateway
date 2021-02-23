@@ -10,7 +10,22 @@ API
 Gateway
 =======
 
-.. automodule:: gateway.gateway
+.. automodule:: data_gateway.reader.packet_reader
+    :members:
+
+.. automodule:: data_gateway.reader.configuration
+    :members:
+
+.. automodule:: data_gateway.persistence
+    :members:
+
+
+Cloud function
+==============
+
+.. _api_cloud_function:
+
+.. automodule:: cloud_function.main
     :members:
 
 
@@ -19,7 +34,7 @@ Gateway
 Exceptions
 ==========
 
-.. automodule:: gateway.exceptions
+.. automodule:: data_gateway.exceptions
     :members:
 
 
