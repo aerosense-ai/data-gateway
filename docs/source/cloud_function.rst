@@ -18,3 +18,13 @@ a new version is ready, it can be deployed to the cloud as follows:
 
 The function used as the cloud function is ``cloud_function.main.clean_and_upload_batch`` and it must accept ``event``
 and ``context`` arguments in that order.
+
+
+Dependencies
+============
+Dependencies for the cloud function must be detailed in the ``requirements.txt`` file in the ``cloud_function`` package.
+
+
+More information
+================
+More information can be found at https://cloud.google.com/functions/docs/writing
