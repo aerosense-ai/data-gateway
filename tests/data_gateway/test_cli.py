@@ -11,6 +11,14 @@ from dummy_serial.dummy_serial import DummySerial
 class TestCLI(TestCase):
     storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=os.environ["TEST_BUCKET_NAME"])
 
+    @classmethod
+    def setUpClass(cls):
+        cls.storage_emulator.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.storage_emulator.stop()
+
     def test_version(self):
         """Ensure the version command works in the CLI."""
         result = CliRunner().invoke(gateway_cli, ["--version"])
@@ -19,7 +27,7 @@ class TestCLI(TestCase):
     def test_help(self):
         """Ensure the help commands works in the CLI."""
         help_result = CliRunner().invoke(gateway_cli, ["--help"])
-        assert help_result.output.startswith("Usage")
+        assert "Usage" in help_result.output
 
         h_result = CliRunner().invoke(gateway_cli, ["-h"])
         assert help_result.output == h_result.output
@@ -28,8 +36,6 @@ class TestCLI(TestCase):
         """Ensure the gateway can be started via the CLI. The "stop-when-no-more-data" option is enabled so the test
         doesn't run forever.
         """
-        self.storage_emulator.start()
-
         with tempfile.TemporaryDirectory() as temporary_directory:
             with mock.patch("serial.Serial", new=DummySerial):
                 result = CliRunner().invoke(
@@ -41,10 +47,27 @@ class TestCLI(TestCase):
                     f"--stop-when-no-more-data",
                 )
 
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
 
-        self.storage_emulator.stop()
+    def test_start_with_default_output_directory(self):
+        """Ensure the gateway can be started via the CLI with a default output directory. The "stop-when-no-more-data"
+        option is enabled so the test doesn't run forever.
+        """
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            os.chdir(temporary_directory)
+
+            with mock.patch("serial.Serial", new=DummySerial):
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    f"start "
+                    f"--gcp-project-name={os.environ['TEST_PROJECT_NAME']} "
+                    f"--gcp-bucket-name={os.environ['TEST_BUCKET_NAME']} "
+                    f"--stop-when-no-more-data",
+                )
+
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
 
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded."""
