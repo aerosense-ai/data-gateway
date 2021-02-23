@@ -50,8 +50,6 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
 
     logger.info("Cleaned and uploaded batch %r to bucket %r.", batch_path, destination_bucket_name)
 
-    client.delete(bucket_name=event["bucket"], path_in_bucket=batch_path)
-
 
 def get_batch(storage_client, event):
     """Get the batch from Google Cloud storage.

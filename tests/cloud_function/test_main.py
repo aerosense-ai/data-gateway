@@ -2,7 +2,6 @@ import json
 import os
 import unittest
 from unittest import mock
-import google.api_core.exceptions
 from gcloud_storage_emulator.server import create_server
 from google.cloud import storage
 from octue.utils.cloud.credentials import GCPCredentialsManager
@@ -83,10 +82,3 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             )["name"],
             cleaned_batch_name,
         )
-
-        # Check that uncleaned batch is deleted.
-        with self.assertRaises(google.api_core.exceptions.NotFound):
-            GoogleCloudStorageClient(project_name=self.TEST_PROJECT_NAME).download_as_string(
-                bucket_name=self.TEST_BUCKET_NAME,
-                path_in_bucket=event["name"],
-            )
