@@ -4,15 +4,6 @@
 Using the Gateway
 =================
 
-.. _configuring:
-
-Configuring the Gateway
-=======================
-
-Configuration options for the gateway can be supplied via a configuration file. By default, **data-gateway** looks for
-a file named ``config.json`` in the working directory, although the CLI allows this to be overriden, to use a specific
-configuration file.
-
 .. _gateway_cli:
 
 Gateway CLI
@@ -21,17 +12,104 @@ Gateway CLI
 The gateway has a CLI which means you can call it just like any other unix command.
 
 It is called simply ``gateway`` and, once :ref:`installed <installation>`, you can see the options and
-help docs by typing:
+help by typing:
 
 .. code-block::
 
-   gateway --help
+   gateway -h
 
 The main command to start the gateway running is:
 
 .. code-block::
 
    gateway start
+
+You can see help about this command by executing:
+
+.. code-block::
+
+   gateway start -h
+
+
+.. _configuring:
+
+Configuring the Gateway
+=======================
+
+Configuration options for the gateway can be supplied via a configuration file. By default, **data-gateway** looks for
+a file named ``config.json`` in the working directory, although the CLI allows this to be overridden, to use a specific
+configuration file. Here is the contents of an example file:
+
+.. code-block::
+
+    {
+        "acc_freq": 100,
+        "acc_range": 16,
+        "analog_freq": 16384,
+        "analog_samples_per_packet": 60,
+        "baros_bm": 1023,
+        "baros_freq": 100,
+        "baros_group_size": 4,
+        "baros_packet_size": 60,
+        "baros_samples_per_packet": 15,
+        "baudrate": 2300000,
+        "default_handles": {
+            "34": "Baro group 0",
+            "36": "Baro group 1",
+            "38": "Baro group 2",
+            "40": "Baro group 3",
+            "42": "Baro group 4",
+            "44": "Baro group 5",
+            "46": "Baro group 6",
+            "48": "Baro group 7",
+            "50": "Baro group 8",
+            "52": "Baro group 9",
+            "54": "Mic 0",
+            "56": "Mic 1",
+            "58": "Mic 2",
+            "60": "Mic 3",
+            "62": "Mic 4",
+            "64": "Mic 5",
+            "66": "Mic 6",
+            "68": "Mic 7",
+            "70": "Mic 8",
+            "72": "Mic 9",
+            "74": "IMU Accel",
+            "76": "IMU Gyro",
+            "78": "IMU Magnetometer",
+            "80": "Analog"
+        },
+        "endian": "little",
+        "gyro_freq": 100,
+        "gyro_range": 2000,
+        "imu_samples_per_packet": 40,
+        "max_period_drift": 0.02,
+        "max_timestamp_slack": 0.005,
+        "mics_bm": 1023,
+        "mics_freq": 5000,
+        "mics_samples_per_packet": 120,
+        "packet_key": 254,
+        "serial_buffer_rx_size": 100000,
+        "serial_buffer_tx_size": 1280,
+        "serial_port": "COM9",
+        "type_handle_def": 255,
+        "n_meas_qty": {"Mics": 10, "Baros": 40, "Acc": 3, "Gyro": 3, "Mag": 3, "Analog": 2},
+        "period": {"Mics": 0.0002, "Baros": 0.01, "Acc": 0.01, "Gyro": 0.01, "Mag": 0.08, "Analog": 6.103515625e-05},
+        "samples_per_packet": {"Mics": 120, "Baros": 15, "Acc": 40, "Gyro": 40, "Mag": 40, "Analog": 60},
+        "user_data": {}
+    }
+
+A default configuration (see ``data_gateway.reader.configuration`` is used if a ``config.json`` file is not specified
+and one is not found in the working directory. If a configuration file is specified, all of the fields seen above must
+be present for it to be valid. Any extra metadata you'd like to include can be specified in the ``user_data`` field as
+a JSON object.
+
+One configuration is used per run of the ``start`` command and is a copy is saved with the output data. To supply the
+configuration file and start the gateway, type the following, supplying any other options you need:
+
+.. code-block::
+
+    gateway start --config-file=</path/to/config.json>
 
 
 .. _daemonising_the_installation:
