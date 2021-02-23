@@ -144,7 +144,6 @@ class TestPacketReader(unittest.TestCase):
             self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros"], number_of_batches_to_check=1)
-        pass
 
     def test_packet_reader_with_mic_sensor(self):
         """Test that the packet reader works with the mic sensor."""
