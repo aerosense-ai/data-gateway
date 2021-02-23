@@ -12,11 +12,14 @@ DATAFILES_DIRECTORY = "datafiles"
 
 
 def clean_and_upload_batch(event, context, cleaned_batch_name=None):
-    """Triggered by a change to a Cloud Storage bucket.
+    """Clean a batch from the data-gateway when one is uploaded to the Google Cloud Storage bucket that this
+    cloud function is set up to trigger for. The cleaned batch is then uploaded to another Google Cloud storage bucket
+    along with an associated Octue Datafile.
 
     :param dict event:
     :param google.cloud.functions.Context context: metadata for the event
-    :return None
+    :param str cleaned_batch_name:
+    :return None:
     """
     destination_project_name = os.environ["DESTINATION_PROJECT_NAME"]
     destination_bucket_name = os.environ["DESTINATION_BUCKET"]
@@ -36,7 +39,7 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
         project_name=destination_project_name,
         bucket_name=destination_bucket_name,
         path_in_bucket=cleaned_batch_path,
-        sequence=int(cleaned_batch_path.split(".")[0].split("-")[-1]),
+        sequence=int(os.path.splitext(cleaned_batch_path)[0].split("-")[-1]),
     )
 
     client.upload_from_string(
@@ -45,7 +48,7 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
         path_in_bucket=os.path.join(os.path.split(batch_path)[0], DATAFILES_DIRECTORY, cleaned_batch_name),
     )
 
-    logger.info("Cleaned and uploaded cleaned batch %r to bucket %r.", batch_path, destination_bucket_name)
+    logger.info("Cleaned and uploaded batch %r to bucket %r.", batch_path, destination_bucket_name)
 
     client.delete(bucket_name=event["bucket"], path_in_bucket=batch_path)
 
