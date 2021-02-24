@@ -38,7 +38,7 @@ Data from the serial port is processed, batched, and uploaded to an ingress Goog
 cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in production.
 
 Before starting this mode, this environment variable must be defined to allow a cloud connection:
-``GCP_SERVICE_ACCOUNT=/absolute/path/to/service/account/file.json``
+``GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json``
 
 To start this mode, type:
 
