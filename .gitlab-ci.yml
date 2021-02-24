@@ -4,6 +4,7 @@ default:
 build_and_test:
   variables:
     STORAGE_EMULATOR_HOST: "http://localhost:9090"
+    GOOGLE_APPLICATION_CREDENTIALS: "$GCP_SERVICE_ACCOUNT"
   script:
     - pip install -r requirements-dev.txt
     - python -m unittest
