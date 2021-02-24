@@ -109,6 +109,7 @@ class TestGetOldestFileInDirectory(unittest.TestCase):
 
             for i in range(5):
                 _create_file_of_size(path=os.path.join(temporary_directory, f"file_{i}"), size=1)
+                time.sleep(0.01)
 
             self.assertEqual(
                 get_oldest_file_in_directory(temporary_directory), os.path.join(temporary_directory, "file_0")
