@@ -6,4 +6,4 @@ build_and_test:
     STORAGE_EMULATOR_HOST: "http://localhost:9090"
   script:
     - pip install -r requirements-dev.txt
-    - python -m unittest
+    - coverage run -m unittest

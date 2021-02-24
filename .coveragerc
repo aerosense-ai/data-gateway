@@ -7,5 +7,6 @@ source =
 [run]
 omit =
     env/*
+    venv/*
     tests/*
     */tests/*
