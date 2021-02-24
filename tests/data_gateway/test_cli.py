@@ -2,7 +2,7 @@ import os
 import tempfile
 from unittest import TestCase, mock
 from click.testing import CliRunner
-from gcloud_storage_emulator.server import create_server
+from gcp_storage_emulator.server import create_server
 
 from data_gateway.cli import gateway_cli
 from dummy_serial.dummy_serial import DummySerial

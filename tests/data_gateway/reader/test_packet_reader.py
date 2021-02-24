@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 import unittest
-from gcloud_storage_emulator.server import create_server
+from gcp_storage_emulator.server import create_server
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from data_gateway.reader.configuration import Configuration

@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 from unittest import mock
-from gcloud_storage_emulator.server import create_server
+from gcp_storage_emulator.server import create_server
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
 from cloud_function import main

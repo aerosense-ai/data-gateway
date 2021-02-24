@@ -5,7 +5,7 @@ import time
 import unittest
 from unittest import mock
 import google.api_core.exceptions
-from gcloud_storage_emulator.server import create_server
+from gcp_storage_emulator.server import create_server
 from google.cloud.storage.blob import Blob
 from octue.utils.cloud.persistence import GoogleCloudStorageClient
 
