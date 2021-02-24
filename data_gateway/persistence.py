@@ -46,8 +46,11 @@ def get_oldest_file_in_directory(path, filter=None):
     """
     if filter is None:
         contents = [item for item in os.scandir(path) if item.is_file()]
+        print(contents)
     else:
         contents = [item for item in os.scandir(path) if item.is_file() and filter(item.path)]
+
+    print(sorted([(item.path, os.path.getmtime(path)) for item in contents], key=lambda item: item[1]))
 
     try:
         return min(contents, key=os.path.getmtime).path
