@@ -7,3 +7,5 @@ build_and_test:
   script:
     - pip install -r requirements-dev.txt
     - coverage run -m unittest
+    - coverage report
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
