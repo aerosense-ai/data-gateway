@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest import mock
 from gcp_storage_emulator.server import create_server
-from octue.utils.cloud.persistence import GoogleCloudStorageClient
+from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
 

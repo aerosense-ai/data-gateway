@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import time
-from octue.utils.cloud.persistence import GoogleCloudStorageClient
+from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 import abc
 

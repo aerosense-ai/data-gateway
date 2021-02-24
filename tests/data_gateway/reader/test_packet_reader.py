@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 from gcp_storage_emulator.server import create_server
-from octue.utils.cloud.persistence import GoogleCloudStorageClient
+from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.reader.configuration import Configuration
 from data_gateway.reader.packet_reader import PacketReader

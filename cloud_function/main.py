@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from octue.resources import Datafile
-from octue.utils.cloud.persistence import GoogleCloudStorageClient
+from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 
 logger = logging.getLogger(__name__)
@@ -33,13 +33,13 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
         serialised_data=json.dumps(cleaned_batch),
         bucket_name=destination_bucket_name,
         path_in_bucket=cleaned_batch_path,
+        metadata={"sequence": int(os.path.splitext(cleaned_batch_path)[0].split("-")[-1])},
     )
 
     datafile = Datafile.from_google_cloud_storage(
         project_name=destination_project_name,
         bucket_name=destination_bucket_name,
         path_in_bucket=cleaned_batch_path,
-        sequence=int(os.path.splitext(cleaned_batch_path)[0].split("-")[-1]),
     )
 
     client.upload_from_string(
@@ -54,7 +54,7 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
 def get_batch(storage_client, event):
     """Get the batch from Google Cloud storage.
 
-    :param octue.utils.cloud.persistence.GoogleCloudStorageClient storage_client:
+    :param octue.utils.cloud.storage.client.GoogleCloudStorageClient storage_client:
     :param dict event:
     :return (dict, dict, str):
     """

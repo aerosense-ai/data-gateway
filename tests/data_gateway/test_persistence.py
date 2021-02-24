@@ -7,7 +7,7 @@ from unittest import mock
 import google.api_core.exceptions
 from gcp_storage_emulator.server import create_server
 from google.cloud.storage.blob import Blob
-from octue.utils.cloud.persistence import GoogleCloudStorageClient
+from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import (
     BatchingFileWriter,
