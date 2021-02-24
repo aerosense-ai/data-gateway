@@ -1,0 +1,12 @@
+default:
+  image: python:3.8.8
+
+build:
+  stage: build
+  script:
+    - pip install -r requirements-dev.txt
+
+test:
+  stage: test
+  script:
+    - python -m unittest
