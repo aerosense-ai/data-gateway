@@ -18,7 +18,7 @@ DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 class TimeBatcher:
     """A batcher that groups the data given to it into batches of the duration of the time interval.
 
-    :param iter(str) sensor_names:
+    :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str output_directory: directory to write batches to
     :return None:
@@ -43,8 +43,8 @@ class TimeBatcher:
     def add_to_current_batch(self, sensor_name, data):
         """Add serialised data (a string) to the current batch for the given sensor name.
 
-        :param str sensor_name:
-        :param str data:
+        :param str sensor_name: name of sensor
+        :param str data: data to add to batch
         :return None:
         """
         # Finalise the batch and persist it if enough time has elapsed.
@@ -96,7 +96,7 @@ class TimeBatcher:
     def _generate_batch_path(self, backup=False):
         """Generate the path that the batch should be persisted to.
 
-        :param bool backup:
+        :param bool backup: generate batch path for a backup
         :return str:
         """
         filename = f"{self._batch_prefix}-{self._batch_number}.json"
@@ -111,9 +111,9 @@ class BatchingFileWriter(TimeBatcher):
     """A file writer that batches the data given to it over time into batches of the duration of the given time
     interval, saving each batch to disk.
 
-    :param iter(str) sensor_names:
-    :param float batch_interval:
-    :param str output_directory:
+    :param iter(str) sensor_names: names of sensors to make batches for
+    :param float batch_interval: time interval with which to batch data (in seconds)
+    :param str output_directory: directory to write batches to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
     """
@@ -131,8 +131,8 @@ class BatchingFileWriter(TimeBatcher):
         """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
         reached.
 
-        :param dict|None batch:
-        :param bool backup:
+        :param dict|None batch: batch to persist
+        :param bool backup: persist batch to backup location
         :return None:
         """
         self._manage_storage(backup=backup)
@@ -145,7 +145,7 @@ class BatchingFileWriter(TimeBatcher):
         """Check if the output or backup directory has reached its storage limit and, if it has, delete the oldest
         batch.
 
-        :param bool backup:
+        :param bool backup: check the backup directory for disk usage
         :return None:
         """
         if backup:
@@ -176,13 +176,13 @@ class BatchingUploader(TimeBatcher):
     interval of time. If upload fails for a batch, it will be written to the backup directory. If the
     `upload_backup_files` flag is `True`, its upload will then be reattempted after the upload of each subsequent batch.
 
-    :param iter(str) sensor_names:
-    :param str project_name:
-    :param str bucket_name:
+    :param iter(str) sensor_names: names of sensors to make batches for
+    :param str project_name: name of Google Cloud project to upload to
+    :param str bucket_name: name of Google Cloud bucket to upload to
     :param float batch_interval: time interval with which to batch data (in seconds)
-    :param str output_directory:
-    :param float upload_timeout:
-    :param bool upload_backup_files:
+    :param str output_directory: directory to write batches to
+    :param float upload_timeout: time after which to give up trying to upload to the cloud
+    :param bool upload_backup_files: attempt to upload backed-up batches on next batch upload
     :return None:
     """
 

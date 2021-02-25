@@ -14,9 +14,9 @@ DATAFILES_DIRECTORY = "datafiles"
 def clean_and_upload_batch(event, context, cleaned_batch_name=None):
     """Clean a batch of data received from the gateway and upload to long-term storage.
 
-    :param dict event:
+    :param dict event: Google Cloud event
     :param google.cloud.functions.Context context: metadata for the event
-    :param str cleaned_batch_name:
+    :param str cleaned_batch_name: new name for cleaned batch file
     :return None:
     """
     batch, batch_metadata, batch_path = get_batch(event)
@@ -33,8 +33,8 @@ def clean_and_upload_batch(event, context, cleaned_batch_name=None):
 def get_batch(event):
     """Get the batch from Google Cloud storage.
 
-    :param octue.utils.cloud.storage.client.GoogleCloudStorageClient storage_client:
-    :param dict event:
+    :param octue.utils.cloud.storage.client.GoogleCloudStorageClient storage_client: client for accessing Google Cloud storage
+    :param dict event: Google Cloud event
     :return (dict, dict, str):
     """
     source_bucket_name = event["bucket"]
@@ -52,9 +52,9 @@ def get_batch(event):
 def clean(batch, batch_metadata, event):
     """Clean and return the given batch.
 
-    :param dict batch:
-    :param dict batch_metadata:
-    :param dict event:
+    :param dict batch: batch to clean
+    :param dict batch_metadata: metadata about batch
+    :param dict event: Google Cloud event
     :return dict:
     """
     batch["cleaned"] = True
@@ -63,7 +63,12 @@ def clean(batch, batch_metadata, event):
 
 
 def persist_batch(batch, batch_path):
-    """Persist the batch to the destination bucket in the destination project, along with an associated Datafile."""
+    """Persist the batch to the destination bucket in the destination project, along with an associated Datafile.
+
+    :param dict patch: batch to persist
+    :param str batch_path: path to persist batch to
+    :return None:
+    """
     destination_project_name = os.environ["DESTINATION_PROJECT_NAME"]
     destination_bucket_name = os.environ["DESTINATION_BUCKET"]
     destination_client = GoogleCloudStorageClient(project_name=destination_project_name, credentials=None)

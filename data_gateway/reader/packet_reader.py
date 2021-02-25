@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 class PacketReader:
     """A serial port packet reader.
 
-    :param bool save_locally:
-    :param bool upload_to_cloud:
-    :param str output_directory:
-    :param float batch_interval:
-    :param str project_name:
-    :param str bucket_name:
-    :param data_gateway.reader.configuration.Configuration configuration:
+    :param bool save_locally: save batches of data locally
+    :param bool upload_to_cloud: upload batches of data to Google cloud
+    :param str|None output_directory:
+    :param float batch_interval: the interval of time in seconds between batches
+    :param str|None project_name: name of Google Cloud project to upload to
+    :param str|None bucket_name: name of Google Cloud project to upload to
+    :param data_gateway.reader.configuration.Configuration|None configuration:
     :return None:
     """
 
@@ -60,8 +60,8 @@ class PacketReader:
         """Read and process packets from a serial port, uploading them to Google Cloud storage and/or writing them to
         disk.
 
-        :param serial.Serial serial_port:
-        :param bool stop_when_no_more_data:
+        :param serial.Serial serial_port: name of serial port to read from
+        :param bool stop_when_no_more_data: stop reading when no more data is received from the port (for testing)
         :return None:
         """
         self._persist_configuration()
@@ -341,8 +341,8 @@ class PacketReader:
     def _persist_data(self, data, sensor_type, timestamp, period):
         """Persist data to the required storage media.
 
-        :param dict data:
-        :param str sensor_type:
+        :param dict data: data to persist
+        :param str sensor_type: sensor type to persist data from
         :param timestamp: timestamp in s
         :param period:
         :return None:
@@ -363,8 +363,8 @@ class PacketReader:
         """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader
         batch).
 
-        :param str sensor_type:
-        :param str data:
+        :param str sensor_type: sensor type to persist data from
+        :param str data: data to persist
         :return None:
         """
         if self.save_locally:
