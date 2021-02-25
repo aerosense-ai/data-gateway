@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 )
 @click.version_option(version=pkg_resources.get_distribution("data_gateway").version)
 def gateway_cli(logger_uri, log_level):
-    """AeroSense Gateway CLI. Run the on-nacelle gateway service to read data from the bluetooth receivers and send it
+    """AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and send it
     to AeroSense Cloud.
     """
     from octue.logging_handlers import apply_log_handler, get_remote_handler
@@ -71,7 +71,7 @@ def gateway_cli(logger_uri, log_level):
     type=click.FLOAT,
     default=600,
     show_default=True,
-    help="The time interval in which to batch data into to be persisted locally or to the cloud.",
+    help="The time interval for which data is collected into a batch before being persisted locally or to the cloud.",
 )
 @click.option(
     "--gcp-project-name",
