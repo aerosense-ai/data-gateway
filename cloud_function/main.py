@@ -12,46 +12,25 @@ DATAFILES_DIRECTORY = "datafiles"
 
 
 def clean_and_upload_batch(event, context, cleaned_batch_name=None):
-    """Clean a batch from the data-gateway when one is uploaded to the Google Cloud Storage bucket that this
-    cloud function is set up to trigger for. The cleaned batch is then uploaded to another Google Cloud storage bucket
-    along with an associated Octue Datafile.
+    """Clean a batch of data received from the gateway and upload to long-term storage.
 
     :param dict event:
     :param google.cloud.functions.Context context: metadata for the event
     :param str cleaned_batch_name:
     :return None:
     """
-    destination_project_name = os.environ["DESTINATION_PROJECT_NAME"]
-    destination_bucket_name = os.environ["DESTINATION_BUCKET"]
-    client = GoogleCloudStorageClient(project_name=destination_project_name, credentials=None)
-
-    batch, batch_metadata, batch_path = get_batch(client, event)
+    batch, batch_metadata, batch_path = get_batch(event)
     cleaned_batch = clean(batch, batch_metadata, event)
-    cleaned_batch_path = os.path.join(os.path.split(batch_path)[0], cleaned_batch_name) or batch_path
 
-    client.upload_from_string(
-        serialised_data=json.dumps(cleaned_batch),
-        bucket_name=destination_bucket_name,
-        path_in_bucket=cleaned_batch_path,
-        metadata={"sequence": int(os.path.splitext(cleaned_batch_path)[0].split("-")[-1])},
-    )
+    if cleaned_batch_name:
+        cleaned_batch_path = os.path.join(os.path.split(batch_path)[0], cleaned_batch_name)
+    else:
+        cleaned_batch_path = batch_path
 
-    datafile = Datafile.from_google_cloud_storage(
-        project_name=destination_project_name,
-        bucket_name=destination_bucket_name,
-        path_in_bucket=cleaned_batch_path,
-    )
-
-    client.upload_from_string(
-        serialised_data=datafile.serialise(to_string=True),
-        bucket_name=destination_bucket_name,
-        path_in_bucket=os.path.join(os.path.split(batch_path)[0], DATAFILES_DIRECTORY, cleaned_batch_name),
-    )
-
-    logger.info("Cleaned and uploaded batch %r to bucket %r.", batch_path, destination_bucket_name)
+    persist_batch(cleaned_batch, cleaned_batch_path)
 
 
-def get_batch(storage_client, event):
+def get_batch(event):
     """Get the batch from Google Cloud storage.
 
     :param octue.utils.cloud.storage.client.GoogleCloudStorageClient storage_client:
@@ -60,11 +39,13 @@ def get_batch(storage_client, event):
     """
     source_bucket_name = event["bucket"]
     batch_path = event["name"]
+    source_client = GoogleCloudStorageClient(project_name=os.environ["GCP_PROJECT"], credentials=None)
 
-    batch = json.loads(storage_client.download_as_string(bucket_name=source_bucket_name, path_in_bucket=batch_path))
-    batch_metadata = storage_client.get_metadata(bucket_name=source_bucket_name, path_in_bucket=batch_path)
-    logger.debug("Received batch %r from bucket %r for cleaning.", batch_path, source_bucket_name)
+    batch = json.loads(source_client.download_as_string(bucket_name=source_bucket_name, path_in_bucket=batch_path))
+    logger.info("Downloaded batch %r from bucket %r.", batch_path, source_bucket_name)
 
+    batch_metadata = source_client.get_metadata(bucket_name=source_bucket_name, path_in_bucket=batch_path)
+    logger.info("Downloaded metadata for batch %r from bucket %r.", batch_path, source_bucket_name)
     return batch, batch_metadata, batch_path
 
 
@@ -77,4 +58,49 @@ def clean(batch, batch_metadata, event):
     :return dict:
     """
     batch["cleaned"] = True
+    logger.info("Cleaned batch.")
     return batch
+
+
+def persist_batch(batch, batch_path):
+    """Persist the batch to the destination bucket in the destination project, along with an associated Datafile."""
+    destination_project_name = os.environ["DESTINATION_PROJECT_NAME"]
+    destination_bucket_name = os.environ["DESTINATION_BUCKET"]
+    destination_client = GoogleCloudStorageClient(project_name=destination_project_name, credentials=None)
+
+    destination_client.upload_from_string(
+        serialised_data=json.dumps(batch),
+        bucket_name=destination_bucket_name,
+        path_in_bucket=batch_path,
+        metadata={"sequence": int(os.path.splitext(batch_path)[0].split("-")[-1])},
+    )
+
+    logger.info(
+        "Uploaded batch to %r in bucket %r of project %r.",
+        batch_path,
+        destination_bucket_name,
+        destination_project_name,
+    )
+
+    datafile = Datafile.from_google_cloud_storage(
+        project_name=destination_project_name,
+        bucket_name=destination_bucket_name,
+        path_in_bucket=batch_path,
+    )
+
+    path_from, name = os.path.split(batch_path)
+    datafile_path = os.path.join(path_from, DATAFILES_DIRECTORY, name)
+
+    destination_client.upload_from_string(
+        serialised_data=datafile.serialise(to_string=True),
+        bucket_name=destination_bucket_name,
+        path_in_bucket=datafile_path,
+    )
+
+    logger.info(
+        "Uploaded Datafile for %r to %r in bucket %r of project %r.",
+        batch_path,
+        datafile_path,
+        destination_bucket_name,
+        destination_project_name,
+    )

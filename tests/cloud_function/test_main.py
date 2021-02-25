@@ -17,6 +17,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        os.environ["GCP_PROJECT"] = cls.TEST_PROJECT_NAME
         os.environ["DESTINATION_PROJECT_NAME"] = cls.TEST_PROJECT_NAME
         os.environ["DESTINATION_BUCKET"] = cls.TEST_BUCKET_NAME
         cls.storage_emulator.start()
