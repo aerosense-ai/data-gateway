@@ -5,6 +5,7 @@ import unittest
 from gcp_storage_emulator.server import create_server
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
+from data_gateway import exceptions
 from data_gateway.reader.configuration import Configuration
 from data_gateway.reader.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
@@ -81,6 +82,26 @@ class TestPacketReader(unittest.TestCase):
                     lines = data[name].split("\n")
                     self.assertTrue(len(lines) > 1)
                     self.assertTrue(len(lines[0].split(",")) > 1)
+
+    def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
+        """Test that an `UnknownPacketTypeException` is raised if an unknown sensor type packet is received."""
+        serial_port = DummySerial(port="test")
+        sensor_type = bytes([0])
+
+        serial_port.write(data=b"".join((self.PACKET_KEY, sensor_type, self.LENGTH, self.RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((self.PACKET_KEY, sensor_type, self.LENGTH, self.RANDOM_BYTES[1])))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=True,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=self.TEST_PROJECT_NAME,
+                bucket_name=self.TEST_BUCKET_NAME,
+            )
+            with self.assertRaises(exceptions.UnknownPacketTypeException):
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
 
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""

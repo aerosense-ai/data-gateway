@@ -255,7 +255,8 @@ class PacketReader:
                     int.from_bytes(payload[(4 * i + 2) : (4 * i + 4)], self.config.endian, signed=False)
                 )
 
-            # logger.info(data["Analog"][0][0])
+        else:
+            raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
 
     def _wait_until_set_is_complete(self, sensor_type, t, data, current_timestamp, prev_ideal_timestamp):
         """timestamp in 1/(2**16) s

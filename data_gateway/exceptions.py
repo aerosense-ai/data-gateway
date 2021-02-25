@@ -5,4 +5,6 @@ class GatewayException(Exception):
 class UnknownPacketTypeException(GatewayException, ValueError):
     """Raised if attempting to parse a packet of unknown type"""
 
-    pass
+
+class UnknownSensorTypeException(GatewayException, TypeError):
+    """Raised if an unknown sensor type is used."""
