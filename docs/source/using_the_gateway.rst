@@ -144,7 +144,7 @@ configuration file. Here is the contents of an example file:
 A default configuration (see ``data_gateway.reader.configuration`` is used if a ``config.json`` file is not specified
 and one is not found in the working directory. If a configuration file is specified, all of the fields seen above must
 be present for it to be valid. Any extra metadata you'd like to include can be specified in the ``user_data`` field as
-a JSON object.
+a JSON object. See the :ref:`Configuration API <configuration_api>` for more information.
 
 One configuration is used per run of the ``start`` command and is a copy is saved with the output data. To supply the
 configuration file and start the gateway, type the following, supplying any other options you need:
