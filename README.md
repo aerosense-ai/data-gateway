@@ -22,7 +22,7 @@ pip install -r requirements-dev.txt
 ### Usage
 The `gateway` CLI is the main entry point.
 ```bash
-gateway -h
+gateway --help
 ```
 
 ```
