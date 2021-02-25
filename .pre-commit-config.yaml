@@ -38,8 +38,7 @@ repos:
           - 'Sphinx>=2,<3'
           - 'sphinx-rtd-theme==0.5.0'
           - 'sphinx-tabs==1.2.1'
-#          - 'scipy~=1.5.2'
-#          - 'jsonschema~=3.2.0'
+          - 'octue @ https://api.github.com/repos/octue/octue-sdk-python/tarball/feature/allow-cloud-storage-credentials-to-be-none'
           - 'pyserial==3.5'
 
   - repo: https://github.com/windpioneers/pre-commit-hooks
