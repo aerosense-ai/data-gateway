@@ -50,7 +50,7 @@ To start this mode, type:
         --output-dir=<path/to/output-directory-in-cloud-bucket> \
 
 If the connection to Google Cloud fails, batches will be written to the hidden directory
-``./<output_directory>.backup`` where they will stay until the connection resumes. Backup files will be deleted upon
+``./<output_directory>/.backup`` where they will stay until the connection resumes. Backup files will be deleted upon
 successful cloud upload.
 
 

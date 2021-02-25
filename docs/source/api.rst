@@ -10,38 +10,29 @@ API
 Gateway
 =======
 
-.. automodule:: data_gateway.reader.packet_reader
+.. autoclass:: data_gateway.reader.packet_reader.PacketReader
     :members:
 
-.. automodule:: data_gateway.reader.configuration
+.. autoclass:: data_gateway.reader.configuration.Configuration
     :members:
 
-.. automodule:: data_gateway.persistence
+.. autoclass:: data_gateway.persistence.TimeBatcher
     :members:
 
-
-Cloud function
-==============
-
-.. _api_cloud_function:
-
-.. automodule:: cloud_function.main
+.. autoclass:: data_gateway.persistence.BatchingFileWriter
     :members:
 
-
-.. _api_exceptions:
-
-Exceptions
-==========
+.. autoclass:: data_gateway.persistence.BatchingUploader
+    :members:
 
 .. automodule:: data_gateway.exceptions
     :members:
 
 
-.. _api_dummy_serial:
+.. _api_cloud_function:
 
-Dummy Serial
-============
+Cloud function
+==============
 
-.. automodule:: dummy_serial.dummy_serial
+.. automodule:: cloud_function.main
     :members:

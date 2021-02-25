@@ -1,5 +1,9 @@
 .. _output_data:
 
+===========
+Output data
+===========
+
 Here is some example output data from the data gateway when reading random data from the serial port (random apart from
 the first three bytes, which represent the packet key, sensor type, and length):
 
