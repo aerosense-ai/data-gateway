@@ -11,6 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 class PacketReader:
+    """A serial port packet reader.
+
+    :param bool save_locally:
+    :param bool upload_to_cloud:
+    :param str output_directory:
+    :param float batch_interval:
+    :param str project_name:
+    :param str bucket_name:
+    :param data_gateway.reader.configuration.Configuration configuration:
+    :return None:
+    """
+
     def __init__(
         self,
         save_locally,
@@ -21,17 +33,6 @@ class PacketReader:
         bucket_name=None,
         configuration=None,
     ):
-        """A serial port packet reader.
-
-        :param bool save_locally:
-        :param bool upload_to_cloud:
-        :param str output_directory:
-        :param float batch_interval:
-        :param str project_name:
-        :param str bucket_name:
-        :param data_gateway.reader.configuration.Configuration configuration:
-        :return None:
-        """
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.output_directory = output_directory

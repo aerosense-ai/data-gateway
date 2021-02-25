@@ -1,5 +1,37 @@
 class Configuration:
-    """A data class containing the configuration values for the firmware and hardware used by the data gateway."""
+    """A data class containing the configuration values for the firmware and hardware used by the data gateway.
+
+    :param float mics_freq: microphones sampling frequency
+    :param float mics_bm: TODO
+    :param float baros_freq: barometers sampling frequency
+    :param float baros_bm: TODO
+    :param float acc_freq: accelerometers sampling frequency
+    :param float acc_range: TODO
+    :param float gyro_freq: gyrometers sampling frequency
+    :param float gyro_range: TODO
+    :param float analog_freq: analog sensors sampling frequency
+    :param str serial_port: name of the serial port
+    :param int serial_buffer_rx_size: serial receiving buffer size in bytes
+    :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
+    :param float baudrate: serial port baud rate
+    :param str endian: one of "little" or "big"
+    :param float max_timestamp_slack: TODO   # 5ms
+    :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
+    :param int packet_key: TODO
+    :param int type_handle_def: TODO
+    :param int mics_samples_per_packet: number of samples per packet from microphones
+    :param int baros_packet_size: TODO
+    :param int baros_group_size: TODO
+    :param int imu_samples_per_packet: TODO
+    :param int analog_samples_per_packet: number of samples per packet from analog sensors
+    :param int baros_samples_per_packet: number of samples per packet from barometers
+    :param dict|None default_handles: TODO
+    :param dict|None samples_per_packet: TODO
+    :param dict|None n_meas_qty: TODO
+    :param dict|None period: TODO
+    :param dict|None user_data: metadata about the current session of the gateway provided by the user
+    :return None:
+    """
 
     def __init__(
         self,
@@ -33,39 +65,6 @@ class Configuration:
         period=None,
         user_data=None,
     ):
-        """Construct a configuration for the data gateway.
-
-        :param float mics_freq: microphones sampling frequency
-        :param float mics_bm: TODO
-        :param float baros_freq: barometers sampling frequency
-        :param float baros_bm: TODO
-        :param float acc_freq: accelerometers sampling frequency
-        :param float acc_range: TODO
-        :param float gyro_freq: gyrometers sampling frequency
-        :param float gyro_range: TODO
-        :param float analog_freq: analog sensors sampling frequency
-        :param str serial_port: name of the serial port
-        :param int serial_buffer_rx_size: serial receiving buffer size in bytes
-        :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
-        :param float baudrate: serial port baud rate
-        :param str endian: one of "little" or "big"
-        :param float max_timestamp_slack: TODO   # 5ms
-        :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
-        :param int packet_key: TODO
-        :param int type_handle_def: TODO
-        :param int mics_samples_per_packet: number of samples per packet from microphones
-        :param int baros_packet_size: TODO
-        :param int baros_group_size: TODO
-        :param int imu_samples_per_packet: TODO
-        :param int analog_samples_per_packet: number of samples per packet from analog sensors
-        :param int baros_samples_per_packet: number of samples per packet from barometers
-        :param dict|None default_handles: TODO
-        :param dict|None samples_per_packet: TODO
-        :param dict|None n_meas_qty: TODO
-        :param dict|None period: TODO
-        :param dict|None user_data: metadata about the current session of the gateway provided by the user
-        :return None:
-        """
         self.mics_freq = mics_freq
         self.mics_bm = mics_bm
         self.baros_freq = baros_freq

@@ -16,15 +16,15 @@ DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
 class TimeBatcher:
-    def __init__(self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
-        """Instantiate a TimeBatcher. The batcher will group the data given to it into batches of the duration of the
-        time interval.
+    """A batcher that groups the data given to it into batches of the duration of the time interval.
 
-        :param iter(str) sensor_names:
-        :param float batch_interval: time interval with which to batch data (in seconds)
-        :param str output_directory: directory to write batches to
-        :return None:
-        """
+    :param iter(str) sensor_names:
+    :param float batch_interval: time interval with which to batch data (in seconds)
+    :param str output_directory: directory to write batches to
+    :return None:
+    """
+
+    def __init__(self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
         self.current_batch = {name: [] for name in sensor_names}
         self.batch_interval = batch_interval
         self.output_directory = output_directory
@@ -108,18 +108,19 @@ class TimeBatcher:
 
 
 class BatchingFileWriter(TimeBatcher):
+    """A file writer that batches the data given to it over time into batches of the duration of the given time
+    interval, saving each batch to disk.
+
+    :param iter(str) sensor_names:
+    :param float batch_interval:
+    :param str output_directory:
+    :param int storage_limit: storage limit in bytes (default is 1 GB)
+    :return None:
+    """
+
     def __init__(
         self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY, storage_limit=1024 ** 3
     ):
-        """Initialise a file writer that batches the data given to it over time into batches of the duration of the
-        given time interval, saving each batch to disk.
-
-        :param iter(str) sensor_names:
-        :param float batch_interval:
-        :param str output_directory:
-        :param int storage_limit: storage limit in bytes (default is 1 GB)
-        :return None:
-        """
         self.storage_limit = storage_limit
         super().__init__(sensor_names, batch_interval, output_directory)
 
@@ -171,6 +172,20 @@ class BatchingFileWriter(TimeBatcher):
 
 
 class BatchingUploader(TimeBatcher):
+    """A Google Cloud Storage uploader that will upload the data given to it to a GCP storage bucket at the given
+    interval of time. If upload fails for a batch, it will be written to the backup directory. If the
+    `upload_backup_files` flag is `True`, its upload will then be reattempted after the upload of each subsequent batch.
+
+    :param iter(str) sensor_names:
+    :param str project_name:
+    :param str bucket_name:
+    :param float batch_interval: time interval with which to batch data (in seconds)
+    :param str output_directory:
+    :param float upload_timeout:
+    :param bool upload_backup_files:
+    :return None:
+    """
+
     def __init__(
         self,
         sensor_names,
@@ -181,20 +196,6 @@ class BatchingUploader(TimeBatcher):
         upload_timeout=60,
         upload_backup_files=True,
     ):
-        """Initialise a BatchingUploader with a bucket from a given GCP project. The uploader will upload the data given
-        to it to a GCP storage bucket at the given interval of time. If upload fails for a batch, it will be written to
-        the backup directory. If the `upload_backup_files` flag is `True`, its upload will then be reattempted after the
-        upload of each subsequent batch.
-
-        :param iter(str) sensor_names:
-        :param str project_name:
-        :param str bucket_name:
-        :param float batch_interval: time interval with which to batch data (in seconds)
-        :param str output_directory:
-        :param float upload_timeout:
-        :param bool upload_backup_files:
-        :return None:
-        """
         self.project_name = project_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
         self.bucket_name = bucket_name
