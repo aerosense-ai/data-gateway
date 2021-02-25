@@ -16,7 +16,7 @@ help by typing:
 
 .. code-block::
 
-   gateway -h
+   gateway --help
 
 The main command to start the gateway running is:
 
@@ -28,7 +28,7 @@ You can see help about this command by executing:
 
 .. code-block::
 
-   gateway start -h
+   gateway start --help
 
 
 Automatic (non-interactive) mode
