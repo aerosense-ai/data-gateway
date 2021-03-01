@@ -7,6 +7,7 @@ from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
+from cloud_function.file_handler import DATAFILES_DIRECTORY
 
 
 class TestCleanAndUploadBatch(unittest.TestCase):
@@ -23,11 +24,17 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         os.environ["DESTINATION_BUCKET"] = cls.TEST_BUCKET_NAME
         cls.storage_emulator.start()
 
-        # Create trigger file.
+        # Create trigger files.
         cls.storage_client.upload_from_string(
             serialised_data=json.dumps({"Baros": "blah,blah,hello,\n"}),
             bucket_name=cls.TEST_BUCKET_NAME,
             path_in_bucket="window-0.json",
+        )
+
+        cls.storage_client.upload_from_string(
+            serialised_data=json.dumps({"baudrate": 10}),
+            bucket_name=cls.TEST_BUCKET_NAME,
+            path_in_bucket="configuration.json",
         )
 
     @classmethod
@@ -55,18 +62,12 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             "updated": "0",
         }
 
-        expected_configuration = {"baudrate": 10}
-
-        with mock.patch(
-            "octue.utils.cloud.storage.client.GoogleCloudStorageClient.download_as_string",
-            return_value=json.dumps(expected_configuration),
-        ):
-            main.clean_and_upload_batch(event=event, context=self._make_mock_context())
+        main.clean_and_upload_batch(event=event, context=self._make_mock_context())
 
         # Check configuration has been persisted in the right place.
         self.assertEqual(
             json.loads(self.storage_client.download_as_string(self.TEST_BUCKET_NAME, path_in_bucket=event["name"])),
-            expected_configuration,
+            {"baudrate": 10},
         )
 
     def test_clean_and_upload_batch(self):
@@ -84,7 +85,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
 
         cleaned_batch_name = "cleaned-batch-0.json"
 
-        with mock.patch("cloud_function.main.clean", return_value={"baros": "hello,\n"}):
+        with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": "hello,\n"}):
             main.clean_and_upload_batch(
                 event=event, context=self._make_mock_context(), cleaned_batch_name=cleaned_batch_name
             )
@@ -105,7 +106,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(main.DATAFILES_DIRECTORY, cleaned_batch_name),
+                    path_in_bucket=storage.path.join(DATAFILES_DIRECTORY, cleaned_batch_name),
                 )
             )["name"],
             cleaned_batch_name,
