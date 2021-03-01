@@ -44,7 +44,7 @@ class PacketReader:
 
         self.sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
 
-        session_subdirectory = str(hash(datetime.now()))
+        session_subdirectory = str(hash(datetime.now()))[1:7]
 
         self.uploader = BatchingUploader(
             sensor_names=self.sensor_names,
