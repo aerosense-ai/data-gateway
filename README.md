@@ -1,4 +1,6 @@
 
+[![pipeline status](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/badges/main/pipeline.svg)](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/-/commits/main)
+[![coverage report](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/badges/main/coverage.svg)](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/-/commits/main)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![python-template](https://img.shields.io/badge/template-python--library-blue)](https://github.com/thclark/python-library-template)
@@ -10,6 +12,54 @@
 
 
 ## Developer notes
+
+### Installation
+For development, run the following from the repository root.
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Usage
+The `gateway` CLI is the main entry point.
+```bash
+gateway --help
+```
+
+```
+Usage: gateway [OPTIONS] COMMAND [ARGS]...
+
+  AeroSense Gateway CLI.
+
+  Runs the on-nacelle gateway service to read data from the bluetooth
+  receivers and send it to AeroSense Cloud.
+
+Options:
+  --logger-uri TEXT               Stream logs to a websocket at the given URI
+                                  (useful for monitoring what's happening
+                                  remotely)
+
+  --log-level [debug|info|warning|error]
+                                  Log level used for the analysis.  [default:
+                                  info]
+
+  --version                       Show the version and exit.
+  -h, --help                      Show this message and exit.
+
+Commands:
+  start             Start the gateway service (daemonise this for a...
+  supervisord-conf  Print conf entry for use with supervisord Daemonising a...
+
+```
+
+### Testing
+These environment variables need to be set to run the tests:
+* `GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json`
+* `STORAGE_EMULATOR_HOST=http://localhost:9090`
+
+Then, from the repository root, run
+```bash
+python3 -m unittest
+```
 
 ### Features
 

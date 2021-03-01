@@ -1,9 +1,12 @@
 [paths]
 source =
-    gateway/
+    cloud_function/
+    data_gateway/
+    dummy_serial/
 
 [run]
 omit =
     env/*
+    venv/*
     tests/*
     */tests/*

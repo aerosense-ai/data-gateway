@@ -7,16 +7,24 @@
 # ------------------------------------------------------------------------------
 tox
 pluggy
+gcp-storage-emulator>=2021.2.17
+google-cloud-storage>=1.35.1
+-r cloud_function/requirements.txt
 
 # Code quality
 # ------------------------------------------------------------------------------
 flake8  # https://github.com/PyCQA/flake8
 black  # https://github.com/ambv/black
 pre-commit  # https://github.com/pre-commit/pre-commit
-
+coverage
 
 # Pre-deploy checks
 # ------------------------------------------------------------------------------
 setuptools
 wheel
 twine  # <---- nothing to do with the twined library!
+
+# Current library (editable install)
+#    Installs any dependencies in setup.py
+# ------------------------------------------------------------------------------
+-e .

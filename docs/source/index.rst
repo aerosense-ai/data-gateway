@@ -39,6 +39,9 @@ outages.
    self
    installation
    using_the_gateway
+   output_data
    deployment
+   cloud_function
+   hardware_and_firmware_versions
    api
    version_history

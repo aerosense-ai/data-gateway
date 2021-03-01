@@ -131,4 +131,4 @@ And you're done! Keep that downloaded permission file for later.
 Configure and run the Gateway
 =============================
 
-TODO
+See :doc:`using the gateway. <using_the_gateway>`
