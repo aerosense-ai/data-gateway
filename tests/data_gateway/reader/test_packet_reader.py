@@ -137,7 +137,7 @@ class TestPacketReader(unittest.TestCase):
         # Check configuration file is present and valid on the cloud.
         configuration = self.storage_client.download_as_string(
             bucket_name=self.TEST_BUCKET_NAME,
-            path_in_bucket=f"{packet_reader.uploader.output_directory}/configuration.json",
+            path_in_bucket=storage.path.join(packet_reader.uploader.output_directory, "configuration.json"),
         )
 
         # Test configuration is valid.

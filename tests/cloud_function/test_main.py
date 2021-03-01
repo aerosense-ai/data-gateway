@@ -3,6 +3,7 @@ import os
 import unittest
 from unittest import mock
 from gcp_storage_emulator.server import create_server
+from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
@@ -73,7 +74,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket="/".join((main.DATAFILES_DIRECTORY, cleaned_batch_name)),
+                    path_in_bucket=storage.path.join(main.DATAFILES_DIRECTORY, cleaned_batch_name),
                 )
             )["name"],
             cleaned_batch_name,
