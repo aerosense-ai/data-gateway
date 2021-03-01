@@ -60,7 +60,7 @@ class TestPacketReader(unittest.TestCase):
             data = json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{packet_reader.uploader.output_directory}/batch-{i}.json",
+                    path_in_bucket=f"{packet_reader.uploader.output_directory}/window-{i}.json",
                 )
             )
 
@@ -71,7 +71,7 @@ class TestPacketReader(unittest.TestCase):
 
     def _check_data_is_written_to_files(self, temporary_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
-        batches = [file for file in os.listdir(temporary_directory) if file.startswith("batch")]
+        batches = [file for file in os.listdir(temporary_directory) if file.startswith("window")]
         self.assertTrue(len(batches) > 0)
 
         for batch in batches:

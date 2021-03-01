@@ -47,10 +47,10 @@ class TestBatchingWriter(unittest.TestCase):
 
             self.assertEqual(len(writer.current_batch["test"]), 0)
 
-            with open(os.path.join(temporary_directory, "batch-0.json")) as f:
+            with open(os.path.join(temporary_directory, "window-0.json")) as f:
                 self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
 
-            with open(os.path.join(temporary_directory, "batch-1.json")) as f:
+            with open(os.path.join(temporary_directory, "window-1.json")) as f:
                 self.assertEqual(json.load(f), {"test": "ding,dong,\n"})
 
     def test_oldest_batch_is_deleted_when_storage_limit_reached(self):
@@ -63,7 +63,7 @@ class TestBatchingWriter(unittest.TestCase):
             with writer:
                 writer.add_to_current_batch(sensor_name="test", data="ping,")
 
-            first_batch_path = os.path.join(temporary_directory, "batch-0.json")
+            first_batch_path = os.path.join(temporary_directory, "window-0.json")
 
             # Check first file is written to disk.
             self.assertTrue(os.path.exists(first_batch_path))
@@ -75,7 +75,7 @@ class TestBatchingWriter(unittest.TestCase):
             self.assertFalse(os.path.exists(first_batch_path))
 
             # Check the second file has not been deleted.
-            self.assertTrue(os.path.exists(os.path.join(temporary_directory, "batch-1.json")))
+            self.assertTrue(os.path.exists(os.path.join(temporary_directory, "window-1.json")))
 
 
 class TestBatchingUploader(unittest.TestCase):
@@ -136,7 +136,7 @@ class TestBatchingUploader(unittest.TestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                    path_in_bucket=f"{uploader.output_directory}/window-0.json",
                 )
             ),
             {"test": "ping,pong,\n"},
@@ -146,7 +146,7 @@ class TestBatchingUploader(unittest.TestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{uploader.output_directory}/batch-1.json",
+                    path_in_bucket=f"{uploader.output_directory}/window-1.json",
                 )
             ),
             {"test": "ding,dong,\n"},
@@ -174,11 +174,11 @@ class TestBatchingUploader(unittest.TestCase):
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                    path_in_bucket=f"{uploader.output_directory}/window-0.json",
                 )
 
             # Check that a backup file has been written.
-            with open(os.path.join(temporary_directory, ".backup", "batch-0.json")) as f:
+            with open(os.path.join(temporary_directory, ".backup", "window-0.json")) as f:
                 self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
 
     def test_backup_files_are_uploaded_on_next_upload_attempt(self):
@@ -203,10 +203,10 @@ class TestBatchingUploader(unittest.TestCase):
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                    path_in_bucket=f"{uploader.output_directory}/window-0.json",
                 )
 
-            backup_path = os.path.join(temporary_directory, ".backup", "batch-0.json")
+            backup_path = os.path.join(temporary_directory, ".backup", "window-0.json")
 
             # Check that a backup file has been written.
             with open(backup_path) as f:
@@ -220,7 +220,7 @@ class TestBatchingUploader(unittest.TestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{uploader.output_directory}/batch-0.json",
+                    path_in_bucket=f"{uploader.output_directory}/window-0.json",
                 )
             ),
             {"test": "ping,pong,\n"},
@@ -230,7 +230,7 @@ class TestBatchingUploader(unittest.TestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{uploader.output_directory}/batch-1.json",
+                    path_in_bucket=f"{uploader.output_directory}/window-1.json",
                 )
             ),
             {"test": "ding,dong,\n"},

@@ -26,7 +26,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         cls.storage_client.upload_from_string(
             serialised_data=json.dumps({"Baros": "blah,blah,hello,\n"}),
             bucket_name=cls.TEST_BUCKET_NAME,
-            path_in_bucket="batch-0.json",
+            path_in_bucket="window-0.json",
         )
 
     @classmethod
@@ -42,7 +42,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         """
         event = {
             "bucket": self.TEST_BUCKET_NAME,
-            "name": "batch-0.json",
+            "name": "window-0.json",
             "metageneration": "some-metageneration",
             "timeCreated": "0",
             "updated": "0",

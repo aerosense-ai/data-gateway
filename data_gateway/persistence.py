@@ -31,7 +31,7 @@ class TimeBatcher:
         self.ready_batch = {}
         self._batch_number = 0
         self._start_time = time.perf_counter()
-        self._batch_prefix = "batch"
+        self._batch_prefix = "window"
         self._backup_directory = os.path.join(self.output_directory, ".backup")
 
     def __enter__(self):
@@ -153,7 +153,7 @@ class BatchingFileWriter(TimeBatcher):
         else:
             directory_to_check = self.output_directory
 
-        filter = lambda path: os.path.split(path)[-1].startswith("batch")  # noqa
+        filter = lambda path: os.path.split(path)[-1].startswith("window")  # noqa
         storage_limit_in_mb = self.storage_limit / 1024 ** 2
 
         if calculate_disk_usage(self.output_directory, filter) >= self.storage_limit:
