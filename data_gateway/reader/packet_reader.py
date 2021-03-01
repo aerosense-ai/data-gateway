@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from datetime import datetime
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
@@ -42,17 +43,21 @@ class PacketReader:
 
         self.sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
 
+        session_subdirectory = str(hash(datetime.now()))
+
         self.uploader = BatchingUploader(
             sensor_names=self.sensor_names,
             project_name=project_name,
             bucket_name=bucket_name,
             batch_interval=batch_interval,
+            session_subdirectory=session_subdirectory,
             output_directory=output_directory,
         )
 
         self.writer = BatchingFileWriter(
             sensor_names=self.sensor_names,
             batch_interval=batch_interval,
+            session_subdirectory=session_subdirectory,
             output_directory=output_directory,
         )
 

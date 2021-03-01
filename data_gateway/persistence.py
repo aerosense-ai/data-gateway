@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import time
+from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_directory
 
@@ -20,15 +21,17 @@ class TimeBatcher:
 
     :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
+    :param str session_subdirectory: directory within output directory to persist into
     :param str output_directory: directory to write batches to
     :return None:
     """
 
-    def __init__(self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+    def __init__(self, sensor_names, batch_interval, session_subdirectory, output_directory=DEFAULT_OUTPUT_DIRECTORY):
         self.current_batch = {name: [] for name in sensor_names}
         self.batch_interval = batch_interval
         self.output_directory = output_directory
         self.ready_batch = {}
+        self._session_subdirectory = session_subdirectory
         self._batch_number = 0
         self._start_time = time.perf_counter()
         self._batch_prefix = "window"
@@ -94,17 +97,13 @@ class TimeBatcher:
         self._start_time = time.perf_counter()
 
     def _generate_batch_path(self, backup=False):
-        """Generate the path that the batch should be persisted to.
+        """Generate the path that the batch should be persisted to. This should start by joining the output directory
+        and the session subdirectory.
 
         :param bool backup: generate batch path for a backup
         :return str:
         """
-        filename = f"{self._batch_prefix}-{self._batch_number}.json"
-
-        if backup:
-            return "/".join((self._backup_directory, filename))
-
-        return "/".join((self.output_directory, filename))
+        pass
 
 
 class BatchingFileWriter(TimeBatcher):
@@ -113,19 +112,23 @@ class BatchingFileWriter(TimeBatcher):
 
     :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
+    :param str session_subdirectory: directory within output directory to persist into
     :param str output_directory: directory to write batches to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
     """
 
     def __init__(
-        self, sensor_names, batch_interval, output_directory=DEFAULT_OUTPUT_DIRECTORY, storage_limit=1024 ** 3
+        self,
+        sensor_names,
+        batch_interval,
+        session_subdirectory,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
+        storage_limit=1024 ** 3,
     ):
         self.storage_limit = storage_limit
-        super().__init__(sensor_names, batch_interval, output_directory)
-
-        if not os.path.exists(self.output_directory):
-            os.makedirs(self.output_directory)
+        super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
+        os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
 
     def _persist_batch(self, batch=None, backup=False):
         """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
@@ -153,11 +156,13 @@ class BatchingFileWriter(TimeBatcher):
         else:
             directory_to_check = self.output_directory
 
+        session_directory = os.path.join(directory_to_check, self._session_subdirectory)
+
         filter = lambda path: os.path.split(path)[-1].startswith("window")  # noqa
         storage_limit_in_mb = self.storage_limit / 1024 ** 2
 
-        if calculate_disk_usage(self.output_directory, filter) >= self.storage_limit:
-            oldest_batch = get_oldest_file_in_directory(directory_to_check, filter)
+        if calculate_disk_usage(session_directory, filter) >= self.storage_limit:
+            oldest_batch = get_oldest_file_in_directory(session_directory, filter)
 
             logger.warning(
                 "Storage limit reached (%s MB) - deleting oldest batch (%r).",
@@ -167,8 +172,21 @@ class BatchingFileWriter(TimeBatcher):
 
             os.remove(oldest_batch)
 
-        elif calculate_disk_usage(self.output_directory, filter) >= 0.9 * self.storage_limit:
+        elif calculate_disk_usage(session_directory, filter) >= 0.9 * self.storage_limit:
             logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * storage_limit_in_mb)
+
+    def _generate_batch_path(self, backup=False):
+        """Generate the path that the batch should be persisted to.
+
+        :param bool backup: generate batch path for a backup
+        :return str:
+        """
+        filename = f"{self._batch_prefix}-{self._batch_number}.json"
+
+        if backup:
+            return os.path.join(self._backup_directory, self._session_subdirectory, filename)
+
+        return os.path.join(self.output_directory, self._session_subdirectory, filename)
 
 
 class BatchingUploader(TimeBatcher):
@@ -180,6 +198,7 @@ class BatchingUploader(TimeBatcher):
     :param str project_name: name of Google Cloud project to upload to
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float batch_interval: time interval with which to batch data (in seconds)
+    :param str session_subdirectory: directory within output directory to persist into
     :param str output_directory: directory to write batches to
     :param float upload_timeout: time after which to give up trying to upload to the cloud
     :param bool upload_backup_files: attempt to upload backed-up batches on next batch upload
@@ -192,6 +211,7 @@ class BatchingUploader(TimeBatcher):
         project_name,
         bucket_name,
         batch_interval,
+        session_subdirectory,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         upload_timeout=60,
         upload_backup_files=True,
@@ -201,11 +221,9 @@ class BatchingUploader(TimeBatcher):
         self.bucket_name = bucket_name
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
-        self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, output_directory)
-        super().__init__(sensor_names, batch_interval, output_directory)
-
-        if not os.path.exists(self._backup_directory):
-            os.makedirs(self._backup_directory)
+        self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, session_subdirectory, output_directory)
+        super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
+        os.makedirs(os.path.join(self._backup_directory, self._session_subdirectory), exist_ok=True)
 
     def _persist_batch(self):
         """Upload a batch to Google Cloud storage. If the batch fails to upload, it is instead written to disk.
@@ -232,12 +250,25 @@ class BatchingUploader(TimeBatcher):
         if self.upload_backup_files:
             self._attempt_to_upload_backup_files()
 
+    def _generate_batch_path(self, backup=False):
+        """Generate the path that the batch should be persisted to.
+
+        :param bool backup: generate batch path for a backup
+        :return str:
+        """
+        filename = f"{self._batch_prefix}-{self._batch_number}.json"
+
+        if backup:
+            return storage.path.join(self._backup_directory, self._session_subdirectory, filename)
+
+        return storage.path.join(self.output_directory, self._session_subdirectory, filename)
+
     def _attempt_to_upload_backup_files(self):
         """Check for backup files and attempt to upload them to cloud storage again.
 
         :return None:
         """
-        backup_filenames = os.listdir(self._backup_directory)
+        backup_filenames = os.listdir(os.path.join(self._backup_directory, self._session_subdirectory))
 
         if not backup_filenames:
             return
@@ -247,8 +278,8 @@ class BatchingUploader(TimeBatcher):
             if not filename.startswith(self._batch_prefix):
                 continue
 
-            local_path = os.path.join(self._backup_directory, filename)
-            path_in_bucket = "/".join((self.output_directory, filename))
+            local_path = os.path.join(self._backup_directory, self._session_subdirectory, filename)
+            path_in_bucket = storage.path.join(self.output_directory, self._session_subdirectory, filename)
 
             try:
                 self.client.upload_file(
