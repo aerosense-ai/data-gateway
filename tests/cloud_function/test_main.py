@@ -36,6 +36,39 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         del os.environ["DESTINATION_PROJECT_NAME"]
         del os.environ["DESTINATION_BUCKET"]
 
+    def _make_mock_context(self):
+        """Make a mock Google Cloud Functions event context object.
+
+        :return unittest.mock.MagicMock:
+        """
+        context = unittest.mock.MagicMock()
+        context.event_id = "some-id"
+        context.event_type = "google.storage.object.finalize"
+
+    def test_persist_configuration(self):
+        """Test that configuration files are persisted to the destination bucket."""
+        event = {
+            "bucket": self.TEST_BUCKET_NAME,
+            "name": "configuration.json",
+            "metageneration": "some-metageneration",
+            "timeCreated": "0",
+            "updated": "0",
+        }
+
+        expected_configuration = {"baudrate": 10}
+
+        with mock.patch(
+            "octue.utils.cloud.storage.client.GoogleCloudStorageClient.download_as_string",
+            return_value=json.dumps(expected_configuration),
+        ):
+            main.clean_and_upload_batch(event=event, context=self._make_mock_context())
+
+        # Check configuration has been persisted in the right place.
+        self.assertEqual(
+            json.loads(self.storage_client.download_as_string(self.TEST_BUCKET_NAME, path_in_bucket=event["name"])),
+            expected_configuration,
+        )
+
     def test_clean_and_upload_batch(self):
         """Test that a batch file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger. The same source and destination bucket are used in this test although different ones will most
@@ -49,14 +82,12 @@ class TestCleanAndUploadBatch(unittest.TestCase):
             "updated": "0",
         }
 
-        context = unittest.mock.MagicMock()
-        context.event_id = "some-id"
-        context.event_type = "gcs-event"
-
         cleaned_batch_name = "cleaned-batch-0.json"
 
         with mock.patch("cloud_function.main.clean", return_value={"baros": "hello,\n"}):
-            main.clean_and_upload_batch(event, context, cleaned_batch_name=cleaned_batch_name)
+            main.clean_and_upload_batch(
+                event=event, context=self._make_mock_context(), cleaned_batch_name=cleaned_batch_name
+            )
 
         # Check that cleaned batch has been created and is in the right place.
         self.assertEqual(
