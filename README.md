@@ -9,7 +9,7 @@
 # data-gateway
 
 ## Documentation
-
+Documentation for `data-gateway` can be found [here.](https://windenergie-hsr.gitlab.io/aerosense/digital-twin/data-gateway)
 
 ## Developer notes
 
