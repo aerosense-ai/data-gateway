@@ -9,7 +9,7 @@ build_and_test:
     STORAGE_EMULATOR_HOST: "http://localhost:9090"
   script:
     - python3 -m venv test-venv
-    - ./test-venv/bin/activate
+    - bash test-venv/bin/activate
     - pip install -r requirements-dev.txt
     - coverage run -m unittest
     - coverage report
@@ -21,7 +21,7 @@ pages:
       - docs-venv
   script:
   - python3 -m venv docs-venv
-  - ./docs-venv/bin/activate
+  - bash docs-venv/bin/activate
   - pip install -r docs/requirements.txt
   - sphinx-build -b html docs/source public
   artifacts:
