@@ -4,7 +4,9 @@ default:
 build_and_test:
   cache:
     paths:
-      - test-venv/
+      - requirements-dev.txt
+    when: 'on_success'
+    key: 'build_and_test'
   variables:
     STORAGE_EMULATOR_HOST: "http://localhost:9090"
   script:
@@ -18,7 +20,9 @@ build_and_test:
 pages:
   cache:
     paths:
-      - docs-venv
+      - docs/requirements.txt
+    when: 'on_success'
+    key: 'pages'
   script:
   - python3 -m venv docs-venv
   - bash docs-venv/bin/activate
