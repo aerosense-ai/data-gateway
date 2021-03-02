@@ -213,12 +213,14 @@ class BatchingUploader(TimeBatcher):
         batch_interval,
         session_subdirectory,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
+        metadata=None,
         upload_timeout=60,
         upload_backup_files=True,
     ):
         self.project_name = project_name
         self.client = GoogleCloudStorageClient(project_name=project_name)
         self.bucket_name = bucket_name
+        self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
         self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, session_subdirectory, output_directory)
@@ -235,6 +237,7 @@ class BatchingUploader(TimeBatcher):
                 serialised_data=json.dumps(self.ready_batch),
                 bucket_name=self.bucket_name,
                 path_in_bucket=self._generate_batch_path(),
+                metadata=self.metadata,
                 timeout=self.upload_timeout,
             )
 
@@ -287,6 +290,7 @@ class BatchingUploader(TimeBatcher):
                     bucket_name=self.bucket_name,
                     path_in_bucket=path_in_bucket,
                     timeout=self.upload_timeout,
+                    metadata=self.metadata,
                 )
 
             except Exception:

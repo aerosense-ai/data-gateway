@@ -53,6 +53,7 @@ class PacketReader:
             batch_interval=batch_interval,
             session_subdirectory=session_subdirectory,
             output_directory=output_directory,
+            metadata=self.config.user_data,
         )
 
         self.writer = BatchingFileWriter(

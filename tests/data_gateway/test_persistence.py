@@ -210,7 +210,7 @@ class TestBatchingUploader(unittest.TestCase):
                     sensor_names=["test"],
                     project_name=self.TEST_PROJECT_NAME,
                     bucket_name=self.TEST_BUCKET_NAME,
-                    batch_interval=1,
+                    batch_interval=2,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=True,
@@ -265,3 +265,27 @@ class TestBatchingUploader(unittest.TestCase):
 
         # Check that the backup file has been removed now it's been uploaded to cloud storage.
         self.assertFalse(os.path.exists(backup_path))
+
+    def test_metadata_is_added_to_uploaded_files(self):
+        """Test that metadata is added to uploaded files and can be retrieved."""
+        uploader = BatchingUploader(
+            sensor_names=["test"],
+            project_name=self.TEST_PROJECT_NAME,
+            bucket_name=self.TEST_BUCKET_NAME,
+            batch_interval=0.01,
+            session_subdirectory="this-session",
+            output_directory=tempfile.TemporaryDirectory().name,
+            metadata={"big": "rock"},
+        )
+
+        with uploader:
+            uploader.add_to_current_batch(sensor_name="test", data="ping,")
+
+        metadata = self.storage_client.get_metadata(
+            bucket_name=self.TEST_BUCKET_NAME,
+            path_in_bucket=storage.path.join(
+                uploader.output_directory, uploader._session_subdirectory, "window-0.json"
+            ),
+        )
+
+        self.assertEqual(metadata["metadata"], {"big": "rock"})
