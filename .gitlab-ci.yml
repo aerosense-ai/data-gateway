@@ -1,0 +1,11 @@
+default:
+  image: python:3.8.8
+
+build_and_test:
+  variables:
+    STORAGE_EMULATOR_HOST: "http://localhost:9090"
+  script:
+    - pip install -r requirements-dev.txt
+    - coverage run -m unittest
+    - coverage report
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
