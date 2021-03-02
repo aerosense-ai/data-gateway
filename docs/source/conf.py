@@ -11,6 +11,7 @@
 # serve to show the default.
 
 import os
+import subprocess
 import sys
 import sphinx_rtd_theme
 
@@ -58,7 +59,9 @@ copyright = u'The Aerosense Research Partners'
 # built documents.
 
 # The full version, including alpha/beta/rc tags.
-release = os.getenv('RELEASE_TAG', 'x.y.unknown')
+os.chdir(os.path.join("..", ".."))
+release = subprocess.check_output(["python3", "setup.py", "--version"]).decode().strip()
+os.chdir(os.path.join("docs", "source"))
 
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])
