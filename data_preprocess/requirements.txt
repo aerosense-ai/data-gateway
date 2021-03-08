@@ -1,0 +1,4 @@
+# Required packages to run data-pre-process
+numpy
+pandas
+scipy
