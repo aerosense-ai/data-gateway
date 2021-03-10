@@ -234,7 +234,7 @@ class BatchingUploader(TimeBatcher):
         """
         try:
             self.client.upload_from_string(
-                serialised_data=json.dumps(self.ready_batch),
+                string=json.dumps(self.ready_batch),
                 bucket_name=self.bucket_name,
                 path_in_bucket=self._generate_batch_path(),
                 metadata=self.metadata,
