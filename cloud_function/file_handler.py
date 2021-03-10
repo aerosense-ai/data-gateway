@@ -66,7 +66,7 @@ class FileHandler:
         :param dict event: Google Cloud event
         :return dict:
         """
-        batch = preprocess.run(batch)
+        batch = preprocess.run(batch, batch_metadata)
         batch["cleaned"] = True
         logger.info("Cleaned batch.")
         return batch
