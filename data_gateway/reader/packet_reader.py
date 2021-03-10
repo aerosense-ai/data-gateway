@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+from datetime import datetime
+from octue.utils.cloud import storage
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
@@ -42,17 +44,22 @@ class PacketReader:
 
         self.sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
 
+        session_subdirectory = str(hash(datetime.now()))[1:7]
+
         self.uploader = BatchingUploader(
             sensor_names=self.sensor_names,
             project_name=project_name,
             bucket_name=bucket_name,
             batch_interval=batch_interval,
+            session_subdirectory=session_subdirectory,
             output_directory=output_directory,
+            metadata=self.config.user_data,
         )
 
         self.writer = BatchingFileWriter(
             sensor_names=self.sensor_names,
             batch_interval=batch_interval,
+            session_subdirectory=session_subdirectory,
             output_directory=output_directory,
         )
 
@@ -154,18 +161,17 @@ class PacketReader:
 
         :return None:
         """
-        relative_path = "/".join((self.output_directory, "configuration.json"))
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(os.path.abspath(os.path.join(".", relative_path)), "w") as f:
+            with open(os.path.abspath(os.path.join(".", self.output_directory, "configuration.json")), "w") as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 serialised_data=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=relative_path,
+                path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
             )
 
     def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
