@@ -55,13 +55,13 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         source_storage_client = GoogleCloudStorageClient(cls.SOURCE_PROJECT_NAME)
 
         source_storage_client.upload_from_string(
-            serialised_data=json.dumps({"Baros": "blah,blah,hello,\n"}),
+            string=json.dumps({"Baros": "blah,blah,hello,\n"}),
             bucket_name=cls.SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
         )
 
         source_storage_client.upload_from_string(
-            serialised_data=json.dumps({"baudrate": 10}),
+            string=json.dumps({"baudrate": 10}),
             bucket_name=cls.SOURCE_BUCKET_NAME,
             path_in_bucket="configuration.json",
         )
