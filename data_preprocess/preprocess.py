@@ -1,6 +1,7 @@
 from io import StringIO
-import functions
 import pandas as pd
+
+from data_preprocess import functions
 
 
 def run(raw_batch, batch_metadata):
