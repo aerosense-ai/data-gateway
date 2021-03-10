@@ -21,7 +21,7 @@ setup(
     install_requires=[
         "click>=7.1.2",
         "pyserial==3.5",
-        "octue @ https://api.github.com/repos/octue/octue-sdk-python/tarball/feature/allow-cloud-storage-credentials-to-be-none",
+        "octue==0.1.9",
     ],
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",

@@ -169,7 +169,7 @@ class PacketReader:
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
-                serialised_data=json.dumps(configuration_dictionary),
+                string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
                 path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
             )

@@ -37,7 +37,7 @@ class FileHandler:
         configuration = self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=path)
 
         self.destination_client.upload_from_string(
-            serialised_data=configuration, bucket_name=self.destination_bucket, path_in_bucket=path
+            string=configuration, bucket_name=self.destination_bucket, path_in_bucket=path
         )
 
     def get_batch(self, batch_path):
@@ -76,7 +76,7 @@ class FileHandler:
         :return None:
         """
         self.destination_client.upload_from_string(
-            serialised_data=json.dumps(batch),
+            string=json.dumps(batch),
             bucket_name=self.destination_bucket,
             path_in_bucket=batch_path,
             metadata={"sequence": int(os.path.splitext(batch_path)[0].split("-")[-1])},
@@ -89,17 +89,17 @@ class FileHandler:
             self.destination_project,
         )
 
-        datafile = Datafile.from_google_cloud_storage(
+        datafile = Datafile.from_cloud(
             project_name=self.destination_project,
             bucket_name=self.destination_bucket,
-            path_in_bucket=batch_path,
+            datafile_path=batch_path,
         )
 
         path_from, name = os.path.split(batch_path)
         datafile_path = os.path.join(path_from, DATAFILES_DIRECTORY, name)
 
         self.destination_client.upload_from_string(
-            serialised_data=datafile.serialise(to_string=True),
+            string=datafile.serialise(to_string=True),
             bucket_name=self.destination_bucket,
             path_in_bucket=datafile_path,
         )
