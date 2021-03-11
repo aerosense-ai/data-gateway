@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 from gcp_storage_emulator.server import create_server
+from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway import exceptions
@@ -60,7 +61,11 @@ class TestPacketReader(unittest.TestCase):
             data = json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=self.TEST_BUCKET_NAME,
-                    path_in_bucket=f"{packet_reader.uploader.output_directory}/batch-{i}.json",
+                    path_in_bucket=storage.path.join(
+                        packet_reader.uploader.output_directory,
+                        packet_reader.uploader._session_subdirectory,
+                        f"window-{i}.json",
+                    ),
                 )
             )
 
@@ -69,13 +74,14 @@ class TestPacketReader(unittest.TestCase):
                 self.assertTrue(len(lines) > 1)
                 self.assertTrue(len(lines[0].split(",")) > 1)
 
-    def _check_data_is_written_to_files(self, temporary_directory, sensor_names):
+    def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
-        batches = [file for file in os.listdir(temporary_directory) if file.startswith("batch")]
+        batch_directory = os.path.join(temporary_directory, packet_reader.writer._session_subdirectory)
+        batches = [file for file in os.listdir(batch_directory) if file.startswith(packet_reader.writer._batch_prefix)]
         self.assertTrue(len(batches) > 0)
 
         for batch in batches:
-            with open(os.path.join(temporary_directory, batch)) as f:
+            with open(os.path.join(batch_directory, batch)) as f:
                 data = json.load(f)
 
                 for name in sensor_names:
@@ -131,7 +137,7 @@ class TestPacketReader(unittest.TestCase):
         # Check configuration file is present and valid on the cloud.
         configuration = self.storage_client.download_as_string(
             bucket_name=self.TEST_BUCKET_NAME,
-            path_in_bucket=f"{packet_reader.uploader.output_directory}/configuration.json",
+            path_in_bucket=storage.path.join(packet_reader.uploader.output_directory, "configuration.json"),
         )
 
         # Test configuration is valid.
@@ -155,7 +161,7 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Baros"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros"], number_of_batches_to_check=1)
 
@@ -177,7 +183,7 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mics"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Mics"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Mics"], number_of_batches_to_check=1)
 
@@ -199,7 +205,7 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Acc"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Acc"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Acc"], number_of_batches_to_check=1)
 
@@ -221,7 +227,7 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Gyro"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Gyro"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Gyro"], number_of_batches_to_check=1)
 
@@ -243,7 +249,7 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mag"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Mag"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Mag"], number_of_batches_to_check=1)
 
@@ -265,7 +271,7 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=self.TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Analog"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Analog"])
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Analog"], number_of_batches_to_check=1)
 
@@ -290,7 +296,7 @@ class TestPacketReader(unittest.TestCase):
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
 
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=sensor_names)
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=sensor_names)
 
         self._check_batches_are_uploaded_to_cloud(
             packet_reader, sensor_names=sensor_names, number_of_batches_to_check=1

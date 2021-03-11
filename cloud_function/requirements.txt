@@ -1,1 +1,4 @@
-octue @ https://api.github.com/repos/octue/octue-sdk-python/tarball/feature/allow-cloud-storage-credentials-to-be-none
+numpy
+octue==0.1.9
+pandas
+scipy
