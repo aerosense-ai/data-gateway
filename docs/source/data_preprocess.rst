@@ -4,7 +4,7 @@
 Data Pre-Process
 ================
 
-"Almost" raw data batches are pre-processed with this module.
+Structured raw data (bytes) batches are pre-processed with this module.
 
 
 .. _pressure_preprocess:
@@ -12,7 +12,7 @@ Data Pre-Process
 Pressure Data
 =============
 
-**1. Temperature/humidity calibration**
+**1. Temperature calibration**
 
 **2. Outlier detection**
 

@@ -42,8 +42,8 @@ Cloud function
 
 .. _api_data_preprocess:
 
-Cloud function
-==============
+Data Pre-Process
+================
 
 .. automodule:: data_preprocess.preprocess
     :members:
