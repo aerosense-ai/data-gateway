@@ -22,7 +22,7 @@ def run(raw_batch, batch_metadata):
         StringIO(raw_batch["Baros"]), delimiter=",", index_col=0, header=None, parse_dates=[0]
     )
 
-    cleaned_pressure = functions.remove_outliers(raw_pressure_bytes, 10)
+    cleaned_pressure = functions.remove_outliers(raw_pressure_bytes, 10, 10)
     resampled_pressure = functions.resample(cleaned_pressure, 0.005)
     processed_batch["Baros"] = resampled_pressure.to_csv(header=False, index=False)
     # TODO check dt on raw bytes,
