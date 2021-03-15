@@ -9,13 +9,12 @@ from data_gateway import exceptions
 from data_gateway.reader.configuration import Configuration
 from data_gateway.reader.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
-from tests import TEST_BUCKET_NAME
+from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
 
 
 class TestPacketReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.TEST_PROJECT_NAME = "a-project-name"
         cls.PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")
         cls.LENGTH = bytes([244])
 
@@ -42,7 +41,7 @@ class TestPacketReader(unittest.TestCase):
         ]
 
         cls.BATCH_INTERVAL = 10
-        cls.storage_client = GoogleCloudStorageClient(project_name=cls.TEST_PROJECT_NAME)
+        cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_batches_to_check=5):
         """Check that non-trivial batches from a packet reader for a particular sensor are uploaded to cloud storage."""
@@ -95,7 +94,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             with self.assertRaises(exceptions.UnknownPacketTypeException):
@@ -115,7 +114,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -149,7 +148,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -171,7 +170,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -193,7 +192,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -215,7 +214,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -237,7 +236,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -259,7 +258,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
@@ -283,7 +282,7 @@ class TestPacketReader(unittest.TestCase):
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
                 batch_interval=self.BATCH_INTERVAL,
-                project_name=self.TEST_PROJECT_NAME,
+                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)

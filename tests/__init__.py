@@ -2,6 +2,7 @@ import unittest
 from octue.utils.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
 
 
+TEST_PROJECT_NAME = "a-project-name"
 TEST_BUCKET_NAME = "a-bucket-name"
 
 

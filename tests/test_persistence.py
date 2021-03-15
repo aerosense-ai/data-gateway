@@ -10,7 +10,7 @@ from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
-from tests import TEST_BUCKET_NAME
+from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
 
 
 class TestBatchingWriter(unittest.TestCase):
@@ -90,14 +90,13 @@ class TestBatchingWriter(unittest.TestCase):
 class TestBatchingUploader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.TEST_PROJECT_NAME = "a-project-name"
-        cls.storage_client = GoogleCloudStorageClient(project_name=cls.TEST_PROJECT_NAME)
+        cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     def test_data_is_batched(self):
         """Test that data is batched as expected."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=self.TEST_PROJECT_NAME,
+            project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=600,
             session_subdirectory="this-session",
@@ -113,7 +112,7 @@ class TestBatchingUploader(unittest.TestCase):
         """
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=self.TEST_PROJECT_NAME,
+            project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
             session_subdirectory="this-session",
@@ -166,7 +165,7 @@ class TestBatchingUploader(unittest.TestCase):
             with mock.patch.object(Blob, "upload_from_string", Exception):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
-                    project_name=self.TEST_PROJECT_NAME,
+                    project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     batch_interval=0.01,
                     session_subdirectory="this-session",
@@ -200,7 +199,7 @@ class TestBatchingUploader(unittest.TestCase):
             with mock.patch.object(Blob, "upload_from_string", Exception):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
-                    project_name=self.TEST_PROJECT_NAME,
+                    project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     batch_interval=2,
                     session_subdirectory="this-session",
@@ -262,7 +261,7 @@ class TestBatchingUploader(unittest.TestCase):
         """Test that metadata is added to uploaded files and can be retrieved."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=self.TEST_PROJECT_NAME,
+            project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
             session_subdirectory="this-session",
