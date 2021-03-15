@@ -2,7 +2,6 @@ import json
 import os
 import unittest
 from unittest import mock
-from gcp_storage_emulator.server import create_server
 from google.cloud.storage.client import Client
 from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
@@ -11,40 +10,38 @@ from cloud_function import main
 from cloud_function.file_handler import DATAFILES_DIRECTORY
 
 
-class TestCleanAndUploadBatch(unittest.TestCase):
-    SOURCE_PROJECT_NAME = "source-project"
-    SOURCE_BUCKET_NAME = "source-bucket"
-    DESTINATION_PROJECT_NAME = "destination-project"
-    DESTINATION_BUCKET_NAME = "destination-bucket"
-    storage_emulator = create_server("localhost", 9090, in_memory=True)
+SOURCE_PROJECT_NAME = "source-project"
+SOURCE_BUCKET_NAME = "source-bucket"
+DESTINATION_PROJECT_NAME = "destination-project"
+DESTINATION_BUCKET_NAME = "destination-bucket"
 
+
+class TestCleanAndUploadBatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["GCP_PROJECT"] = cls.SOURCE_PROJECT_NAME
-        os.environ["DESTINATION_PROJECT_NAME"] = cls.DESTINATION_PROJECT_NAME
-        os.environ["DESTINATION_BUCKET"] = cls.DESTINATION_BUCKET_NAME
+        os.environ["GCP_PROJECT"] = SOURCE_PROJECT_NAME
+        os.environ["DESTINATION_PROJECT_NAME"] = DESTINATION_PROJECT_NAME
+        os.environ["DESTINATION_BUCKET"] = DESTINATION_BUCKET_NAME
 
-        cls.destination_storage_client = GoogleCloudStorageClient(cls.DESTINATION_PROJECT_NAME)
+        cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
 
-        cls.storage_emulator.start()
         cls._create_buckets()
         cls._create_trigger_files()
 
     @classmethod
     def tearDownClass(cls):
-        cls.storage_emulator.stop()
         del os.environ["GCP_PROJECT"]
         del os.environ["DESTINATION_PROJECT_NAME"]
         del os.environ["DESTINATION_BUCKET"]
 
-    @classmethod
-    def _create_buckets(cls):
+    @staticmethod
+    def _create_buckets():
         """Create the source and destination buckets.
 
         :return None:
         """
-        Client(project=cls.SOURCE_PROJECT_NAME).create_bucket(cls.SOURCE_BUCKET_NAME)
-        Client(project=cls.DESTINATION_PROJECT_NAME).create_bucket(cls.DESTINATION_BUCKET_NAME)
+        Client(project=SOURCE_PROJECT_NAME).create_bucket(SOURCE_BUCKET_NAME)
+        Client(project=DESTINATION_PROJECT_NAME).create_bucket(DESTINATION_BUCKET_NAME)
 
     @classmethod
     def _create_trigger_files(cls):
@@ -52,17 +49,17 @@ class TestCleanAndUploadBatch(unittest.TestCase):
 
         :return None:
         """
-        source_storage_client = GoogleCloudStorageClient(cls.SOURCE_PROJECT_NAME)
+        source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
 
         source_storage_client.upload_from_string(
             string=json.dumps({"Baros": "blah,blah,hello,\n"}),
-            bucket_name=cls.SOURCE_BUCKET_NAME,
+            bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
         )
 
         source_storage_client.upload_from_string(
             string=json.dumps({"baudrate": 10}),
-            bucket_name=cls.SOURCE_BUCKET_NAME,
+            bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="configuration.json",
         )
 
@@ -79,7 +76,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
     def test_persist_configuration(self):
         """Test that configuration files are persisted to the destination bucket."""
         event = {
-            "bucket": self.SOURCE_BUCKET_NAME,
+            "bucket": SOURCE_BUCKET_NAME,
             "name": "configuration.json",
             "metageneration": "some-metageneration",
             "timeCreated": "0",
@@ -92,7 +89,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    self.DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
+                    DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
                 )
             ),
             {"baudrate": 10},
@@ -104,7 +101,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         likely be used in production.
         """
         event = {
-            "bucket": self.SOURCE_BUCKET_NAME,
+            "bucket": SOURCE_BUCKET_NAME,
             "name": "window-0.json",
             "metageneration": "some-metageneration",
             "timeCreated": "0",
@@ -118,7 +115,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    bucket_name=self.DESTINATION_BUCKET_NAME,
+                    bucket_name=DESTINATION_BUCKET_NAME,
                     path_in_bucket=event["name"],
                 )
             ),
@@ -129,7 +126,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    bucket_name=self.DESTINATION_BUCKET_NAME,
+                    bucket_name=DESTINATION_BUCKET_NAME,
                     path_in_bucket=storage.path.join(DATAFILES_DIRECTORY, event["name"]),
                 )
             )["name"],

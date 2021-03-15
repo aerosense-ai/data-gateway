@@ -2,25 +2,13 @@ import os
 import tempfile
 from unittest import TestCase, mock
 from click.testing import CliRunner
-from gcp_storage_emulator.server import create_server
 
 from data_gateway.cli import gateway_cli
 from dummy_serial.dummy_serial import DummySerial
+from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
 
 
 class TestCLI(TestCase):
-    TEST_PROJECT_NAME = "a-project-name"
-    TEST_BUCKET_NAME = "a-bucket-name"
-    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=TEST_BUCKET_NAME)
-
-    @classmethod
-    def setUpClass(cls):
-        cls.storage_emulator.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.storage_emulator.stop()
-
     def test_version(self):
         """Ensure the version command works in the CLI."""
         result = CliRunner().invoke(gateway_cli, ["--version"])
@@ -43,8 +31,8 @@ class TestCLI(TestCase):
                 result = CliRunner().invoke(
                     gateway_cli,
                     f"start "
-                    f"--gcp-project-name={self.TEST_PROJECT_NAME} "
-                    f"--gcp-bucket-name={self.TEST_BUCKET_NAME} "
+                    f"--gcp-project-name={TEST_PROJECT_NAME} "
+                    f"--gcp-bucket-name={TEST_BUCKET_NAME} "
                     f"--output-dir={temporary_directory} "
                     f"--stop-when-no-more-data",
                 )
@@ -63,8 +51,8 @@ class TestCLI(TestCase):
                 result = CliRunner().invoke(
                     gateway_cli,
                     f"start "
-                    f"--gcp-project-name={self.TEST_PROJECT_NAME} "
-                    f"--gcp-bucket-name={self.TEST_BUCKET_NAME} "
+                    f"--gcp-project-name={TEST_PROJECT_NAME} "
+                    f"--gcp-bucket-name={TEST_BUCKET_NAME} "
                     f"--stop-when-no-more-data",
                 )
 
