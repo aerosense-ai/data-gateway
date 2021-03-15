@@ -21,7 +21,7 @@ setup(
     install_requires=[
         "click>=7.1.2",
         "pyserial==3.5",
-        "octue==0.1.11",
+        "octue @ https://github.com/octue/octue-sdk-python/archive/release/0.1.11.zip",
     ],
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",
