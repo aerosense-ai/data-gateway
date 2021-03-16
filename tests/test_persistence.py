@@ -5,12 +5,12 @@ import time
 import unittest
 from unittest import mock
 import google.api_core.exceptions
-from gcp_storage_emulator.server import create_server
 from google.cloud.storage.blob import Blob
 from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
+from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
 
 
 class TestBatchingWriter(unittest.TestCase):
@@ -88,25 +88,16 @@ class TestBatchingWriter(unittest.TestCase):
 
 
 class TestBatchingUploader(unittest.TestCase):
-    TEST_PROJECT_NAME = "a-project-name"
-    TEST_BUCKET_NAME = "a-bucket-name"
-    storage_emulator = create_server("localhost", 9090, in_memory=True, default_bucket=TEST_BUCKET_NAME)
-    storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
-
     @classmethod
     def setUpClass(cls):
-        cls.storage_emulator.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.storage_emulator.stop()
+        cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     def test_data_is_batched(self):
         """Test that data is batched as expected."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=self.TEST_PROJECT_NAME,
-            bucket_name=self.TEST_BUCKET_NAME,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
             batch_interval=600,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
@@ -121,8 +112,8 @@ class TestBatchingUploader(unittest.TestCase):
         """
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=self.TEST_PROJECT_NAME,
-            bucket_name=self.TEST_BUCKET_NAME,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
@@ -146,7 +137,7 @@ class TestBatchingUploader(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     path_in_bucket=storage.path.join(
                         uploader.output_directory, uploader._session_subdirectory, "window-0.json"
                     ),
@@ -158,7 +149,7 @@ class TestBatchingUploader(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     path_in_bucket=storage.path.join(
                         uploader.output_directory, uploader._session_subdirectory, "window-1.json"
                     ),
@@ -174,8 +165,8 @@ class TestBatchingUploader(unittest.TestCase):
             with mock.patch.object(Blob, "upload_from_string", Exception):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
-                    project_name=self.TEST_PROJECT_NAME,
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    project_name=TEST_PROJECT_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     batch_interval=0.01,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
@@ -189,7 +180,7 @@ class TestBatchingUploader(unittest.TestCase):
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     path_in_bucket=storage.path.join(
                         uploader.output_directory, uploader._session_subdirectory, "window-0.json"
                     ),
@@ -208,8 +199,8 @@ class TestBatchingUploader(unittest.TestCase):
             with mock.patch.object(Blob, "upload_from_string", Exception):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
-                    project_name=self.TEST_PROJECT_NAME,
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    project_name=TEST_PROJECT_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     batch_interval=2,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
@@ -223,7 +214,7 @@ class TestBatchingUploader(unittest.TestCase):
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     path_in_bucket=storage.path.join(
                         uploader.output_directory, uploader._session_subdirectory, "window-0.json"
                     ),
@@ -242,7 +233,7 @@ class TestBatchingUploader(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     path_in_bucket=storage.path.join(
                         uploader.output_directory, uploader._session_subdirectory, "window-0.json"
                     ),
@@ -254,7 +245,7 @@ class TestBatchingUploader(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=self.TEST_BUCKET_NAME,
+                    bucket_name=TEST_BUCKET_NAME,
                     path_in_bucket=storage.path.join(
                         uploader.output_directory, uploader._session_subdirectory, "window-1.json"
                     ),
@@ -270,8 +261,8 @@ class TestBatchingUploader(unittest.TestCase):
         """Test that metadata is added to uploaded files and can be retrieved."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=self.TEST_PROJECT_NAME,
-            bucket_name=self.TEST_BUCKET_NAME,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
@@ -282,7 +273,7 @@ class TestBatchingUploader(unittest.TestCase):
             uploader.add_to_current_batch(sensor_name="test", data="ping,")
 
         metadata = self.storage_client.get_metadata(
-            bucket_name=self.TEST_BUCKET_NAME,
+            bucket_name=TEST_BUCKET_NAME,
             path_in_bucket=storage.path.join(
                 uploader.output_directory, uploader._session_subdirectory, "window-0.json"
             ),

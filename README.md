@@ -54,7 +54,6 @@ Commands:
 ### Testing
 These environment variables need to be set to run the tests:
 * `GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json`
-* `STORAGE_EMULATOR_HOST=http://localhost:9090`
 
 Then, from the repository root, run
 ```bash

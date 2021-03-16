@@ -1,4 +1,4 @@
 numpy
-octue==0.1.9
+octue==0.1.11
 pandas
 scipy
