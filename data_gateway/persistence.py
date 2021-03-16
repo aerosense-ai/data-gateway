@@ -16,6 +16,20 @@ logger = logging.getLogger(__name__)
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
 
+class NoOperationContextManager:
+    """A no-operation context manager that can be used to fill in for cases where the context-managed object is not
+    needed but the context-managed block is.
+
+    :return None:
+    """
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class TimeBatcher:
     """A batcher that groups the data given to it into batches of the duration of the time interval.
 
