@@ -5,7 +5,7 @@ from datetime import datetime
 from octue.utils.cloud import storage
 
 from data_gateway import exceptions
-from data_gateway.persistence import BatchingFileWriter, BatchingUploader
+from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
 from data_gateway.reader.configuration import Configuration
 
 
@@ -46,22 +46,28 @@ class PacketReader:
 
         session_subdirectory = str(hash(datetime.now()))[1:7]
 
-        self.uploader = BatchingUploader(
-            sensor_names=self.sensor_names,
-            project_name=project_name,
-            bucket_name=bucket_name,
-            batch_interval=batch_interval,
-            session_subdirectory=session_subdirectory,
-            output_directory=output_directory,
-            metadata=self.config.user_data,
-        )
+        if upload_to_cloud:
+            self.uploader = BatchingUploader(
+                sensor_names=self.sensor_names,
+                project_name=project_name,
+                bucket_name=bucket_name,
+                batch_interval=batch_interval,
+                session_subdirectory=session_subdirectory,
+                output_directory=output_directory,
+                metadata=self.config.user_data,
+            )
+        else:
+            self.uploader = NoOperationContextManager()
 
-        self.writer = BatchingFileWriter(
-            sensor_names=self.sensor_names,
-            batch_interval=batch_interval,
-            session_subdirectory=session_subdirectory,
-            output_directory=output_directory,
-        )
+        if save_locally:
+            self.writer = BatchingFileWriter(
+                sensor_names=self.sensor_names,
+                batch_interval=batch_interval,
+                session_subdirectory=session_subdirectory,
+                output_directory=output_directory,
+            )
+        else:
+            self.writer = NoOperationContextManager()
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):
         """Read and process packets from a serial port, uploading them to Google Cloud storage and/or writing them to
