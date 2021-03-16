@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 from unittest import TestCase, mock
@@ -5,7 +6,7 @@ from click.testing import CliRunner
 
 from data_gateway.cli import gateway_cli
 from dummy_serial.dummy_serial import DummySerial
-from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 
 
 class EnvironmentVariableRemover:
@@ -107,6 +108,34 @@ class TestCLI(TestCase):
                     result = CliRunner().invoke(
                         gateway_cli, f"start --interactive --output-dir={temporary_directory}", input="stop\n"
                     )
+
+            self.assertIsNone(result.exception)
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue("Stopping gateway." in result.output)
+
+    def test_interactive_mode_writes_to_disk(self):
+        """Ensure interactive mode writes data to disk. It should work without the GOOGLE_APPLICATION_CREDENTIALS
+        environment variable.
+        """
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            serial_port = DummySerial(port="test")
+            sensor_type = bytes([34])
+            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                with mock.patch("serial.Serial", return_value=serial_port):
+                    result = CliRunner().invoke(
+                        gateway_cli, f"start --interactive --output-dir={temporary_directory}", input="sleep 2\nstop\n"
+                    )
+
+                session_subdirectory = [item for item in os.scandir(temporary_directory) if item.is_dir()][0].name
+
+                with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
+                    data = json.loads(f.read())
+
+                self.assertTrue(len(data) == 1)
+                self.assertTrue(len(data["Baros"]) > 1)
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
