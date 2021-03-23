@@ -214,7 +214,6 @@ class PacketReader:
                             self.config.endian,
                             signed=False,
                         )
-                        / 4096
                     )
 
         elif self.handles[sensor_type].startswith("Mic"):
