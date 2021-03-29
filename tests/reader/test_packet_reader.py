@@ -109,7 +109,7 @@ class TestPacketReader(unittest.TestCase):
         # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
 
-    def test_packet_reader_with_baro_p_sensor(self):
+    def test_packet_reader_with_baros_p_sensor(self):
         """Test that the packet reader works with the Baro_P sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([34])
@@ -131,7 +131,7 @@ class TestPacketReader(unittest.TestCase):
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros_P"], number_of_batches_to_check=1)
 
-    def test_packet_reader_with_baro_t_sensor(self):
+    def test_packet_reader_with_baros_t_sensor(self):
         """Test that the packet reader works with the Baro_T sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([34])
