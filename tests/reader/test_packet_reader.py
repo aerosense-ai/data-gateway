@@ -109,8 +109,8 @@ class TestPacketReader(unittest.TestCase):
         # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
 
-    def test_packet_reader_with_baro_sensor(self):
-        """Test that the packet reader works with the baro sensor."""
+    def test_packet_reader_with_baro_p_sensor(self):
+        """Test that the packet reader works with the Baro_P sensor."""
         serial_port = DummySerial(port="test")
         sensor_type = bytes([34])
 
@@ -127,9 +127,31 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Baros"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Baros_P"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros"], number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros_P"], number_of_batches_to_check=1)
+
+    def test_packet_reader_with_baro_t_sensor(self):
+        """Test that the packet reader works with the Baro_T sensor."""
+        serial_port = DummySerial(port="test")
+        sensor_type = bytes([34])
+
+        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=True,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Baros_T"])
+
+        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros_T"], number_of_batches_to_check=1)
 
     def test_packet_reader_with_mic_sensor(self):
         """Test that the packet reader works with the mic sensor."""
@@ -245,7 +267,7 @@ class TestPacketReader(unittest.TestCase):
         """Test that the packet reader works with all sensors together."""
         serial_port = DummySerial(port="test")
         sensor_types = bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([80])
-        sensor_names = "Baros", "Mics", "Acc", "Gyro", "Mag", "Analog"
+        sensor_names = "Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Analog"
 
         for sensor_type in sensor_types:
             serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
