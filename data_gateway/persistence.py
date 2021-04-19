@@ -82,7 +82,7 @@ class TimeBatcher:
         for sensor_name, data in self.current_batch.items():
             if data:
                 self.ready_batch[sensor_name] = "".join(copy.deepcopy(data))
-            data.clear()
+                data.clear()
 
     def force_persist(self):
         """Persist all current batches, regardless of whether a complete batch interval has passed.
