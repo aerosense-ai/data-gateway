@@ -5,7 +5,7 @@ from datetime import datetime
 from octue.utils.cloud import storage
 
 from data_gateway import exceptions
-from data_gateway.persistence import BatchingFileWriter, BatchingUploader
+from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
 from data_gateway.reader.configuration import Configuration
 
 
@@ -42,26 +42,32 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
 
-        self.sensor_names = ("Mics", "Baros", "Acc", "Gyro", "Mag", "Analog")
+        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog")
 
         session_subdirectory = str(hash(datetime.now()))[1:7]
 
-        self.uploader = BatchingUploader(
-            sensor_names=self.sensor_names,
-            project_name=project_name,
-            bucket_name=bucket_name,
-            batch_interval=batch_interval,
-            session_subdirectory=session_subdirectory,
-            output_directory=output_directory,
-            metadata=self.config.user_data,
-        )
+        if upload_to_cloud:
+            self.uploader = BatchingUploader(
+                sensor_names=self.sensor_names,
+                project_name=project_name,
+                bucket_name=bucket_name,
+                batch_interval=batch_interval,
+                session_subdirectory=session_subdirectory,
+                output_directory=output_directory,
+                metadata=self.config.user_data,
+            )
+        else:
+            self.uploader = NoOperationContextManager()
 
-        self.writer = BatchingFileWriter(
-            sensor_names=self.sensor_names,
-            batch_interval=batch_interval,
-            session_subdirectory=session_subdirectory,
-            output_directory=output_directory,
-        )
+        if save_locally:
+            self.writer = BatchingFileWriter(
+                sensor_names=self.sensor_names,
+                batch_interval=batch_interval,
+                session_subdirectory=session_subdirectory,
+                output_directory=output_directory,
+            )
+        else:
+            self.writer = NoOperationContextManager()
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):
         """Read and process packets from a serial port, uploading them to Google Cloud storage and/or writing them to
@@ -191,24 +197,32 @@ class PacketReader:
 
         if self.handles[sensor_type].startswith("Baro group"):
             # Write data to files when set is complete.
-            self._wait_until_set_is_complete("Baros", t, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Baros_P", t, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Baros_T", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
             baro_group_number = int(self.handles[sensor_type][11:])
 
             for i in range(self.config.baros_samples_per_packet):
                 for j in range(self.config.baros_group_size):
-                    data["Baros"][baro_group_number * self.config.baros_group_size + j][i] = (
-                        int.from_bytes(
-                            payload[
-                                (4 * (self.config.baros_group_size * i + j)) : (
-                                    4 * (self.config.baros_group_size * i + j) + 4
-                                )
-                            ],
-                            self.config.endian,
-                            signed=False,
-                        )
-                        / 4096
+                    data["Baros_P"][baro_group_number * self.config.baros_group_size + j][i] = int.from_bytes(
+                        payload[
+                            (5 * (self.config.baros_group_size * i + j)) : (
+                                5 * (self.config.baros_group_size * i + j) + 3
+                            )
+                        ],
+                        self.config.endian,
+                        signed=False,
+                    )
+
+                    data["Baros_T"][baro_group_number * self.config.baros_group_size + j][i] = int.from_bytes(
+                        payload[
+                            (5 * (self.config.baros_group_size * i + j) + 3) : (
+                                5 * (self.config.baros_group_size * i + j) + 5
+                            )
+                        ],
+                        self.config.endian,
+                        signed=True,
                     )
 
         elif self.handles[sensor_type].startswith("Mic"):
@@ -275,7 +289,7 @@ class PacketReader:
         :param dict prev_ideal_timestamp:
         :return None:
         """
-        if sensor_type in {"Mics", "Baros", "Analog"}:
+        if sensor_type in {"Mics", "Baros_P", "Baros_T", "Analog"}:
             # For those measurement types, the samples are inherently synchronized to the CPU time already. The
             # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
             # only to check if a packet has been dropped. Also, for mics and baros, there exist packet sets: Several
