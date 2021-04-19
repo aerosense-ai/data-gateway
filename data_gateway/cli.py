@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 import click
 import pkg_resources
 
@@ -147,7 +148,11 @@ def start(
     if not output_dir.startswith("/"):
         output_dir = os.path.join(".", output_dir)
 
-    threading.Thread(target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True)
+    thread = threading.Thread(
+        target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True
+    )
+    thread.start()
+
     print(
         "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
         f" to disk at {output_dir!r} at intervals of {batch_interval} seconds."
@@ -166,7 +171,9 @@ def start(
                 with open(commands_record_file, "a") as f:
                     f.write(line)
 
-                if line == "stop\n":
+                if line.startswith("sleep") and line.endswith("\n"):
+                    time.sleep(int(line.split(" ")[-1].strip()))
+                elif line == "stop\n":
                     packet_reader.stop = True
                     break
 

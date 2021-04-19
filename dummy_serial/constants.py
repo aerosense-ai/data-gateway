@@ -11,4 +11,4 @@ DEFAULT_BAUDRATE = 9600
 # * Should not be an empty string, as that is interpreted as "no data available on port".
 DEFAULT_RESPONSE = "NONE"
 
-NO_DATA_PRESENT = ""
+NO_DATA_PRESENT = b""

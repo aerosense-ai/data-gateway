@@ -54,7 +54,7 @@ class Configuration:
         packet_key=0xFE,
         type_handle_def=0xFF,
         mics_samples_per_packet=120,
-        baros_packet_size=60,
+        baros_packet_size=48,
         baros_group_size=4,
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
@@ -119,7 +119,8 @@ class Configuration:
 
         self.samples_per_packet = samples_per_packet or {
             "Mics": self.mics_samples_per_packet,
-            "Baros": self.baros_samples_per_packet,
+            "Baros_P": self.baros_samples_per_packet,
+            "Baros_T": self.baros_samples_per_packet,
             "Acc": self.imu_samples_per_packet,
             "Gyro": self.imu_samples_per_packet,
             "Mag": self.imu_samples_per_packet,
@@ -128,7 +129,8 @@ class Configuration:
 
         self.n_meas_qty = n_meas_qty or {
             "Mics": 10,
-            "Baros": 40,
+            "Baros_P": 40,
+            "Baros_T": 40,
             "Acc": 3,
             "Gyro": 3,
             "Mag": 3,
@@ -137,7 +139,8 @@ class Configuration:
 
         self.period = period or {
             "Mics": 1 / self.mics_freq,
-            "Baros": 1 / self.baros_freq,
+            "Baros_P": 1 / self.baros_freq,
+            "Baros_T": 1 / self.baros_freq,
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
