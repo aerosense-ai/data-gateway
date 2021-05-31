@@ -119,9 +119,10 @@ def start(
     serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
 
     if not interactive:
-        print(
+        logger.info(
             "Starting packet reader in non-interactive mode - files will be uploaded to cloud storage at intervals of "
-            f"{batch_interval} seconds."
+            "%s seconds.",
+            batch_interval,
         )
 
         PacketReader(
@@ -153,9 +154,11 @@ def start(
     )
     thread.start()
 
-    print(
+    logger.info(
         "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
-        f" to disk at {output_dir!r} at intervals of {batch_interval} seconds."
+        " to disk at %r at intervals of %s seconds.",
+        output_dir,
+        batch_interval,
     )
 
     # Keep a record of the commands given.
@@ -182,7 +185,7 @@ def start(
     except KeyboardInterrupt:
         packet_reader.stop = True
 
-    print("Stopping gateway.")
+    logger.info("Stopping gateway.")
     packet_reader.writer.force_persist()
 
 
