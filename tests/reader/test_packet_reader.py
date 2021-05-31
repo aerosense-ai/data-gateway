@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
@@ -108,6 +109,56 @@ class TestPacketReader(unittest.TestCase):
 
         # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
+
+    def test_update_handles_fails_if_start_and_end_handles_are_incorrect(self):
+        """Test that an error is raised if the start and end handles are incorrect when trying to update handles."""
+        serial_port = DummySerial(port="test")
+        sensor_type = bytes([255])
+
+        # Set first two bytes of payload to incorrect range for updating handles.
+        payload = bytearray(RANDOM_BYTES[0])
+        payload[0:1] = int(0).to_bytes(1, "little")
+        payload[2:3] = int(255).to_bytes(1, "little")
+        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, payload)))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=False,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+
+            with patch("data_gateway.reader.packet_reader.logger") as mock_logger:
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+                self.assertIn("Handle error", mock_logger.method_calls[0].args[0])
+
+    def test_update_handles(self):
+        """Test that the handles can be updated."""
+        serial_port = DummySerial(port="test")
+        sensor_type = bytes([255])
+
+        # Set first two bytes of payload to correct range for updating handles.
+        payload = bytearray(RANDOM_BYTES[0])
+        payload[0:1] = int(0).to_bytes(1, "little")
+        payload[2:3] = int(50).to_bytes(1, "little")
+        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, payload)))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=False,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+
+            with patch("data_gateway.reader.packet_reader.logger") as mock_logger:
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+                self.assertIn("Successfully updated handles", mock_logger.method_calls[0].args[0])
 
     def test_packet_reader_with_baros_p_sensor(self):
         """Test that the packet reader works with the Baro_P sensor."""
