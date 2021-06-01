@@ -10,6 +10,7 @@ class Configuration:
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO
     :param float analog_freq: analog sensors sampling frequency
+    :param float constat_period: period of incoming connection statistic parameters in ms
     :param str serial_port: name of the serial port
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
@@ -25,6 +26,7 @@ class Configuration:
     :param int imu_samples_per_packet: TODO
     :param int analog_samples_per_packet: number of samples per packet from analog sensors
     :param int baros_samples_per_packet: number of samples per packet from barometers
+    :param int constat_samples_per_packet: number of samples per packet from connection statistics
     :param dict|None default_handles: TODO
     :param dict|None samples_per_packet: TODO
     :param dict|None n_meas_qty: TODO
@@ -44,6 +46,7 @@ class Configuration:
         gyro_freq=100,
         gyro_range=2000,
         analog_freq=10,
+        constat_period=45,
         serial_port="COM9",
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
@@ -59,6 +62,7 @@ class Configuration:
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         baros_samples_per_packet=None,
+        constat_samples_per_packet=40,
         default_handles=None,
         samples_per_packet=None,
         n_meas_qty=None,
@@ -74,6 +78,7 @@ class Configuration:
         self.gyro_freq = gyro_freq
         self.gyro_range = gyro_range
         self.analog_freq = analog_freq
+        self.constat_period = constat_period
         self.serial_port = serial_port
         self.serial_buffer_rx_size = serial_buffer_rx_size
         self.serial_buffer_tx_size = serial_buffer_tx_size
@@ -89,6 +94,7 @@ class Configuration:
         self.imu_samples_per_packet = imu_samples_per_packet
         self.analog_samples_per_packet = analog_samples_per_packet
         self.baros_samples_per_packet = baros_samples_per_packet or int(baros_packet_size / baros_group_size)
+        self.constat_samples_per_packet = constat_samples_per_packet
 
         self.default_handles = default_handles or {
             34: "Baro group 0",
@@ -116,6 +122,7 @@ class Configuration:
             78: "IMU Magnetometer",
             80: "Analog Kinetron",
             82: "Analog Vbat",
+            84: "Constat",
         }
 
         self.samples_per_packet = samples_per_packet or {
@@ -126,6 +133,7 @@ class Configuration:
             "Gyro": self.imu_samples_per_packet,
             "Mag": self.imu_samples_per_packet,
             "Analog": self.analog_samples_per_packet,
+            "Constat": self.constat_samples_per_packet,
         }
 
         self.n_meas_qty = n_meas_qty or {
@@ -136,6 +144,7 @@ class Configuration:
             "Gyro": 3,
             "Mag": 3,
             "Analog": 1,
+            "Constat": 3,
         }
 
         self.period = period or {
@@ -146,6 +155,7 @@ class Configuration:
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
             "Analog": 1 / self.analog_freq,
+            "Constat": self.constat_period/1000,
         }
 
         self.user_data = user_data or {}

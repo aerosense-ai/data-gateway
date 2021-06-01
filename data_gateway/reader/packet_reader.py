@@ -43,7 +43,7 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
 
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog")
+        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog", "Constat")
 
         session_subdirectory = str(hash(datetime.now()))[1:7]
 
@@ -130,7 +130,7 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.endian)
 
-        if end_handle - start_handle == 50:
+        if end_handle - start_handle == 52:
             self.handles = {
                 start_handle + 2: "Baro group 0",
                 start_handle + 4: "Baro group 1",
@@ -157,9 +157,11 @@ class PacketReader:
                 start_handle + 46: "IMU Magnetometer",
                 start_handle + 48: "Analog Kinetron",
                 start_handle + 50: "Analog Vbat",
+                start_handle + 52: "Constat",
             }
 
             logger.info("Successfully updated handles.")
+            print("Successfully updated handles.")
             return
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
@@ -278,6 +280,15 @@ class PacketReader:
                     int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
                 )
 
+
+        elif self.handles[sensor_type] == "Constat":
+            self._wait_until_set_is_complete("Constat", t, data, current_timestamp, previous_ideal_timestamp)
+
+            for i in range(self.config.constat_samples_per_packet):
+                data["Constat"][0][i] = struct.unpack("<f" if self.config.endian == "little" else ">f", payload[(6 * i) : (6 * i + 4)])[0]
+                data["Constat"][1][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 5)], self.config.endian, signed=True)
+                data["Constat"][2][i] = int.from_bytes(payload[(6 * i + 5) : (6 * i + 6)], self.config.endian, signed=True)
+
         else:
             raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
 
@@ -291,7 +302,7 @@ class PacketReader:
         :param dict prev_ideal_timestamp:
         :return None:
         """
-        if sensor_type in {"Mics", "Baros_P", "Baros_T", "Analog"}:
+        if sensor_type in {"Mics", "Baros_P", "Baros_T", "Analog", "Constat"}:
             # For those measurement types, the samples are inherently synchronized to the CPU time already. The
             # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
             # only to check if a packet has been dropped. Also, for mics and baros, there exist packet sets: Several
