@@ -271,7 +271,7 @@ class PacketReader:
             self._wait_until_set_is_complete("Analog", t, data, current_timestamp, previous_ideal_timestamp)
 
             def val_to_v(val):
-                return (val << 6) / 1e6
+                return val / 1e6
 
             for i in range(self.config.analog_samples_per_packet):
                 data["Analog"][0][i] = val_to_v(
