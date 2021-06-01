@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+import struct
 from octue.utils.cloud import storage
 
 from data_gateway import exceptions
@@ -154,7 +155,8 @@ class PacketReader:
                 start_handle + 42: "IMU Accel",
                 start_handle + 44: "IMU Gyro",
                 start_handle + 46: "IMU Magnetometer",
-                start_handle + 48: "Analog",
+                start_handle + 48: "Analog Kinetron",
+                start_handle + 50: "Analog Vbat",
             }
 
             logger.info("Successfully updated handles.")
@@ -262,7 +264,10 @@ class PacketReader:
                 data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True)
                 data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
 
-        elif self.handles[sensor_type] == "Analog":
+        elif self.handles[sensor_type] == "Analog Kinetron":
+            logger.error("Received Kinetron packet. Not supported atm")
+
+        elif self.handles[sensor_type] == "Analog Vbat":
             self._wait_until_set_is_complete("Analog", t, data, current_timestamp, previous_ideal_timestamp)
 
             def val_to_v(val):
@@ -270,10 +275,7 @@ class PacketReader:
 
             for i in range(self.config.analog_samples_per_packet):
                 data["Analog"][0][i] = val_to_v(
-                    int.from_bytes(payload[(4 * i) : (4 * i + 2)], self.config.endian, signed=False)
-                )
-                data["Analog"][1][i] = val_to_v(
-                    int.from_bytes(payload[(4 * i + 2) : (4 * i + 4)], self.config.endian, signed=False)
+                    int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
                 )
 
         else:
