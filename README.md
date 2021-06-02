@@ -14,13 +14,15 @@ Documentation for `data-gateway` can be found [here.](https://windenergie-hsr.gi
 ## Developer notes
 
 ### Installation
+
+#### On Linux/MacOS
 For development, run the following from the repository root.
 ```bash
 pip install -r requirements-dev.txt
 ```
 
 #### On Windows
-This workflow works for Windows using Powershell
+This workflow works for Windows using Powershell.
 
 Prerequisites:
 1. Make sure to have python not installed from the [python.org](https://www.python.org/)
