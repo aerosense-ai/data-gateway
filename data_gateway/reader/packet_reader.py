@@ -161,7 +161,6 @@ class PacketReader:
             }
 
             logger.info("Successfully updated handles.")
-            print("Successfully updated handles.")
             return
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
