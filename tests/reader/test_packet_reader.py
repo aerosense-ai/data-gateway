@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
@@ -58,10 +59,10 @@ class TestPacketReader(unittest.TestCase):
     def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
         """Test that an `UnknownPacketTypeException` is raised if an unknown sensor type packet is received."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([0])
+        packet_type = bytes([0])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -78,10 +79,10 @@ class TestPacketReader(unittest.TestCase):
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([34])
+        packet_type = bytes([34])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -109,13 +110,67 @@ class TestPacketReader(unittest.TestCase):
         # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
 
+    def test_update_handles_fails_if_start_and_end_handles_are_incorrect(self):
+        """Test that an error is raised if the start and end handles are incorrect when trying to update handles."""
+        serial_port = DummySerial(port="test")
+
+        # Set packet type to handles update packet.
+        packet_type = bytes([255])
+
+        # Set first two bytes of payload to incorrect range for updating handles.
+        payload = bytearray(RANDOM_BYTES[0])
+        payload[0:1] = int(0).to_bytes(1, "little")
+        payload[2:3] = int(255).to_bytes(1, "little")
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=False,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+
+            with patch("data_gateway.reader.packet_reader.logger") as mock_logger:
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+                self.assertIn("Handle error", mock_logger.method_calls[0].args[0])
+
+    def test_update_handles(self):
+        """Test that the handles can be updated."""
+        serial_port = DummySerial(port="test")
+
+        # Set packet type to handles update packet.
+        packet_type = bytes([255])
+
+        # Set first two bytes of payload to correct range for updating handles.
+        payload = bytearray(RANDOM_BYTES[0])
+        payload[0:1] = int(0).to_bytes(1, "little")
+        payload[2:3] = int(50).to_bytes(1, "little")
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=False,
+                output_directory=temporary_directory,
+                batch_interval=self.BATCH_INTERVAL,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+
+            with patch("data_gateway.reader.packet_reader.logger") as mock_logger:
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+                self.assertIn("Successfully updated handles", mock_logger.method_calls[0].args[0])
+
     def test_packet_reader_with_baros_p_sensor(self):
         """Test that the packet reader works with the Baro_P sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([34])
+        packet_type = bytes([34])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -134,10 +189,10 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_baros_t_sensor(self):
         """Test that the packet reader works with the Baro_T sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([34])
+        packet_type = bytes([34])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -156,10 +211,10 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_mic_sensor(self):
         """Test that the packet reader works with the mic sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([54])
+        packet_type = bytes([54])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -178,10 +233,10 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_acc_sensor(self):
         """Test that the packet reader works with the acc sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([74])
+        packet_type = bytes([74])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -200,10 +255,10 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_gyro_sensor(self):
         """Test that the packet reader works with the gyro sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([76])
+        packet_type = bytes([76])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -222,10 +277,10 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_mag_sensor(self):
         """Test that the packet reader works with the mag sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([78])
+        packet_type = bytes([78])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -244,10 +299,10 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_analog_sensor(self):
         """Test that the packet reader works with the analog sensor."""
         serial_port = DummySerial(port="test")
-        sensor_type = bytes([80])
+        packet_type = bytes([80])
 
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -266,12 +321,12 @@ class TestPacketReader(unittest.TestCase):
     def test_all_sensors_together(self):
         """Test that the packet reader works with all sensors together."""
         serial_port = DummySerial(port="test")
-        sensor_types = bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([80])
+        packet_types = bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([80])
         sensor_names = "Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Analog"
 
-        for sensor_type in sensor_types:
-            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+        for packet_type in packet_types:
+            serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(

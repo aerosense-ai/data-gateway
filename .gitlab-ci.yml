@@ -1,19 +1,16 @@
-default:
-  image: python:3.8.8
-
-build_and_test:
+linux_build_and_test:
   cache:
     paths:
       - requirements-dev.txt
     when: 'on_success'
     key: 'build_and_test'
   script:
-    - python3 -m venv test-venv
-    - bash test-venv/bin/activate
-    - pip install -r requirements-dev.txt
-    - coverage run -m unittest
-    - coverage report
+    - pip install tox
+    - tox
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  image: python:3.8.8
+  tags:
+    - docker
 
 pages:
   cache:
