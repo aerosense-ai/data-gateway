@@ -132,7 +132,7 @@ class Configuration:
             "Acc": self.imu_samples_per_packet,
             "Gyro": self.imu_samples_per_packet,
             "Mag": self.imu_samples_per_packet,
-            "Analog": self.analog_samples_per_packet,
+            "Analog Vbat": self.analog_samples_per_packet,
             "Constat": self.constat_samples_per_packet,
         }
 
@@ -143,7 +143,7 @@ class Configuration:
             "Acc": 3,
             "Gyro": 3,
             "Mag": 3,
-            "Analog": 1,
+            "Analog Vbat": 1,
             "Constat": 3,
         }
 
@@ -154,8 +154,8 @@ class Configuration:
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
-            "Analog": 1 / self.analog_freq,
-            "Constat": self.constat_period/1000,
+            "Analog Vbat": 1 / self.analog_freq,
+            "Constat": self.constat_period / 1000,
         }
 
         self.user_data = user_data or {}

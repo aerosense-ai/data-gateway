@@ -1,8 +1,8 @@
 import json
 import logging
 import os
-from datetime import datetime
 import struct
+from datetime import datetime
 from octue.utils.cloud import storage
 
 from data_gateway import exceptions
@@ -43,7 +43,8 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
 
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog", "Constat")
+        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog")
+        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
 
         session_subdirectory = str(hash(datetime.now()))[1:7]
 
@@ -269,24 +270,29 @@ class PacketReader:
             logger.error("Received Kinetron packet. Not supported atm")
 
         elif self.handles[sensor_type] == "Analog Vbat":
-            self._wait_until_set_is_complete("Analog", t, data, current_timestamp, previous_ideal_timestamp)
+            self._wait_until_set_is_complete("Analog Vbat", t, data, current_timestamp, previous_ideal_timestamp)
 
             def val_to_v(val):
-                return (val << 6) / 1e6
+                return val / 1e6
 
             for i in range(self.config.analog_samples_per_packet):
-                data["Analog"][0][i] = val_to_v(
+                data["Analog Vbat"][0][i] = val_to_v(
                     int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
                 )
-
 
         elif self.handles[sensor_type] == "Constat":
             self._wait_until_set_is_complete("Constat", t, data, current_timestamp, previous_ideal_timestamp)
 
             for i in range(self.config.constat_samples_per_packet):
-                data["Constat"][0][i] = struct.unpack("<f" if self.config.endian == "little" else ">f", payload[(6 * i) : (6 * i + 4)])[0]
-                data["Constat"][1][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 5)], self.config.endian, signed=True)
-                data["Constat"][2][i] = int.from_bytes(payload[(6 * i + 5) : (6 * i + 6)], self.config.endian, signed=True)
+                data["Constat"][0][i] = struct.unpack(
+                    "<f" if self.config.endian == "little" else ">f", payload[(6 * i) : (6 * i + 4)]
+                )[0]
+                data["Constat"][1][i] = int.from_bytes(
+                    payload[(6 * i + 4) : (6 * i + 5)], self.config.endian, signed=True
+                )
+                data["Constat"][2][i] = int.from_bytes(
+                    payload[(6 * i + 5) : (6 * i + 6)], self.config.endian, signed=True
+                )
 
         else:
             raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
@@ -301,7 +307,7 @@ class PacketReader:
         :param dict prev_ideal_timestamp:
         :return None:
         """
-        if sensor_type in {"Mics", "Baros_P", "Baros_T", "Analog", "Constat"}:
+        if sensor_type in {"Mics", "Baros_P", "Baros_T", "Analog Vbat", "Constat"}:
             # For those measurement types, the samples are inherently synchronized to the CPU time already. The
             # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
             # only to check if a packet has been dropped. Also, for mics and baros, there exist packet sets: Several
