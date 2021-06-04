@@ -1,7 +1,21 @@
-default:
+build_and_test_linux:
+  cache:
+    paths:
+      - requirements-dev.txt
+    when: 'on_success'
+    key: 'build_and_test'
+  script:
+    - python3 -m venv test-venv
+    - bash test-venv/bin/activate
+    - pip install -r requirements-dev.txt
+    - coverage run -m unittest
+    - coverage report
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   image: python:3.8.8
+  tags:
+    - docker
 
-build_and_test:
+build_and_test_windows:
   cache:
     paths:
       - requirements-dev.txt
