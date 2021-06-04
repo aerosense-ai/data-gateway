@@ -14,6 +14,10 @@ build_and_test:
     - coverage run -m unittest
     - coverage report
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  tags:
+    - shared-windows
+    - windows
+    - windows-1809
 
 pages:
   cache:
