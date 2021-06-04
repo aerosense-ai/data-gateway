@@ -125,7 +125,7 @@ class Configuration:
             "Acc": self.imu_samples_per_packet,
             "Gyro": self.imu_samples_per_packet,
             "Mag": self.imu_samples_per_packet,
-            "Analog": self.analog_samples_per_packet,
+            "Analog Vbat": self.analog_samples_per_packet,
         }
 
         self.n_meas_qty = n_meas_qty or {
@@ -135,7 +135,7 @@ class Configuration:
             "Acc": 3,
             "Gyro": 3,
             "Mag": 3,
-            "Analog": 1,
+            "Analog Vbat": 1,
         }
 
         self.period = period or {
@@ -145,7 +145,7 @@ class Configuration:
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
-            "Analog": 1 / self.analog_freq,
+            "Analog Vbat": 1 / self.analog_freq,
         }
 
         self.user_data = user_data or {}
