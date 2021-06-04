@@ -299,7 +299,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_analog_sensor(self):
         """Test that the packet reader works with the analog sensor."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([80])
+        packet_type = bytes([82])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -314,15 +314,17 @@ class TestPacketReader(unittest.TestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Analog"])
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Analog Vbat"])
 
-        self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Analog"], number_of_batches_to_check=1)
+        self._check_batches_are_uploaded_to_cloud(
+            packet_reader, sensor_names=["Analog Vbat"], number_of_batches_to_check=1
+        )
 
     def test_all_sensors_together(self):
         """Test that the packet reader works with all sensors together."""
         serial_port = DummySerial(port="test")
-        packet_types = bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([80])
-        sensor_names = "Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Analog"
+        packet_types = bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([82])
+        sensor_names = "Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Analog Vbat"
 
         for packet_type in packet_types:
             serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))

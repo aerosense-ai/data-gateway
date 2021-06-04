@@ -43,7 +43,7 @@ class Configuration:
         acc_range=16,
         gyro_freq=100,
         gyro_range=2000,
-        analog_freq=16384,
+        analog_freq=10,
         serial_port="COM9",
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
@@ -114,7 +114,8 @@ class Configuration:
             74: "IMU Accel",
             76: "IMU Gyro",
             78: "IMU Magnetometer",
-            80: "Analog",
+            80: "Analog Kinetron",
+            82: "Analog Vbat",
         }
 
         self.samples_per_packet = samples_per_packet or {
@@ -124,7 +125,7 @@ class Configuration:
             "Acc": self.imu_samples_per_packet,
             "Gyro": self.imu_samples_per_packet,
             "Mag": self.imu_samples_per_packet,
-            "Analog": self.analog_samples_per_packet,
+            "Analog Vbat": self.analog_samples_per_packet,
         }
 
         self.n_meas_qty = n_meas_qty or {
@@ -134,7 +135,7 @@ class Configuration:
             "Acc": 3,
             "Gyro": 3,
             "Mag": 3,
-            "Analog": 2,
+            "Analog Vbat": 1,
         }
 
         self.period = period or {
@@ -144,7 +145,7 @@ class Configuration:
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
-            "Analog": 1 / self.analog_freq,
+            "Analog Vbat": 1 / self.analog_freq,
         }
 
         self.user_data = user_data or {}
