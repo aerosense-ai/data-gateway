@@ -1,4 +1,4 @@
-build_and_test_linux:
+linux_build_and_test:
   cache:
     paths:
       - requirements-dev.txt
@@ -12,7 +12,7 @@ build_and_test_linux:
   tags:
     - docker
 
-build_and_test_windows:
+windows_build_and_test:
   cache:
     paths:
       - requirements-dev.txt
@@ -20,8 +20,13 @@ build_and_test_windows:
     key: 'build_and_test'
   script:
     - choco install python --version=3.8.0 -y
-    - $env:PATH+=";C:\Python38;C:\Python38\Scripts"
-    - python -m pip install tox
+    - cat C:\ProgramData\chocolatey\logs\chocolatey.log
+    - ls C:\Python38
+    - $env:PATH+=";C:\Python38\;C:\Python38\Scripts"
+    - echo %PATH%
+    - set PATH=C:\Python38\Python 3.8;%PATH%
+    - echo %PATH%
+    - python3 -m pip install tox
     - tox
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   tags:
