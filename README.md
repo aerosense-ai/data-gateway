@@ -14,9 +14,34 @@ Documentation for `data-gateway` can be found [here.](https://windenergie-hsr.gi
 ## Developer notes
 
 ### Installation
+
+#### On Linux/MacOS
 For development, run the following from the repository root.
 ```bash
 pip install -r requirements-dev.txt
+```
+
+#### On Windows
+This workflow works for Windows using Powershell.
+
+Prerequisites:
+1. Make sure to have python not installed from the [python.org](https://www.python.org/)
+2. Install [pyenv-win](https://github.com/pyenv-win/pyenv-win) via pip method
+3. Execute ```pip install virtualenv```
+
+Installation:
+1. clone this repo.
+2. ``` cd data-gateway```
+2. ``` pyenv install 3.7.0``` (or higher)
+3. ``` pyenv local 3.7.0 ```
+4. ``` pyenv rehash ```
+5. ``` virtualenv venv ```
+6. ``` ./venv/Scripts/activate ```
+7. ``` pip install -r requirements-dev.txt ```
+
+Every time you enter the repo over powershell again, make sure to activate the venv using
+```
+./venv/Scripts/activate
 ```
 
 ### Usage
