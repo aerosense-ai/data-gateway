@@ -47,7 +47,7 @@ class Configuration:
         gyro_range=2000,
         analog_freq=10,
         constat_period=45,
-        serial_port="COM9",
+        serial_port="COM4",
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
         baudrate=2300000,
@@ -62,7 +62,7 @@ class Configuration:
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         baros_samples_per_packet=None,
-        constat_samples_per_packet=40,
+        constat_samples_per_packet=24,
         default_handles=None,
         samples_per_packet=None,
         n_meas_qty=None,
@@ -144,7 +144,7 @@ class Configuration:
             "Gyro": 3,
             "Mag": 3,
             "Analog Vbat": 1,
-            "Constat": 3,
+            "Constat": 4,
         }
 
         self.period = period or {
