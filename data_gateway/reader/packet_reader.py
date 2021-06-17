@@ -161,7 +161,7 @@ class PacketReader:
                 start_handle + 52: "Constat",
             }
 
-            logger.warning("Successfully updated handles.")
+            logger.info("Successfully updated handles.")
             return
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
@@ -273,7 +273,7 @@ class PacketReader:
             self._wait_until_set_is_complete("Analog Vbat", t, data, current_timestamp, previous_ideal_timestamp)
 
             def val_to_v(val):
-                return val / 1e6 * 3  # *3 to compensate for the voltage divider
+                return val / 1e6
 
             for i in range(self.config.analog_samples_per_packet):
                 data["Analog Vbat"][0][i] = val_to_v(
@@ -283,22 +283,15 @@ class PacketReader:
         elif self.handles[sensor_type] == "Constat":
             self._wait_until_set_is_complete("Constat", t, data, current_timestamp, previous_ideal_timestamp)
 
-            print("Constat packet: %d" % (t / (2 ** 16)))
-
             for i in range(self.config.constat_samples_per_packet):
-                bytes_per_sample = 10
                 data["Constat"][0][i] = struct.unpack(
-                    "<f" if self.config.endian == "little" else ">f",
-                    payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
+                    "<f" if self.config.endian == "little" else ">f", payload[(6 * i) : (6 * i + 4)]
                 )[0]
                 data["Constat"][1][i] = int.from_bytes(
-                    payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)], self.config.endian, signed=True
+                    payload[(6 * i + 4) : (6 * i + 5)], self.config.endian, signed=True
                 )
                 data["Constat"][2][i] = int.from_bytes(
-                    payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)], self.config.endian, signed=True
-                )
-                data["Constat"][3][i] = int.from_bytes(
-                    payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)], self.config.endian, signed=False
+                    payload[(6 * i + 5) : (6 * i + 6)], self.config.endian, signed=True
                 )
 
         else:
@@ -334,7 +327,7 @@ class PacketReader:
                         ms_gap = (current_timestamp[sensor_type] - ideal_new_timestamp) / (2 ** 16) * 1000
                         logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
                     else:
-                        logger.warning("Received first set of %s packets", sensor_type)
+                        logger.info("Received first set of %s packets", sensor_type)
 
                     ideal_new_timestamp = current_timestamp[sensor_type]
 
@@ -376,7 +369,7 @@ class PacketReader:
                         logger.warning("Lost %s packet: %s ms gap", sensor_type, ms_gap)
 
                 else:
-                    logger.warning("Received first %s packet", sensor_type)
+                    logger.info("Received first %s packet", sensor_type)
 
                 self._persist_data(data, sensor_type, t / (2 ** 16), self.config.period[sensor_type])
 
