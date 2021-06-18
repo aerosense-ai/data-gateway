@@ -41,12 +41,11 @@ class TestBatchingWriter(unittest.TestCase):
                 writer.add_to_current_batch(sensor_name="test", data="ping,")
                 writer.add_to_current_batch(sensor_name="test", data="pong,\n")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(writer.batch_interval)
+                time.sleep(writer.batch_interval * 2)
 
                 writer.add_to_current_batch(sensor_name="test", data="ding,")
                 writer.add_to_current_batch(sensor_name="test", data="dong,\n")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(writer.batch_interval)
 
             self.assertEqual(len(writer.current_batch["test"]), 0)
 
@@ -201,7 +200,7 @@ class TestBatchingUploader(unittest.TestCase):
                     sensor_names=["test"],
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
-                    batch_interval=2,
+                    batch_interval=10,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=True,
