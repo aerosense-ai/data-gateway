@@ -388,21 +388,21 @@ class PacketReader:
         number_of_samples = len(data[sensor_type][0])
 
         # Iterate through all sample times.
-        for i in range(len(data[sensor_type][0])):
+        for i in range(number_of_samples):
             time = timestamp - (number_of_samples - i) * period
-            self._add_to_required_storage_media_batches(sensor_type, data=str(time) + ",")
+            sample = [time]
 
             for meas in data[sensor_type]:
-                self._add_to_required_storage_media_batches(sensor_type, data=str(meas[i]) + ",")
+                sample.append(meas[i])
 
-            self._add_to_required_storage_media_batches(sensor_type, data="\n")
+            self._add_to_required_storage_media_batches(sensor_type, data=sample)
 
     def _add_to_required_storage_media_batches(self, sensor_type, data):
         """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader
         batch).
 
         :param str sensor_type: sensor type to persist data from
-        :param str data: data to persist
+        :param iter data: data to persist
         :return None:
         """
         if self.save_locally:
