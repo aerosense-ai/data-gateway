@@ -1,12 +1,13 @@
 import json
 import os
 import tempfile
-from unittest import TestCase, mock
+from unittest import mock
 from click.testing import CliRunner
 
 from data_gateway.cli import gateway_cli
 from dummy_serial.dummy_serial import DummySerial
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
 class EnvironmentVariableRemover:
@@ -28,7 +29,7 @@ class EnvironmentVariableRemover:
             os.environ[variable_name] = value
 
 
-class TestCLI(TestCase):
+class TestCLI(BaseTestCase):
     def test_version(self):
         """Ensure the version command works in the CLI."""
         result = CliRunner().invoke(gateway_cli, ["--version"])

@@ -2,7 +2,6 @@ import json
 import os
 import tempfile
 import time
-import unittest
 from unittest import mock
 import google.api_core.exceptions
 from google.cloud.storage.blob import Blob
@@ -11,9 +10,10 @@ from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
-class TestBatchingWriter(unittest.TestCase):
+class TestBatchingWriter(BaseTestCase):
     def test_data_is_batched(self):
         """Test that data is batched as expected."""
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -86,7 +86,7 @@ class TestBatchingWriter(unittest.TestCase):
             )
 
 
-class TestBatchingUploader(unittest.TestCase):
+class TestBatchingUploader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)

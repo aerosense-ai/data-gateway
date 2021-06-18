@@ -1,7 +1,6 @@
 import json
 import os
 import tempfile
-import unittest
 from unittest.mock import patch
 from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
@@ -11,9 +10,10 @@ from data_gateway.reader.configuration import Configuration
 from data_gateway.reader.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
-class TestPacketReader(unittest.TestCase):
+class TestPacketReader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.BATCH_INTERVAL = 10
