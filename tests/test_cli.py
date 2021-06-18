@@ -66,6 +66,8 @@ class TestCLI(TestCase):
         """Ensure the gateway can be started via the CLI with a default output directory. The "stop-when-no-more-data"
         option is enabled so the test doesn't run forever.
         """
+        initial_directory = os.getcwd()
+
         with tempfile.TemporaryDirectory() as temporary_directory:
             os.chdir(temporary_directory)
 
@@ -80,8 +82,9 @@ class TestCLI(TestCase):
                     ],
                 )
 
-        self.assertIsNone(result.exception)
-        self.assertEqual(result.exit_code, 0)
+            self.assertIsNone(result.exception)
+            self.assertEqual(result.exit_code, 0)
+            os.chdir(initial_directory)
 
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded. Interactive mode should work without the
