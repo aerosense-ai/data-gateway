@@ -3,8 +3,8 @@ import os
 import unittest
 from unittest import mock
 from google.cloud.storage.client import Client
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
 from cloud_function.file_handler import DATAFILES_DIRECTORY
@@ -90,7 +90,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
+                    bucket_name=DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
                 )
             ),
             {"baudrate": 10},

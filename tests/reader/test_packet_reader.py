@@ -2,8 +2,8 @@ import json
 import os
 import tempfile
 from unittest.mock import patch
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway import exceptions
 from data_gateway.reader.configuration import Configuration

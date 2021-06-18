@@ -3,8 +3,8 @@ import json
 import logging
 import os
 import time
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_directory
 
 import abc

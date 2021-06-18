@@ -5,8 +5,8 @@ import time
 from unittest import mock
 import google.api_core.exceptions
 from google.cloud.storage.blob import Blob
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
@@ -278,4 +278,4 @@ class TestBatchingUploader(BaseTestCase):
             ),
         )
 
-        self.assertEqual(metadata["metadata"], {"big": "rock"})
+        self.assertEqual(metadata["custom_metadata"], {"big": "rock"})

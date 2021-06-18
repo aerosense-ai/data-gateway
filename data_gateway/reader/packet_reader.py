@@ -3,7 +3,7 @@ import logging
 import os
 import struct
 from datetime import datetime
-from octue.utils.cloud import storage
+from octue.cloud import storage
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
