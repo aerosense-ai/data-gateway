@@ -3,9 +3,10 @@ import unittest
 from serial.serialutil import SerialException
 
 from dummy_serial import DummySerial, constants, exceptions, random_bytes, random_string
+from tests.base import BaseTestCase
 
 
-class DummySerialTest(unittest.TestCase):
+class DummySerialTest(BaseTestCase):
     def setUp(self):
         """
         Sets up test environment:

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from octue.resources import Datafile
+from octue.utils.cloud import storage
 from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 
@@ -96,7 +97,7 @@ class FileHandler:
         )
 
         path_from, name = os.path.split(batch_path)
-        datafile_path = os.path.join(path_from, DATAFILES_DIRECTORY, name)
+        datafile_path = storage.path.join(path_from, DATAFILES_DIRECTORY, name)
 
         self.destination_client.upload_from_string(
             string=datafile.serialise(to_string=True),

@@ -8,6 +8,7 @@ from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
 from cloud_function.file_handler import DATAFILES_DIRECTORY
+from tests.base import BaseTestCase
 
 
 SOURCE_PROJECT_NAME = "source-project"
@@ -16,7 +17,7 @@ DESTINATION_PROJECT_NAME = "destination-project"
 DESTINATION_BUCKET_NAME = "destination-bucket"
 
 
-class TestCleanAndUploadBatch(unittest.TestCase):
+class TestCleanAndUploadBatch(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         os.environ["GCP_PROJECT"] = SOURCE_PROJECT_NAME

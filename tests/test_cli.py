@@ -1,12 +1,13 @@
 import json
 import os
 import tempfile
-from unittest import TestCase, mock
+from unittest import mock
 from click.testing import CliRunner
 
 from data_gateway.cli import gateway_cli
 from dummy_serial.dummy_serial import DummySerial
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
 class EnvironmentVariableRemover:
@@ -28,7 +29,7 @@ class EnvironmentVariableRemover:
             os.environ[variable_name] = value
 
 
-class TestCLI(TestCase):
+class TestCLI(BaseTestCase):
     def test_version(self):
         """Ensure the version command works in the CLI."""
         result = CliRunner().invoke(gateway_cli, ["--version"])
@@ -50,11 +51,13 @@ class TestCLI(TestCase):
             with mock.patch("serial.Serial", new=DummySerial):
                 result = CliRunner().invoke(
                     gateway_cli,
-                    f"start "
-                    f"--gcp-project-name={TEST_PROJECT_NAME} "
-                    f"--gcp-bucket-name={TEST_BUCKET_NAME} "
-                    f"--output-dir={temporary_directory} "
-                    f"--stop-when-no-more-data",
+                    [
+                        "start",
+                        f"--gcp-project-name={TEST_PROJECT_NAME}",
+                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        f"--output-dir={temporary_directory}",
+                        "--stop-when-no-more-data",
+                    ],
                 )
 
         self.assertIsNone(result.exception)
@@ -64,20 +67,25 @@ class TestCLI(TestCase):
         """Ensure the gateway can be started via the CLI with a default output directory. The "stop-when-no-more-data"
         option is enabled so the test doesn't run forever.
         """
+        initial_directory = os.getcwd()
+
         with tempfile.TemporaryDirectory() as temporary_directory:
             os.chdir(temporary_directory)
 
             with mock.patch("serial.Serial", new=DummySerial):
                 result = CliRunner().invoke(
                     gateway_cli,
-                    f"start "
-                    f"--gcp-project-name={TEST_PROJECT_NAME} "
-                    f"--gcp-bucket-name={TEST_BUCKET_NAME} "
-                    f"--stop-when-no-more-data",
+                    [
+                        "start",
+                        f"--gcp-project-name={TEST_PROJECT_NAME}",
+                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--stop-when-no-more-data",
+                    ],
                 )
 
-        self.assertIsNone(result.exception)
-        self.assertEqual(result.exit_code, 0)
+            self.assertIsNone(result.exception)
+            self.assertEqual(result.exit_code, 0)
+            os.chdir(initial_directory)
 
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded. Interactive mode should work without the
@@ -89,7 +97,7 @@ class TestCLI(TestCase):
             with tempfile.TemporaryDirectory() as temporary_directory:
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
-                        gateway_cli, f"start --interactive --output-dir={temporary_directory}", input=commands
+                        gateway_cli, ["start", "--interactive", f"--output-dir={temporary_directory}"], input=commands
                     )
 
                 self.assertIsNone(result.exception)
@@ -106,7 +114,7 @@ class TestCLI(TestCase):
             with tempfile.TemporaryDirectory() as temporary_directory:
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
-                        gateway_cli, f"start --interactive --output-dir={temporary_directory}", input="stop\n"
+                        gateway_cli, ["start", "--interactive", f"--output-dir={temporary_directory}"], input="stop\n"
                     )
 
             self.assertIsNone(result.exception)
@@ -126,7 +134,9 @@ class TestCLI(TestCase):
             with tempfile.TemporaryDirectory() as temporary_directory:
                 with mock.patch("serial.Serial", return_value=serial_port):
                     result = CliRunner().invoke(
-                        gateway_cli, f"start --interactive --output-dir={temporary_directory}", input="sleep 2\nstop\n"
+                        gateway_cli,
+                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                        input="sleep 2\nstop\n",
                     )
 
                 session_subdirectory = [item for item in os.scandir(temporary_directory) if item.is_dir()][0].name
@@ -153,7 +163,12 @@ class TestCLI(TestCase):
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        f"start --interactive --config-file={config_path} --output-dir={temporary_directory}",
+                        [
+                            "start",
+                            "--interactive",
+                            f"--config-file={config_path}",
+                            f"--output-dir={temporary_directory}",
+                        ],
                         input="stop\n",
                     )
 

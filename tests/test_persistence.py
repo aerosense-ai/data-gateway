@@ -2,7 +2,6 @@ import json
 import os
 import tempfile
 import time
-import unittest
 from unittest import mock
 import google.api_core.exceptions
 from google.cloud.storage.blob import Blob
@@ -11,9 +10,10 @@ from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
-class TestBatchingWriter(unittest.TestCase):
+class TestBatchingWriter(BaseTestCase):
     def test_data_is_batched(self):
         """Test that data is batched as expected."""
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -41,12 +41,11 @@ class TestBatchingWriter(unittest.TestCase):
                 writer.add_to_current_batch(sensor_name="test", data="ping,")
                 writer.add_to_current_batch(sensor_name="test", data="pong,\n")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(writer.batch_interval)
+                time.sleep(writer.batch_interval * 2)
 
                 writer.add_to_current_batch(sensor_name="test", data="ding,")
                 writer.add_to_current_batch(sensor_name="test", data="dong,\n")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(writer.batch_interval)
 
             self.assertEqual(len(writer.current_batch["test"]), 0)
 
@@ -87,7 +86,7 @@ class TestBatchingWriter(unittest.TestCase):
             )
 
 
-class TestBatchingUploader(unittest.TestCase):
+class TestBatchingUploader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
@@ -201,7 +200,7 @@ class TestBatchingUploader(unittest.TestCase):
                     sensor_names=["test"],
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
-                    batch_interval=2,
+                    batch_interval=10,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=True,

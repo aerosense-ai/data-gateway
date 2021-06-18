@@ -1,11 +1,11 @@
 import json
 import os
-import unittest
 
 from data_gateway.reader.configuration import Configuration
+from tests.base import BaseTestCase
 
 
-class TestConfiguration(unittest.TestCase):
+class TestConfiguration(BaseTestCase):
 
     configuration_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")
     with open(configuration_path) as f:
