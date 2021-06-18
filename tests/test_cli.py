@@ -144,7 +144,7 @@ class TestCLI(BaseTestCase):
                 with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
                     data = json.loads(f.read())
 
-                self.assertTrue(len(data) == 2)
+                self.assertEqual(len(data), 2)
                 self.assertTrue(len(data["Baros_P"]) > 1)
                 self.assertTrue(len(data["Baros_T"]) > 1)
 
