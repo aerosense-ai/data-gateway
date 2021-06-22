@@ -1,10 +1,9 @@
+import datetime
 import json
 import logging
 import os
 import struct
-from datetime import datetime
 from octue.cloud import storage
-from octue.utils.time import convert_to_posix_time
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
@@ -44,7 +43,7 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
-        self.start_timestamp = convert_to_posix_time(datetime.now())
+        self.start_timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
         session_subdirectory = str(hash(self.start_timestamp))[1:7]
 
         if upload_to_cloud:

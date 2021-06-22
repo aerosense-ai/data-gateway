@@ -36,7 +36,7 @@ class TimeBatcher:
     :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str session_subdirectory: directory within output directory to persist into
-    :param float start_timestamp: posix timestamp of the start of data collection session
+    :param float start_timestamp: posix UTC timestamp of the start of data collection session
     :param str output_directory: directory to write batches to
     :return None:
     """
@@ -136,7 +136,7 @@ class BatchingFileWriter(TimeBatcher):
     :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str session_subdirectory: directory within output directory to persist into
-    :param float start_timestamp: posix timestamp of the start of data collection session
+    :param float start_timestamp: posix UTC timestamp of the start of data collection session
     :param str output_directory: directory to write batches to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
@@ -224,7 +224,7 @@ class BatchingUploader(TimeBatcher):
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str session_subdirectory: directory within output directory to persist into
-    :param float start_timestamp: posix timestamp of the start of data collection session
+    :param float start_timestamp: posix UTC timestamp of the start of data collection session
     :param str output_directory: directory to write batches to
     :param float upload_timeout: time after which to give up trying to upload to the cloud
     :param bool upload_backup_files: attempt to upload backed-up batches on next batch upload

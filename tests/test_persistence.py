@@ -8,14 +8,13 @@ import google.api_core.exceptions
 from google.cloud.storage.blob import Blob
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
-from octue.utils.time import convert_to_posix_time
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
 
 
-START_TIMESTAMP = convert_to_posix_time(datetime.datetime.now())
+START_TIMESTAMP = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
 
 
 class TestBatchingWriter(BaseTestCase):
