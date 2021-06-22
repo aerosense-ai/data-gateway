@@ -37,9 +37,9 @@ class TestPacketReader(BaseTestCase):
             )
 
             for name in sensor_names:
-                lines = data[name].split("\n")
+                lines = data[name]
                 self.assertTrue(len(lines) > 1)
-                self.assertTrue(len(lines[0].split(",")) > 1)
+                self.assertTrue(len(lines[0]) > 1)
 
     def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
@@ -52,9 +52,9 @@ class TestPacketReader(BaseTestCase):
                 data = json.load(f)
 
                 for name in sensor_names:
-                    lines = data[name].split("\n")
+                    lines = data[name]
                     self.assertTrue(len(lines) > 1)
-                    self.assertTrue(len(lines[0].split(",")) > 1)
+                    self.assertTrue(len(lines[0]) > 1)
 
     def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
         """Test that an `UnknownPacketTypeException` is raised if an unknown sensor type packet is received."""

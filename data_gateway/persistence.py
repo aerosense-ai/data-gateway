@@ -61,7 +61,7 @@ class TimeBatcher:
         """Add serialised data (a string) to the current batch for the given sensor name.
 
         :param str sensor_name: name of sensor
-        :param str data: data to add to batch
+        :param iter data: data to add to batch
         :return None:
         """
         # Finalise the batch and persist it if enough time has elapsed.
@@ -81,7 +81,7 @@ class TimeBatcher:
         """
         for sensor_name, data in self.current_batch.items():
             if data:
-                self.ready_batch[sensor_name] = "".join(copy.deepcopy(data))
+                self.ready_batch[sensor_name] = copy.deepcopy(data)
                 data.clear()
 
     def force_persist(self):

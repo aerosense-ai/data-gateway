@@ -38,22 +38,22 @@ class TestBatchingWriter(BaseTestCase):
             )
 
             with writer:
-                writer.add_to_current_batch(sensor_name="test", data="ping,")
-                writer.add_to_current_batch(sensor_name="test", data="pong,\n")
+                writer.add_to_current_batch(sensor_name="test", data="ping")
+                writer.add_to_current_batch(sensor_name="test", data="pong")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
                 time.sleep(writer.batch_interval * 2)
 
-                writer.add_to_current_batch(sensor_name="test", data="ding,")
-                writer.add_to_current_batch(sensor_name="test", data="dong,\n")
+                writer.add_to_current_batch(sensor_name="test", data="ding")
+                writer.add_to_current_batch(sensor_name="test", data="dong")
                 self.assertEqual(len(writer.current_batch["test"]), 2)
 
             self.assertEqual(len(writer.current_batch["test"]), 0)
 
             with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-0.json")) as f:
-                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f), {"test": ["ping", "pong"]})
 
             with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-1.json")) as f:
-                self.assertEqual(json.load(f), {"test": "ding,dong,\n"})
+                self.assertEqual(json.load(f), {"test": ["ding", "dong"]})
 
     def test_oldest_batch_is_deleted_when_storage_limit_reached(self):
         """Check that (only) the oldest batch is deleted when the storage limit is reached."""
@@ -119,14 +119,14 @@ class TestBatchingUploader(BaseTestCase):
         )
 
         with uploader:
-            uploader.add_to_current_batch(sensor_name="test", data="ping,")
-            uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+            uploader.add_to_current_batch(sensor_name="test", data="ping")
+            uploader.add_to_current_batch(sensor_name="test", data="pong")
             self.assertEqual(len(uploader.current_batch["test"]), 2)
 
             time.sleep(uploader.batch_interval)
 
-            uploader.add_to_current_batch(sensor_name="test", data="ding,")
-            uploader.add_to_current_batch(sensor_name="test", data="dong,\n")
+            uploader.add_to_current_batch(sensor_name="test", data="ding")
+            uploader.add_to_current_batch(sensor_name="test", data="dong")
             self.assertEqual(len(uploader.current_batch["test"]), 2)
 
             time.sleep(uploader.batch_interval)
@@ -142,7 +142,7 @@ class TestBatchingUploader(BaseTestCase):
                     ),
                 )
             ),
-            {"test": "ping,pong,\n"},
+            {"test": ["ping", "pong"]},
         )
 
         self.assertEqual(
@@ -154,7 +154,7 @@ class TestBatchingUploader(BaseTestCase):
                     ),
                 )
             ),
-            {"test": "ding,dong,\n"},
+            {"test": ["ding", "dong"]},
         )
 
     def test_batch_is_written_to_disk_if_upload_fails(self):
@@ -173,8 +173,8 @@ class TestBatchingUploader(BaseTestCase):
                 )
 
                 with uploader:
-                    uploader.add_to_current_batch(sensor_name="test", data="ping,")
-                    uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+                    uploader.add_to_current_batch(sensor_name="test", data="ping")
+                    uploader.add_to_current_batch(sensor_name="test", data="pong")
 
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
@@ -189,7 +189,7 @@ class TestBatchingUploader(BaseTestCase):
             with open(
                 os.path.join(temporary_directory, ".backup", uploader._session_subdirectory, "window-0.json")
             ) as f:
-                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f), {"test": ["ping", "pong"]})
 
     def test_backup_files_are_uploaded_on_next_upload_attempt(self):
         """Test that backup files from a failed upload are uploaded on the next upload attempt."""
@@ -207,8 +207,8 @@ class TestBatchingUploader(BaseTestCase):
                 )
 
                 with uploader:
-                    uploader.add_to_current_batch(sensor_name="test", data="ping,")
-                    uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+                    uploader.add_to_current_batch(sensor_name="test", data="ping")
+                    uploader.add_to_current_batch(sensor_name="test", data="pong")
 
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
@@ -223,10 +223,10 @@ class TestBatchingUploader(BaseTestCase):
 
             # Check that a backup file has been written.
             with open(backup_path) as f:
-                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f), {"test": ["ping", "pong"]})
 
             with uploader:
-                uploader.add_to_current_batch(sensor_name="test", data="ding,dong,\n")
+                uploader.add_to_current_batch(sensor_name="test", data=["ding", "dong"])
 
         # Check that both batches are now in cloud storage.
         self.assertEqual(
@@ -238,7 +238,7 @@ class TestBatchingUploader(BaseTestCase):
                     ),
                 )
             ),
-            {"test": "ping,pong,\n"},
+            {"test": ["ping", "pong"]},
         )
 
         self.assertEqual(
@@ -250,7 +250,7 @@ class TestBatchingUploader(BaseTestCase):
                     ),
                 )
             ),
-            {"test": "ding,dong,\n"},
+            {"test": [["ding", "dong"]]},
         )
 
         # Check that the backup file has been removed now it's been uploaded to cloud storage.
