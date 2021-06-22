@@ -1,19 +1,19 @@
 import json
 import os
 import tempfile
-import unittest
 from unittest.mock import patch
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway import exceptions
 from data_gateway.reader.configuration import Configuration
 from data_gateway.reader.packet_reader import PacketReader
 from dummy_serial.dummy_serial import DummySerial
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
-class TestPacketReader(unittest.TestCase):
+class TestPacketReader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.BATCH_INTERVAL = 10
@@ -37,9 +37,9 @@ class TestPacketReader(unittest.TestCase):
             )
 
             for name in sensor_names:
-                lines = data[name].split("\n")
+                lines = data[name]
                 self.assertTrue(len(lines) > 1)
-                self.assertTrue(len(lines[0].split(",")) > 1)
+                self.assertTrue(len(lines[0]) > 1)
 
     def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
@@ -52,9 +52,9 @@ class TestPacketReader(unittest.TestCase):
                 data = json.load(f)
 
                 for name in sensor_names:
-                    lines = data[name].split("\n")
+                    lines = data[name]
                     self.assertTrue(len(lines) > 1)
-                    self.assertTrue(len(lines[0].split(",")) > 1)
+                    self.assertTrue(len(lines[0]) > 1)
 
     def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
         """Test that an `UnknownPacketTypeException` is raised if an unknown sensor type packet is received."""

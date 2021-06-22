@@ -1,8 +1,9 @@
 import json
 import logging
 import os
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
 
 from data_preprocess import preprocess
 
@@ -45,7 +46,7 @@ class FileHandler:
     def get_batch(self, batch_path):
         """Get the batch from Google Cloud storage.
 
-        :param octue.utils.cloud.storage.client.GoogleCloudStorageClient storage_client: client for accessing Google Cloud storage
+        :param octue.cloud.storage.client.GoogleCloudStorageClient storage_client: client for accessing Google Cloud storage
         :param dict event: Google Cloud event
         :return (dict, dict, str):
         """
@@ -99,7 +100,7 @@ class FileHandler:
         )
 
         path_from, name = os.path.split(batch_path)
-        datafile_path = os.path.join(path_from, DATAFILES_DIRECTORY, name)
+        datafile_path = storage.path.join(path_from, DATAFILES_DIRECTORY, name)
 
         self.destination_client.upload_from_string(
             string=datafile.serialise(to_string=True),

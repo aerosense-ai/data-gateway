@@ -1,4 +1,1 @@
-numpy
-octue==0.1.12
-pandas
-scipy
+octue==0.1.24
