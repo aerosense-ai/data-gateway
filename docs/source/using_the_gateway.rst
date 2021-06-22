@@ -119,7 +119,8 @@ configuration file. Here is the contents of an example file:
             "74": "IMU Accel",
             "76": "IMU Gyro",
             "78": "IMU Magnetometer",
-            "80": "Analog"
+            "80": "Analog Kinetron",
+            "82": "Analog Vbat"
         },
         "endian": "little",
         "gyro_freq": 100,
@@ -135,9 +136,9 @@ configuration file. Here is the contents of an example file:
         "serial_buffer_tx_size": 1280,
         "serial_port": "COM9",
         "type_handle_def": 255,
-        "n_meas_qty": {"Mics": 10, "Baros": 40, "Acc": 3, "Gyro": 3, "Mag": 3, "Analog": 2},
-        "period": {"Mics": 0.0002, "Baros": 0.01, "Acc": 0.01, "Gyro": 0.01, "Mag": 0.08, "Analog": 6.103515625e-05},
-        "samples_per_packet": {"Mics": 120, "Baros": 15, "Acc": 40, "Gyro": 40, "Mag": 40, "Analog": 60},
+        "n_meas_qty": {"Mics": 10, "Baros": 40, "Acc": 3, "Gyro": 3, "Mag": 3, "Analog Vbat": 2},
+        "period": {"Mics": 0.0002, "Baros": 0.01, "Acc": 0.01, "Gyro": 0.01, "Mag": 0.08, "Analog Vbat": 6.103515625e-05},
+        "samples_per_packet": {"Mics": 120, "Baros": 15, "Acc": 40, "Gyro": 40, "Mag": 40, "Analog Vbat": 60},
         "user_data": {}
     }
 

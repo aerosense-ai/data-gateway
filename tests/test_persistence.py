@@ -1,66 +1,72 @@
+import datetime
 import json
 import os
 import tempfile
 import time
-import unittest
 from unittest import mock
 import google.api_core.exceptions
 from google.cloud.storage.blob import Blob
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
 from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests.base import BaseTestCase
 
 
-class TestBatchingWriter(unittest.TestCase):
+START_TIMESTAMP = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
+
+
+class TestBatchingWriter(BaseTestCase):
     def test_data_is_batched(self):
         """Test that data is batched as expected."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
+                start_timestamp=START_TIMESTAMP,
                 session_subdirectory="this-session",
                 output_directory=temporary_directory,
                 batch_interval=600,
             )
 
         writer.add_to_current_batch(sensor_name="test", data="blah,")
-        self.assertEqual(writer.current_batch["test"], ["blah,"])
+        self.assertEqual(writer.current_batch["sensor_data"]["test"], ["blah,"])
 
     def test_data_is_written_to_disk_in_batches(self):
         """Test that data is written to disk in batches of whatever units it is added in."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
+                start_timestamp=START_TIMESTAMP,
                 session_subdirectory="this-session",
                 output_directory=temporary_directory,
                 batch_interval=0.01,
             )
 
             with writer:
-                writer.add_to_current_batch(sensor_name="test", data="ping,")
-                writer.add_to_current_batch(sensor_name="test", data="pong,\n")
-                self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(writer.batch_interval)
+                writer.add_to_current_batch(sensor_name="test", data="ping")
+                writer.add_to_current_batch(sensor_name="test", data="pong")
+                self.assertEqual(len(writer.current_batch["sensor_data"]["test"]), 2)
+                time.sleep(writer.batch_interval * 2)
 
-                writer.add_to_current_batch(sensor_name="test", data="ding,")
-                writer.add_to_current_batch(sensor_name="test", data="dong,\n")
-                self.assertEqual(len(writer.current_batch["test"]), 2)
-                time.sleep(writer.batch_interval)
+                writer.add_to_current_batch(sensor_name="test", data="ding")
+                writer.add_to_current_batch(sensor_name="test", data="dong")
+                self.assertEqual(len(writer.current_batch["sensor_data"]["test"]), 2)
 
-            self.assertEqual(len(writer.current_batch["test"]), 0)
+            self.assertEqual(len(writer.current_batch["sensor_data"]["test"]), 0)
 
             with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-0.json")) as f:
-                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f)["sensor_data"], {"test": ["ping", "pong"]})
 
             with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-1.json")) as f:
-                self.assertEqual(json.load(f), {"test": "ding,dong,\n"})
+                self.assertEqual(json.load(f)["sensor_data"], {"test": ["ding", "dong"]})
 
     def test_oldest_batch_is_deleted_when_storage_limit_reached(self):
         """Check that (only) the oldest batch is deleted when the storage limit is reached."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
+                start_timestamp=START_TIMESTAMP,
                 session_subdirectory="this-session",
                 output_directory=temporary_directory,
                 batch_interval=0.01,
@@ -87,7 +93,7 @@ class TestBatchingWriter(unittest.TestCase):
             )
 
 
-class TestBatchingUploader(unittest.TestCase):
+class TestBatchingUploader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
@@ -99,12 +105,13 @@ class TestBatchingUploader(unittest.TestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=600,
+            start_timestamp=START_TIMESTAMP,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
         )
 
         uploader.add_to_current_batch(sensor_name="test", data="blah,")
-        self.assertEqual(uploader.current_batch["test"], ["blah,"])
+        self.assertEqual(uploader.current_batch["sensor_data"]["test"], ["blah,"])
 
     def test_data_is_uploaded_in_batches_and_can_be_retrieved_from_cloud_storage(self):
         """Test that data is uploaded in batches of whatever units it is added in, and that it can be retrieved from
@@ -115,24 +122,25 @@ class TestBatchingUploader(unittest.TestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
+            start_timestamp=START_TIMESTAMP,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
         )
 
         with uploader:
-            uploader.add_to_current_batch(sensor_name="test", data="ping,")
-            uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
-            self.assertEqual(len(uploader.current_batch["test"]), 2)
+            uploader.add_to_current_batch(sensor_name="test", data="ping")
+            uploader.add_to_current_batch(sensor_name="test", data="pong")
+            self.assertEqual(len(uploader.current_batch["sensor_data"]["test"]), 2)
 
             time.sleep(uploader.batch_interval)
 
-            uploader.add_to_current_batch(sensor_name="test", data="ding,")
-            uploader.add_to_current_batch(sensor_name="test", data="dong,\n")
-            self.assertEqual(len(uploader.current_batch["test"]), 2)
+            uploader.add_to_current_batch(sensor_name="test", data="ding")
+            uploader.add_to_current_batch(sensor_name="test", data="dong")
+            self.assertEqual(len(uploader.current_batch["sensor_data"]["test"]), 2)
 
             time.sleep(uploader.batch_interval)
 
-        self.assertEqual(len(uploader.current_batch["test"]), 0)
+        self.assertEqual(len(uploader.current_batch["sensor_data"]["test"]), 0)
 
         self.assertEqual(
             json.loads(
@@ -142,8 +150,8 @@ class TestBatchingUploader(unittest.TestCase):
                         uploader.output_directory, uploader._session_subdirectory, "window-0.json"
                     ),
                 )
-            ),
-            {"test": "ping,pong,\n"},
+            )["sensor_data"],
+            {"test": ["ping", "pong"]},
         )
 
         self.assertEqual(
@@ -154,8 +162,8 @@ class TestBatchingUploader(unittest.TestCase):
                         uploader.output_directory, uploader._session_subdirectory, "window-1.json"
                     ),
                 )
-            ),
-            {"test": "ding,dong,\n"},
+            )["sensor_data"],
+            {"test": ["ding", "dong"]},
         )
 
     def test_batch_is_written_to_disk_if_upload_fails(self):
@@ -168,14 +176,15 @@ class TestBatchingUploader(unittest.TestCase):
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     batch_interval=0.01,
+                    start_timestamp=START_TIMESTAMP,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=False,
                 )
 
                 with uploader:
-                    uploader.add_to_current_batch(sensor_name="test", data="ping,")
-                    uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+                    uploader.add_to_current_batch(sensor_name="test", data="ping")
+                    uploader.add_to_current_batch(sensor_name="test", data="pong")
 
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
@@ -190,7 +199,7 @@ class TestBatchingUploader(unittest.TestCase):
             with open(
                 os.path.join(temporary_directory, ".backup", uploader._session_subdirectory, "window-0.json")
             ) as f:
-                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f)["sensor_data"], {"test": ["ping", "pong"]})
 
     def test_backup_files_are_uploaded_on_next_upload_attempt(self):
         """Test that backup files from a failed upload are uploaded on the next upload attempt."""
@@ -201,15 +210,16 @@ class TestBatchingUploader(unittest.TestCase):
                     sensor_names=["test"],
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
-                    batch_interval=2,
+                    batch_interval=10,
+                    start_timestamp=START_TIMESTAMP,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=True,
                 )
 
                 with uploader:
-                    uploader.add_to_current_batch(sensor_name="test", data="ping,")
-                    uploader.add_to_current_batch(sensor_name="test", data="pong,\n")
+                    uploader.add_to_current_batch(sensor_name="test", data="ping")
+                    uploader.add_to_current_batch(sensor_name="test", data="pong")
 
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
@@ -224,10 +234,10 @@ class TestBatchingUploader(unittest.TestCase):
 
             # Check that a backup file has been written.
             with open(backup_path) as f:
-                self.assertEqual(json.load(f), {"test": "ping,pong,\n"})
+                self.assertEqual(json.load(f)["sensor_data"], {"test": ["ping", "pong"]})
 
             with uploader:
-                uploader.add_to_current_batch(sensor_name="test", data="ding,dong,\n")
+                uploader.add_to_current_batch(sensor_name="test", data=["ding", "dong"])
 
         # Check that both batches are now in cloud storage.
         self.assertEqual(
@@ -238,8 +248,8 @@ class TestBatchingUploader(unittest.TestCase):
                         uploader.output_directory, uploader._session_subdirectory, "window-0.json"
                     ),
                 )
-            ),
-            {"test": "ping,pong,\n"},
+            )["sensor_data"],
+            {"test": ["ping", "pong"]},
         )
 
         self.assertEqual(
@@ -250,8 +260,8 @@ class TestBatchingUploader(unittest.TestCase):
                         uploader.output_directory, uploader._session_subdirectory, "window-1.json"
                     ),
                 )
-            ),
-            {"test": "ding,dong,\n"},
+            )["sensor_data"],
+            {"test": [["ding", "dong"]]},
         )
 
         # Check that the backup file has been removed now it's been uploaded to cloud storage.
@@ -264,6 +274,7 @@ class TestBatchingUploader(unittest.TestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
+            start_timestamp=START_TIMESTAMP,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
             metadata={"big": "rock"},
@@ -279,4 +290,4 @@ class TestBatchingUploader(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(metadata["metadata"], {"big": "rock"})
+        self.assertEqual(metadata["custom_metadata"], {"big": "rock"})

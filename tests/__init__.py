@@ -1,6 +1,3 @@
-import unittest
-from octue.utils.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
-
 from data_gateway.reader.configuration import Configuration
 
 
@@ -31,8 +28,3 @@ RANDOM_BYTES = [
         b"\xe3\xe7\xfa =\x0e\xcdI\xefn\xe8\xed\xfe\xdd\xe6\xc0\xa8>\x18\xdek\x83\x81\x10,U+\x99\x07\xcb\xbf\xc6Mo1"
     ),
 ]
-
-
-test_result_modifier = GoogleCloudStorageEmulatorTestResultModifier(default_bucket_name=TEST_BUCKET_NAME)
-setattr(unittest.TestResult, "startTestRun", test_result_modifier.startTestRun)
-setattr(unittest.TestResult, "stopTestRun", test_result_modifier.stopTestRun)
