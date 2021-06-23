@@ -46,6 +46,8 @@ class PacketReader:
         self.start_timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
         session_subdirectory = str(hash(self.start_timestamp))[1:7]
 
+        logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
+
         if upload_to_cloud:
             self.uploader = BatchingUploader(
                 sensor_names=self.sensor_names,
