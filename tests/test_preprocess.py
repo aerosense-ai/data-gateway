@@ -65,11 +65,6 @@ class TestDataPreProcess(unittest.TestCase):
         test_batch = self.sample_dataset()
         test_metadata = self.VALID_CONFIGURATION
 
-        # TODO What is vbat?
-        del test_batch['sensor_data']['Analog Vbat']
-        # TODO constat freqs should be in valid configuration
-        del test_batch['sensor_data']['Constat']
-
         processed_batch = preprocess.run(test_batch, test_metadata)
 
         with open('../../../apps/visualisers/time-series/data/out.json', 'w') as out_file:
