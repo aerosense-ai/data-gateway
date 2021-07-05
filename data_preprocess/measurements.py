@@ -4,8 +4,8 @@ from scipy.interpolate import interp1d
 
 
 class RawSignal:
-    def __init__(self, dataframe=None, sensor=None):
-        self.dataframe = dataframe or pd.DataFrame()
+    def __init__(self, dataframe, sensor):
+        self.dataframe = dataframe
         self.sensor = sensor
 
     def find_missing_data(self, threshold):
