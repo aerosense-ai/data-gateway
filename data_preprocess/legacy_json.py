@@ -1,3 +1,8 @@
+"""
+A quick script used to transform old batches saved during interactive mode (legacy_json) with
+csv format. A new_json file stores data as in a nested list format.
+"""
+
 import json
 from io import StringIO
 import pandas as pd
