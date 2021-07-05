@@ -1,8 +1,8 @@
+import datetime
 import json
 import logging
 import os
 import struct
-from datetime import datetime
 from octue.cloud import storage
 
 from data_gateway import exceptions
@@ -42,11 +42,9 @@ class PacketReader:
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.stop = False
-
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog")
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
-
-        session_subdirectory = str(hash(datetime.now()))[1:7]
+        self.start_timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
+        session_subdirectory = str(hash(self.start_timestamp))[1:7]
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
@@ -54,6 +52,7 @@ class PacketReader:
                 project_name=project_name,
                 bucket_name=bucket_name,
                 batch_interval=batch_interval,
+                start_timestamp=self.start_timestamp,
                 session_subdirectory=session_subdirectory,
                 output_directory=output_directory,
                 metadata=self.config.user_data,
@@ -65,6 +64,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
                 batch_interval=batch_interval,
+                start_timestamp=self.start_timestamp,
                 session_subdirectory=session_subdirectory,
                 output_directory=output_directory,
             )

@@ -37,7 +37,7 @@ class TestPacketReader(BaseTestCase):
             )
 
             for name in sensor_names:
-                lines = data[name]
+                lines = data["sensor_data"][name]
                 self.assertTrue(len(lines) > 1)
                 self.assertTrue(len(lines[0]) > 1)
 
@@ -52,7 +52,7 @@ class TestPacketReader(BaseTestCase):
                 data = json.load(f)
 
                 for name in sensor_names:
-                    lines = data[name]
+                    lines = data["sensor_data"][name]
                     self.assertTrue(len(lines) > 1)
                     self.assertTrue(len(lines[0]) > 1)
 
