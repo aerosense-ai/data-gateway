@@ -111,15 +111,18 @@ class TestCLI(BaseTestCase):
         without the GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            with tempfile.TemporaryDirectory() as temporary_directory:
-                with mock.patch("serial.Serial", new=DummySerial):
-                    result = CliRunner().invoke(
-                        gateway_cli, ["start", "--interactive", f"--output-dir={temporary_directory}"], input="stop\n"
-                    )
+            with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
+                with tempfile.TemporaryDirectory() as temporary_directory:
+                    with mock.patch("serial.Serial", new=DummySerial):
+                        result = CliRunner().invoke(
+                            gateway_cli,
+                            ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                            input="stop\n",
+                        )
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
-            self.assertTrue("Stopping gateway." in result.output)
+            self.assertEqual(mock_local_logger_emit.call_args_list[-1][0][0].msg, "Stopping gateway.")
 
     def test_interactive_mode_writes_to_disk(self):
         """Ensure interactive mode writes data to disk. It should work without the GOOGLE_APPLICATION_CREDENTIALS
@@ -131,26 +134,27 @@ class TestCLI(BaseTestCase):
             serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
             serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
 
-            with tempfile.TemporaryDirectory() as temporary_directory:
-                with mock.patch("serial.Serial", return_value=serial_port):
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
-                        input="sleep 2\nstop\n",
-                    )
+            with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
+                with tempfile.TemporaryDirectory() as temporary_directory:
+                    with mock.patch("serial.Serial", return_value=serial_port):
+                        result = CliRunner().invoke(
+                            gateway_cli,
+                            ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                            input="sleep 2\nstop\n",
+                        )
 
-                session_subdirectory = [item for item in os.scandir(temporary_directory) if item.is_dir()][0].name
+                    session_subdirectory = [item for item in os.scandir(temporary_directory) if item.is_dir()][0].name
 
-                with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
-                    data = json.loads(f.read())
+                    with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
+                        data = json.loads(f.read())
 
-                self.assertEqual(len(data), 2)
-                self.assertTrue(len(data["sensor_data"]["Baros_P"]) > 1)
-                self.assertTrue(len(data["sensor_data"]["Baros_T"]) > 1)
+                    self.assertEqual(len(data), 2)
+                    self.assertTrue(len(data["sensor_data"]["Baros_P"]) > 1)
+                    self.assertTrue(len(data["sensor_data"]["Baros_T"]) > 1)
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
-            self.assertTrue("Stopping gateway." in result.output)
+            self.assertEqual(mock_local_logger_emit.call_args_list[-1][0][0].msg, "Stopping gateway.")
 
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI. Interactive mode should work without the
@@ -159,19 +163,20 @@ class TestCLI(BaseTestCase):
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             config_path = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
 
-            with tempfile.TemporaryDirectory() as temporary_directory:
-                with mock.patch("serial.Serial", new=DummySerial):
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        [
-                            "start",
-                            "--interactive",
-                            f"--config-file={config_path}",
-                            f"--output-dir={temporary_directory}",
-                        ],
-                        input="stop\n",
-                    )
+            with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
+                with tempfile.TemporaryDirectory() as temporary_directory:
+                    with mock.patch("serial.Serial", new=DummySerial):
+                        result = CliRunner().invoke(
+                            gateway_cli,
+                            [
+                                "start",
+                                "--interactive",
+                                f"--config-file={config_path}",
+                                f"--output-dir={temporary_directory}",
+                            ],
+                            input="stop\n",
+                        )
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
-            self.assertTrue("Loaded configuration file" in result.output)
+            self.assertIn("Loaded configuration file", mock_local_logger_emit.call_args_list[0][0][0].msg)
