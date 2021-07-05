@@ -4,7 +4,9 @@ from scipy.interpolate import interp1d
 
 
 class RawSignal:
-    def __init__(self, dataframe=pd.DataFrame(), sensor=None):
+    def __init__(self, dataframe=None, sensor=None):
+        self.dataframe = dataframe or pd.DataFrame()
+        self.sensor = sensor
         self.sensor = sensor
         self.dataframe = dataframe
 
