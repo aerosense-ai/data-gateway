@@ -7,8 +7,6 @@ class RawSignal:
     def __init__(self, dataframe=None, sensor=None):
         self.dataframe = dataframe or pd.DataFrame()
         self.sensor = sensor
-        self.sensor = sensor
-        self.dataframe = dataframe
 
     def find_missing_data(self, threshold):
         """
