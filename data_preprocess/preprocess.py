@@ -1,6 +1,6 @@
 import pandas as pd
 
-from data_preprocess.MeasurementData import RawSignal
+from data_preprocess.measurements import RawSignal
 
 
 def run(raw_batch, batch_metadata):
