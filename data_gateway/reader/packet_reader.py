@@ -44,7 +44,7 @@ class PacketReader:
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
-        self.session_subdirectory = str(hash(self.sensor_time_offset))[1:7]
+        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
@@ -405,7 +405,7 @@ class PacketReader:
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
         # UTC time now. Store it as the `start_timestamp` metadata in the batches.
-        if self.sensor_time_offset is None:
+        if sensor_type == "Baros_P" and self.sensor_time_offset is None:
             if time:
                 self._calculate_and_store_sensor_timestamp_offset(time)
 
