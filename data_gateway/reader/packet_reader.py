@@ -131,34 +131,18 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.endian)
 
-        if end_handle - start_handle == 52:
+        if end_handle - start_handle == 20:
             self.handles = {
-                start_handle + 2: "Baro group 0",
-                start_handle + 4: "Baro group 1",
-                start_handle + 6: "Baro group 2",
-                start_handle + 8: "Baro group 3",
-                start_handle + 10: "Baro group 4",
-                start_handle + 12: "Baro group 5",
-                start_handle + 14: "Baro group 6",
-                start_handle + 16: "Baro group 7",
-                start_handle + 18: "Baro group 8",
-                start_handle + 20: "Baro group 9",
-                start_handle + 22: "Mic 0",
-                start_handle + 24: "Mic 1",
-                start_handle + 26: "Mic 2",
-                start_handle + 28: "Mic 3",
-                start_handle + 30: "Mic 4",
-                start_handle + 32: "Mic 5",
-                start_handle + 34: "Mic 6",
-                start_handle + 36: "Mic 7",
-                start_handle + 38: "Mic 8",
-                start_handle + 40: "Mic 9",
-                start_handle + 42: "IMU Accel",
-                start_handle + 44: "IMU Gyro",
-                start_handle + 46: "IMU Magnetometer",
-                start_handle + 48: "Analog Kinetron",
-                start_handle + 50: "Analog Vbat",
-                start_handle + 52: "Constat",
+                start_handle + 2: "Abs. baros",
+                start_handle + 4: "Diff. baros",
+                start_handle + 6: "Mic 0",
+                start_handle + 8: "Mic 1",
+                start_handle + 10: "IMU Accel",
+                start_handle + 12: "IMU Gyro",
+                start_handle + 14: "IMU Magnetometer",
+                start_handle + 16: "Analog1",
+                start_handle + 18: "Analog2",
+                start_handle + 20: "Constat",
             }
 
             logger.warning("Successfully updated handles.")
@@ -199,45 +183,83 @@ class PacketReader:
 
         t = int.from_bytes(payload[240:244], self.config.endian, signed=False)
 
-        if self.handles[sensor_type].startswith("Baro group"):
+        if self.handles[sensor_type] == "Abs. baros":
             # Write data to files when set is complete.
             self._wait_until_set_is_complete("Baros_P", t, data, current_timestamp, previous_ideal_timestamp)
             self._wait_until_set_is_complete("Baros_T", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
-            baro_group_number = int(self.handles[sensor_type][11:])
-
+            # TODO bytes_per_sample should probably be in the configuration
+            bytes_per_sample = 6
             for i in range(self.config.baros_samples_per_packet):
-                for j in range(self.config.baros_group_size):
-                    data["Baros_P"][baro_group_number * self.config.baros_group_size + j][i] = int.from_bytes(
-                        payload[
-                            (5 * (self.config.baros_group_size * i + j)) : (
-                                5 * (self.config.baros_group_size * i + j) + 3
-                            )
-                        ],
+                for j in range(self.config.n_meas_qty["Baros_P"]):
+
+                    data["Baros_P"][j][i] = int.from_bytes(
+                        payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.endian,
                         signed=False,
                     )
 
-                    data["Baros_T"][baro_group_number * self.config.baros_group_size + j][i] = int.from_bytes(
-                        payload[
-                            (5 * (self.config.baros_group_size * i + j) + 3) : (
-                                5 * (self.config.baros_group_size * i + j) + 5
-                            )
-                        ],
+                    data["Baros_T"][j][i] = int.from_bytes(
+                        payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
                         self.config.endian,
                         signed=True,
                     )
 
-        elif self.handles[sensor_type].startswith("Mic"):
+        elif self.handles[sensor_type] == "Mic 0":
             self._wait_until_set_is_complete("Mics", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
-            mic_number = int(self.handles[sensor_type][4:])
-            for i in range(self.config.mics_samples_per_packet):
-                data["Mics"][mic_number][i] = int.from_bytes(
-                    payload[(2 * i) : (2 * i + 2)], self.config.endian, signed=True
-                )
+            # TODO bytes_per_sample should probably be in the configuration
+            bytes_per_sample = 3
+
+            for i in range(self.config.mics_samples_per_packet // 2):
+                # TODO what is 5 and? move to configuration?
+                #    self.config.endian = 'big', unlike for baros..
+                for j in range(5):
+                    data["Mics"][j][2 * i] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+                    data["Mics"][j][2 * i + 1] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 5 * bytes_per_sample) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 5 * bytes_per_sample
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+                    data["Mics"][j + 5][2 * i] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 10 * bytes_per_sample) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 10 * bytes_per_sample
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 15 * bytes_per_sample) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 15 * bytes_per_sample
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+        elif self.handles[sensor_type] == "Mic 1":
+            if payload[0] == 1:
+                logger.info("Microphone data reading done")
+            elif payload[0] == 2:
+                logger.info("Microphone data erasing done")
+            elif payload[0] == 3:
+                logger.info("Microphones started ")
 
         elif self.handles[sensor_type].startswith("IMU Accel"):
             self._wait_until_set_is_complete("Acc", t, data, current_timestamp, previous_ideal_timestamp)
@@ -266,6 +288,7 @@ class PacketReader:
                 data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True)
                 data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
 
+        # TODO Analog sensor definitions
         elif self.handles[sensor_type] == "Analog Kinetron":
             logger.error("Received Kinetron packet. Not supported atm")
 
@@ -285,8 +308,8 @@ class PacketReader:
 
             print("Constat packet: %d" % (t / (2 ** 16)))
 
+            bytes_per_sample = 10
             for i in range(self.config.constat_samples_per_packet):
-                bytes_per_sample = 10
                 data["Constat"][0][i] = struct.unpack(
                     "<f" if self.config.endian == "little" else ">f",
                     payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
@@ -334,7 +357,7 @@ class PacketReader:
                         ms_gap = (current_timestamp[sensor_type] - ideal_new_timestamp) / (2 ** 16) * 1000
                         logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
                     else:
-                        logger.warning("Received first set of %s packets", sensor_type)
+                        logger.info("Received first set of %s packets", sensor_type)
 
                     ideal_new_timestamp = current_timestamp[sensor_type]
 
@@ -376,7 +399,7 @@ class PacketReader:
                         logger.warning("Lost %s packet: %s ms gap", sensor_type, ms_gap)
 
                 else:
-                    logger.warning("Received first %s packet", sensor_type)
+                    logger.info("Received first %s packet", sensor_type)
 
                 self._persist_data(data, sensor_type, t / (2 ** 16), self.config.period[sensor_type])
 
