@@ -147,7 +147,7 @@ class TestPacketReader(unittest.TestCase):
         # Set first two bytes of payload to correct range for updating handles.
         payload = bytearray(RANDOM_BYTES[0])
         payload[0:1] = int(0).to_bytes(1, "little")
-        payload[2:3] = int(52).to_bytes(1, "little")
+        payload[2:3] = int(20).to_bytes(1, "little")
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -211,7 +211,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_mic_sensor(self):
         """Test that the packet reader works with the mic sensor."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([54])
+        packet_type = bytes([38])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -233,7 +233,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_acc_sensor(self):
         """Test that the packet reader works with the acc sensor."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([74])
+        packet_type = bytes([42])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -255,7 +255,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_gyro_sensor(self):
         """Test that the packet reader works with the gyro sensor."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([76])
+        packet_type = bytes([44])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -277,7 +277,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_mag_sensor(self):
         """Test that the packet reader works with the mag sensor."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([78])
+        packet_type = bytes([46])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -299,7 +299,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_analog_sensor(self):
         """Test that the packet reader works with the analog sensor."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([82])
+        packet_type = bytes([48])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -323,7 +323,7 @@ class TestPacketReader(unittest.TestCase):
     def test_packet_reader_with_connections_statistics(self):
         """Test that the packet reader works with the connection statistics "sensor"."""
         serial_port = DummySerial(port="test")
-        packet_type = bytes([84])
+        packet_type = bytes([52])
 
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
