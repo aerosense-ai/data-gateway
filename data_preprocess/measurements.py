@@ -53,9 +53,9 @@ class RawSignal:
             & (self.dataframe >= rolling_median - std_multiplier * rolling_std)
         ]
 
-    def raw_to_variable(self):
+    def fixed_point_to_measurement_variable(self):
         """
-        Transform raw bytes to a physical variable.
+        Transform fixed point values to a physical variable.
         """
         if self.sensor == "Baros_P":
             # Pascal

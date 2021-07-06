@@ -40,7 +40,7 @@ def run(raw_batch, batch_metadata):
         # TODO make a log of pre-process ... compare data availbility before and after cleaning...
         raw_data.to_constant_timestep(batch_metadata["period"][sensor])
 
-        raw_data.raw_to_variable()
+        raw_data.fixed_point_to_measurement_variable()
 
         processed_batch[sensor] = raw_data.dataframe.values.tolist()
 
