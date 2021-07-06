@@ -294,30 +294,6 @@ class TestPacketReader(BaseTestCase):
 
         self._check_batches_are_uploaded_to_cloud(packet_reader, sensor_names=["Mag"], number_of_batches_to_check=1)
 
-    def test_packet_reader_with_analog_sensor(self):
-        """Test that the packet reader works with the analog sensor."""
-        serial_port = DummySerial(port="test")
-        packet_type = bytes([48])
-
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
-                save_locally=True,
-                upload_to_cloud=True,
-                output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Analog Vbat"])
-
-        self._check_batches_are_uploaded_to_cloud(
-            packet_reader, sensor_names=["Analog Vbat"], number_of_batches_to_check=1
-        )
-
     def test_packet_reader_with_connections_statistics(self):
         """Test that the packet reader works with the connection statistics "sensor"."""
         serial_port = DummySerial(port="test")
@@ -344,8 +320,8 @@ class TestPacketReader(BaseTestCase):
     def test_all_sensors_together(self):
         """Test that the packet reader works with all sensors together."""
         serial_port = DummySerial(port="test")
-        packet_types = (bytes([34]), bytes([38]), bytes([42]), bytes([44]), bytes([46]), bytes([48]), bytes([52]))
-        sensor_names = ("Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
+        packet_types = (bytes([34]), bytes([38]), bytes([42]), bytes([44]), bytes([46]), bytes([52]))
+        sensor_names = ("Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Constat")
 
         for packet_type in packet_types:
             serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))

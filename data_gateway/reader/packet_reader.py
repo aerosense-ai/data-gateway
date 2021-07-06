@@ -291,7 +291,7 @@ class PacketReader:
                 data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
 
         # TODO Analog sensor definitions
-        elif self.handles[sensor_type] == "Analog Kinetron":
+        elif self.handles[sensor_type] in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Kinetron packet. Not supported atm")
 
         elif self.handles[sensor_type] == "Analog Vbat":
