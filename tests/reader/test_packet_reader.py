@@ -38,7 +38,6 @@ class TestPacketReader(BaseTestCase):
 
             for name in sensor_names:
                 lines = data["sensor_data"][name]
-                self.assertTrue(len(lines) > 1)
                 self.assertTrue(len(lines[0]) > 1)
 
     def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
@@ -53,7 +52,6 @@ class TestPacketReader(BaseTestCase):
 
                 for name in sensor_names:
                     lines = data["sensor_data"][name]
-                    self.assertTrue(len(lines) > 1)
                     self.assertTrue(len(lines[0]) > 1)
 
     def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
@@ -346,7 +344,7 @@ class TestPacketReader(BaseTestCase):
     def test_all_sensors_together(self):
         """Test that the packet reader works with all sensors together."""
         serial_port = DummySerial(port="test")
-        packet_types = (bytes([34]), bytes([54]), bytes([74]), bytes([76]), bytes([78]), bytes([82]), bytes([84]))
+        packet_types = (bytes([34]), bytes([38]), bytes([42]), bytes([44]), bytes([46]), bytes([48]), bytes([52]))
         sensor_names = ("Baros_P", "Baros_T", "Mics", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
 
         for packet_type in packet_types:
