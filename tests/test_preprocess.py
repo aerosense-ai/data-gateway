@@ -37,7 +37,7 @@ class TestDataPreProcess(unittest.TestCase):
         sensors = {"Mics"}
         # sensors = {"Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag"}
 
-        test_batch = {"start_timestamp": datetime.datetime.now().timestamp(), "sensor_data": {}}
+        test_batch = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
 
         for sensor in sensors:
             test_batch["sensor_data"][sensor] = self.random_dataset(

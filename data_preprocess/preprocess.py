@@ -28,7 +28,7 @@ def run(raw_batch, batch_metadata):
 
         # Convert to absolute time
         # TODO introduce absolute timestamps on sensors
-        raw_data.dataframe[0] += raw_batch["start_timestamp"]
+        raw_data.dataframe[0] += raw_batch["sensor_time_offset"]
 
         # Index dataframe with timestamp as date series
         raw_data.dataframe.index = pd.to_datetime(raw_data.dataframe[0], unit="s")

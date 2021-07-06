@@ -8,7 +8,7 @@ class TestFileHandler(unittest.TestCase):
     def test_clean(self):
         """Test clean function returns batch in expected format."""
         batch = {
-            "start_timestamp": datetime.datetime(2000, 1, 1).timestamp(),
+            "sensor_time_offset": datetime.datetime(2000, 1, 1).timestamp(),
             "sensor_data": {"Baros_P": [[0, 1, 2, 3], [1, 1, 2, 3]]},
         }
 

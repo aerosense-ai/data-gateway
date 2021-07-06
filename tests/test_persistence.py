@@ -23,7 +23,6 @@ class TestBatchingWriter(BaseTestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
-                start_timestamp=START_TIMESTAMP,
                 session_subdirectory="this-session",
                 output_directory=temporary_directory,
                 batch_interval=600,
@@ -37,7 +36,6 @@ class TestBatchingWriter(BaseTestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
-                start_timestamp=START_TIMESTAMP,
                 session_subdirectory="this-session",
                 output_directory=temporary_directory,
                 batch_interval=0.01,
@@ -66,7 +64,6 @@ class TestBatchingWriter(BaseTestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
-                start_timestamp=START_TIMESTAMP,
                 session_subdirectory="this-session",
                 output_directory=temporary_directory,
                 batch_interval=0.01,
@@ -105,7 +102,6 @@ class TestBatchingUploader(BaseTestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=600,
-            start_timestamp=START_TIMESTAMP,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
         )
@@ -122,7 +118,6 @@ class TestBatchingUploader(BaseTestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
-            start_timestamp=START_TIMESTAMP,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
         )
@@ -176,7 +171,6 @@ class TestBatchingUploader(BaseTestCase):
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     batch_interval=0.01,
-                    start_timestamp=START_TIMESTAMP,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=False,
@@ -211,7 +205,6 @@ class TestBatchingUploader(BaseTestCase):
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     batch_interval=10,
-                    start_timestamp=START_TIMESTAMP,
                     session_subdirectory="this-session",
                     output_directory=temporary_directory,
                     upload_backup_files=True,
@@ -274,7 +267,6 @@ class TestBatchingUploader(BaseTestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             batch_interval=0.01,
-            start_timestamp=START_TIMESTAMP,
             session_subdirectory="this-session",
             output_directory=tempfile.TemporaryDirectory().name,
             metadata={"big": "rock"},

@@ -15,7 +15,7 @@ with open(path_to_legacy_json, "r") as json_dump:
     data = json.load(json_dump)
 
 sensor_dict = {}
-processed_batch = {"start_timestamp": "POSIX TIMESTAMP HERE"}
+processed_batch = {"sensor_time_offset": "POSIX TIMESTAMP HERE"}
 
 for key in data.keys():
     # Convert CSV to Pandas
