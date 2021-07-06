@@ -6,8 +6,6 @@
     "analog_samples_per_packet": 60,
     "baros_bm": 1023,
     "baros_freq": 100,
-    "baros_group_size": 4,
-    "baros_packet_size": 60,
     "baros_samples_per_packet": 15,
     "constat_samples_per_packet": 40,
     "baudrate": 2300000,
