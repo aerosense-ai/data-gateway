@@ -3,8 +3,8 @@ import json
 import logging
 import os
 import time
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_directory
 
 import abc
@@ -36,18 +36,27 @@ class TimeBatcher:
     :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str session_subdirectory: directory within output directory to persist into
+    :param float start_timestamp: posix UTC timestamp of the start of data collection session
     :param str output_directory: directory to write batches to
     :return None:
     """
 
-    def __init__(self, sensor_names, batch_interval, session_subdirectory, output_directory=DEFAULT_OUTPUT_DIRECTORY):
-        self.current_batch = {name: [] for name in sensor_names}
+    def __init__(
+        self,
+        sensor_names,
+        batch_interval,
+        session_subdirectory,
+        start_timestamp,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
+    ):
+        self.current_batch = {"start_timestamp": start_timestamp, "sensor_data": {name: [] for name in sensor_names}}
         self.batch_interval = batch_interval
         self.output_directory = output_directory
-        self.ready_batch = {}
+        self.ready_batch = {"start_timestamp": start_timestamp, "sensor_data": {}}
         self._session_subdirectory = session_subdirectory
-        self._batch_number = 0
+        self.start_timestamp = start_timestamp
         self._start_time = time.perf_counter()
+        self._batch_number = 0
         self._batch_prefix = "window"
         self._backup_directory = os.path.join(self.output_directory, ".backup")
 
@@ -61,7 +70,7 @@ class TimeBatcher:
         """Add serialised data (a string) to the current batch for the given sensor name.
 
         :param str sensor_name: name of sensor
-        :param str data: data to add to batch
+        :param iter data: data to add to batch
         :return None:
         """
         # Finalise the batch and persist it if enough time has elapsed.
@@ -71,7 +80,7 @@ class TimeBatcher:
             self._prepare_for_next_batch()
 
         # Then add data to the current/new batch.
-        self.current_batch[sensor_name].append(data)
+        self.current_batch["sensor_data"][sensor_name].append(data)
 
     def finalise_current_batch(self):
         """Finalise the current batch for the given sensor name. This puts the current batch into the queue of ready
@@ -79,9 +88,9 @@ class TimeBatcher:
 
         :return None:
         """
-        for sensor_name, data in self.current_batch.items():
+        for sensor_name, data in self.current_batch["sensor_data"].items():
             if data:
-                self.ready_batch[sensor_name] = "".join(copy.deepcopy(data))
+                self.ready_batch["sensor_data"][sensor_name] = copy.deepcopy(data)
                 data.clear()
 
     def force_persist(self):
@@ -107,7 +116,7 @@ class TimeBatcher:
         :return None:
         """
         self._batch_number += 1
-        self.ready_batch = {}
+        self.ready_batch["sensor_data"] = {}
         self._start_time = time.perf_counter()
 
     def _generate_batch_path(self, backup=False):
@@ -127,6 +136,7 @@ class BatchingFileWriter(TimeBatcher):
     :param iter(str) sensor_names: names of sensors to make batches for
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str session_subdirectory: directory within output directory to persist into
+    :param float start_timestamp: posix UTC timestamp of the start of data collection session
     :param str output_directory: directory to write batches to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
@@ -137,11 +147,12 @@ class BatchingFileWriter(TimeBatcher):
         sensor_names,
         batch_interval,
         session_subdirectory,
+        start_timestamp,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         storage_limit=1024 ** 3,
     ):
         self.storage_limit = storage_limit
-        super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
+        super().__init__(sensor_names, batch_interval, session_subdirectory, start_timestamp, output_directory)
         os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
 
     def _persist_batch(self, batch=None, backup=False):
@@ -213,6 +224,7 @@ class BatchingUploader(TimeBatcher):
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float batch_interval: time interval with which to batch data (in seconds)
     :param str session_subdirectory: directory within output directory to persist into
+    :param float start_timestamp: posix UTC timestamp of the start of data collection session
     :param str output_directory: directory to write batches to
     :param float upload_timeout: time after which to give up trying to upload to the cloud
     :param bool upload_backup_files: attempt to upload backed-up batches on next batch upload
@@ -226,6 +238,7 @@ class BatchingUploader(TimeBatcher):
         bucket_name,
         batch_interval,
         session_subdirectory,
+        start_timestamp,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         metadata=None,
         upload_timeout=60,
@@ -237,8 +250,10 @@ class BatchingUploader(TimeBatcher):
         self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
-        self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, session_subdirectory, output_directory)
-        super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
+        self._backup_writer = BatchingFileWriter(
+            sensor_names, batch_interval, session_subdirectory, start_timestamp, output_directory
+        )
+        super().__init__(sensor_names, batch_interval, session_subdirectory, start_timestamp, output_directory)
         os.makedirs(os.path.join(self._backup_directory, self._session_subdirectory), exist_ok=True)
 
     def _persist_batch(self):
@@ -255,7 +270,7 @@ class BatchingUploader(TimeBatcher):
                 timeout=self.upload_timeout,
             )
 
-        except Exception:
+        except Exception:  # noqa
             logger.warning(
                 "Upload of batch failed - writing to disk at %r instead.",
                 self._backup_writer._generate_batch_path(backup=True),

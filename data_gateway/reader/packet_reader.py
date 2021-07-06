@@ -1,9 +1,9 @@
+import datetime
 import json
 import logging
 import os
 import struct
-from datetime import datetime
-from octue.utils.cloud import storage
+from octue.cloud import storage
 
 from data_gateway import exceptions
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
@@ -42,11 +42,11 @@ class PacketReader:
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.stop = False
-
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog")
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
+        self.start_timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
+        session_subdirectory = str(hash(self.start_timestamp))[1:7]
 
-        session_subdirectory = str(hash(datetime.now()))[1:7]
+        logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
@@ -54,6 +54,7 @@ class PacketReader:
                 project_name=project_name,
                 bucket_name=bucket_name,
                 batch_interval=batch_interval,
+                start_timestamp=self.start_timestamp,
                 session_subdirectory=session_subdirectory,
                 output_directory=output_directory,
                 metadata=self.config.user_data,
@@ -65,6 +66,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
                 batch_interval=batch_interval,
+                start_timestamp=self.start_timestamp,
                 session_subdirectory=session_subdirectory,
                 output_directory=output_directory,
             )
@@ -418,21 +420,21 @@ class PacketReader:
         number_of_samples = len(data[sensor_type][0])
 
         # Iterate through all sample times.
-        for i in range(len(data[sensor_type][0])):
+        for i in range(number_of_samples):
             time = timestamp - (number_of_samples - i) * period
-            self._add_to_required_storage_media_batches(sensor_type, data=str(time) + ",")
+            sample = [time]
 
             for meas in data[sensor_type]:
-                self._add_to_required_storage_media_batches(sensor_type, data=str(meas[i]) + ",")
+                sample.append(meas[i])
 
-            self._add_to_required_storage_media_batches(sensor_type, data="\n")
+            self._add_to_required_storage_media_batches(sensor_type, data=sample)
 
     def _add_to_required_storage_media_batches(self, sensor_type, data):
         """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader
         batch).
 
         :param str sensor_type: sensor type to persist data from
-        :param str data: data to persist
+        :param iter data: data to persist
         :return None:
         """
         if self.save_locally:

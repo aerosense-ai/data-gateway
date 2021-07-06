@@ -3,11 +3,12 @@ import os
 import unittest
 from unittest import mock
 from google.cloud.storage.client import Client
-from octue.utils.cloud import storage
-from octue.utils.cloud.storage.client import GoogleCloudStorageClient
+from octue.cloud import storage
+from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
 from cloud_function.file_handler import DATAFILES_DIRECTORY
+from tests.base import BaseTestCase
 
 
 SOURCE_PROJECT_NAME = "source-project"
@@ -16,7 +17,7 @@ DESTINATION_PROJECT_NAME = "destination-project"
 DESTINATION_BUCKET_NAME = "destination-bucket"
 
 
-class TestCleanAndUploadBatch(unittest.TestCase):
+class TestCleanAndUploadBatch(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         os.environ["GCP_PROJECT"] = SOURCE_PROJECT_NAME
@@ -89,7 +90,7 @@ class TestCleanAndUploadBatch(unittest.TestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
+                    bucket_name=DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
                 )
             ),
             {"baudrate": 10},

@@ -5,7 +5,7 @@ default_language_version:
   python: python3  # force all unspecified python hooks to run python3
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.1.0
+    rev: v4.0.1
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -13,24 +13,24 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.7.0
+    rev: 5.9.1
     hooks:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: 20.8b1
+    rev: 21.6b0
     hooks:
       - id: black
         args: ['--line-length', '120']
 
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.2
     hooks:
       - id: flake8
         language_version: python3
 
   - repo: https://github.com/thclark/pre-commit-sphinx
-    rev: 0.0.1
+    rev: 0.0.3
     hooks:
       - id: build-docs
         language_version: python3
@@ -38,7 +38,7 @@ repos:
           - 'Sphinx>=2,<3'
           - 'sphinx-rtd-theme==0.5.0'
           - 'sphinx-tabs==1.2.1'
-          - 'octue==0.1.12'
+          - 'octue==0.2.3'
           - 'pyserial==3.5'
 
   - repo: https://github.com/windpioneers/pre-commit-hooks
@@ -56,3 +56,4 @@ repos:
           - '^hotfix/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
           - '^review/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
           - '^release/(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+          - '^refactor/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'

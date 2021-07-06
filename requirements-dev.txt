@@ -6,8 +6,9 @@
 # Testing
 # ------------------------------------------------------------------------------
 pluggy
-gcp-storage-emulator>=2021.2.17
+gcp-storage-emulator>=2021.6.2
 google-cloud-storage>=1.35.1
+tox>=3.23.1
 -r cloud_function/requirements.txt
 
 # Code quality
