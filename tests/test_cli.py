@@ -149,8 +149,8 @@ class TestCLI(BaseTestCase):
                         data = json.loads(f.read())
 
                     self.assertEqual(len(data), 2)
-                    self.assertTrue(len(data["sensor_data"]["Baros_P"]) > 1)
-                    self.assertTrue(len(data["sensor_data"]["Baros_T"]) > 1)
+                    self.assertTrue(len(data["sensor_data"]["Baros_P"][0]) > 1)
+                    self.assertTrue(len(data["sensor_data"]["Baros_T"][0]) > 1)
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
