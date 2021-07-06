@@ -95,7 +95,9 @@ class TestPacketReader(BaseTestCase):
             )
             packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
 
-            configuration_path = os.path.join(temporary_directory, "configuration.json")
+            configuration_path = os.path.join(
+                temporary_directory, packet_reader.session_subdirectory, "configuration.json"
+            )
 
             # Check configuration file is present and valid locally.
             with open(configuration_path) as f:
@@ -104,7 +106,9 @@ class TestPacketReader(BaseTestCase):
         # Check configuration file is present and valid on the cloud.
         configuration = self.storage_client.download_as_string(
             bucket_name=TEST_BUCKET_NAME,
-            path_in_bucket=storage.path.join(packet_reader.uploader.output_directory, "configuration.json"),
+            path_in_bucket=storage.path.join(
+                packet_reader.uploader.output_directory, packet_reader.session_subdirectory, "configuration.json"
+            ),
         )
 
         # Test configuration is valid.

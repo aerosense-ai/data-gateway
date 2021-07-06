@@ -44,7 +44,7 @@ class PacketReader:
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
-        session_subdirectory = str(hash(self.sensor_time_offset))[1:7]
+        self.session_subdirectory = str(hash(self.sensor_time_offset))[1:7]
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
@@ -52,7 +52,7 @@ class PacketReader:
                 project_name=project_name,
                 bucket_name=bucket_name,
                 batch_interval=batch_interval,
-                session_subdirectory=session_subdirectory,
+                session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 metadata=self.config.user_data,
             )
@@ -63,7 +63,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
                 batch_interval=batch_interval,
-                session_subdirectory=session_subdirectory,
+                session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
             )
         else:
@@ -172,14 +172,21 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(os.path.abspath(os.path.join(".", self.output_directory, "configuration.json")), "w") as f:
+            with open(
+                os.path.abspath(
+                    os.path.join(".", self.output_directory, self.session_subdirectory, "configuration.json")
+                ),
+                "w",
+            ) as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
+                path_in_bucket=storage.path.join(
+                    self.output_directory, self.session_subdirectory, "configuration.json"
+                ),
             )
 
     def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):

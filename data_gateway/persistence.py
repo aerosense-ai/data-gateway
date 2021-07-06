@@ -49,7 +49,6 @@ class TimeBatcher:
         self._start_time = time.perf_counter()
         self._batch_number = 0
         self._batch_prefix = "window"
-        self._backup_directory = os.path.join(self.output_directory, ".backup")
 
     def __enter__(self):
         return self
@@ -110,11 +109,11 @@ class TimeBatcher:
         self.ready_batch["sensor_data"] = {}
         self._start_time = time.perf_counter()
 
-    def _generate_batch_path(self, backup=False):
+    @abc.abstractmethod
+    def _generate_batch_path(self):
         """Generate the path that the batch should be persisted to. This should start by joining the output directory
         and the session subdirectory.
 
-        :param bool backup: generate batch path for a backup
         :return str:
         """
         pass
@@ -144,33 +143,27 @@ class BatchingFileWriter(TimeBatcher):
         super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
         os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
 
-    def _persist_batch(self, batch=None, backup=False):
+    def _persist_batch(self, batch=None):
         """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
         reached.
 
         :param dict|None batch: batch to persist
-        :param bool backup: persist batch to backup location
         :return None:
         """
-        self._manage_storage(backup=backup)
-        batch_path = os.path.abspath(os.path.join(".", self._generate_batch_path(backup=backup)))
+        self._manage_storage()
+        batch_path = os.path.abspath(os.path.join(".", self._generate_batch_path()))
 
         with open(batch_path, "w") as f:
             json.dump(batch or self.ready_batch, f)
 
-    def _manage_storage(self, backup=False):
-        """Check if the output or backup directory has reached its storage limit and, if it has, delete the oldest
-        batch.
+        logger.info(f"{self._batch_prefix.capitalize()} {self._batch_number} written to disk.")
 
-        :param bool backup: check the backup directory for disk usage
+    def _manage_storage(self):
+        """Check if the output directory has reached its storage limit and, if it has, delete the oldest batch.
+
         :return None:
         """
-        if backup:
-            directory_to_check = self._backup_directory
-        else:
-            directory_to_check = self.output_directory
-
-        session_directory = os.path.join(directory_to_check, self._session_subdirectory)
+        session_directory = os.path.join(self.output_directory, self._session_subdirectory)
 
         filter = lambda path: os.path.split(path)[-1].startswith("window")  # noqa
         storage_limit_in_mb = self.storage_limit / 1024 ** 2
@@ -189,17 +182,12 @@ class BatchingFileWriter(TimeBatcher):
         elif calculate_disk_usage(session_directory, filter) >= 0.9 * self.storage_limit:
             logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * storage_limit_in_mb)
 
-    def _generate_batch_path(self, backup=False):
+    def _generate_batch_path(self):
         """Generate the path that the batch should be persisted to.
 
-        :param bool backup: generate batch path for a backup
         :return str:
         """
         filename = f"{self._batch_prefix}-{self._batch_number}.json"
-
-        if backup:
-            return os.path.join(self._backup_directory, self._session_subdirectory, filename)
-
         return os.path.join(self.output_directory, self._session_subdirectory, filename)
 
 
@@ -237,9 +225,11 @@ class BatchingUploader(TimeBatcher):
         self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
-        self._backup_writer = BatchingFileWriter(sensor_names, batch_interval, session_subdirectory, output_directory)
         super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
-        os.makedirs(os.path.join(self._backup_directory, self._session_subdirectory), exist_ok=True)
+        self._backup_directory = os.path.join(self.output_directory, ".backup")
+        self._backup_writer = BatchingFileWriter(
+            sensor_names, batch_interval, session_subdirectory, output_directory=self._backup_directory
+        )
 
     def _persist_batch(self):
         """Upload a batch to Google Cloud storage. If the batch fails to upload, it is instead written to disk.
@@ -258,26 +248,24 @@ class BatchingUploader(TimeBatcher):
         except Exception:  # noqa
             logger.warning(
                 "Upload of batch failed - writing to disk at %r instead.",
-                self._backup_writer._generate_batch_path(backup=True),
+                self._backup_writer._generate_batch_path(),
             )
 
-            self._backup_writer._persist_batch(batch=self.ready_batch, backup=True)
+            self._backup_writer._persist_batch(batch=self.ready_batch)
             return
+
+        logger.info(f"{self._batch_prefix.capitalize()} {self._batch_number} uploaded to cloud.")
 
         if self.upload_backup_files:
             self._attempt_to_upload_backup_files()
 
-    def _generate_batch_path(self, backup=False):
+    def _generate_batch_path(self):
         """Generate the path that the batch should be persisted to.
 
         :param bool backup: generate batch path for a backup
         :return str:
         """
         filename = f"{self._batch_prefix}-{self._batch_number}.json"
-
-        if backup:
-            return storage.path.join(self._backup_directory, self._session_subdirectory, filename)
-
         return storage.path.join(self.output_directory, self._session_subdirectory, filename)
 
     def _attempt_to_upload_backup_files(self):
