@@ -1,1 +1,3 @@
 octue==0.1.24
+pandas>=1.2.3
+scipy>=1.6.1
