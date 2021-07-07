@@ -124,7 +124,7 @@ class Configuration:
             "Gyro": 3,
             "Mag": 3,
             "Analog Vbat": 1,
-            "Constat": 3,
+            "Constat": 4,
         }
 
         self.period = period or {

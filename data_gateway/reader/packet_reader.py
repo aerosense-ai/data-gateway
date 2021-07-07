@@ -297,7 +297,7 @@ class PacketReader:
 
         # TODO Analog sensor definitions
         elif self.handles[sensor_type] in {"Analog Kinetron", "Analog1", "Analog2"}:
-            logger.error("Received Kinetron packet. Not supported atm")
+            logger.error("Received Analog packet. Not supported atm")
 
         elif self.handles[sensor_type] == "Analog Vbat":
             self._wait_until_set_is_complete("Analog Vbat", t, data, current_timestamp, previous_ideal_timestamp)
