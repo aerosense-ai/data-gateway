@@ -93,10 +93,10 @@ class FileHandler:
             self.destination_project,
         )
 
-        datafile = Datafile.from_cloud(
+        datafile = Datafile(
+            path=batch_path,
             project_name=self.destination_project,
             bucket_name=self.destination_bucket,
-            datafile_path=batch_path,
         )
 
         path_from, name = os.path.split(batch_path)

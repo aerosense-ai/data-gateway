@@ -25,7 +25,7 @@ class RawSignal:
 
         old_time_vector = self.dataframe[0] * 1e9
         new_time_vector = pd.date_range(
-            start=self.dataframe.index[0], end=self.dataframe.index[-1], freq="{}S".format(time_step)
+            start=self.dataframe.index[0], end=self.dataframe.index[-1], freq="{:.12f}S".format(time_step)
         )
 
         new_dataframe = pd.DataFrame(new_time_vector.values.astype(np.int64) / 1e9, index=new_time_vector)
