@@ -43,8 +43,8 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
-        self.start_timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
-        session_subdirectory = str(hash(self.start_timestamp))[1:7]
+        self.sensor_time_offset = None
+        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
@@ -54,8 +54,7 @@ class PacketReader:
                 project_name=project_name,
                 bucket_name=bucket_name,
                 batch_interval=batch_interval,
-                start_timestamp=self.start_timestamp,
-                session_subdirectory=session_subdirectory,
+                session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 metadata=self.config.user_data,
             )
@@ -66,8 +65,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
                 batch_interval=batch_interval,
-                start_timestamp=self.start_timestamp,
-                session_subdirectory=session_subdirectory,
+                session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
             )
         else:
@@ -147,7 +145,7 @@ class PacketReader:
                 start_handle + 20: "Constat",
             }
 
-            logger.warning("Successfully updated handles.")
+            logger.info("Successfully updated handles.")
             return
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
@@ -160,14 +158,21 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(os.path.abspath(os.path.join(".", self.output_directory, "configuration.json")), "w") as f:
+            with open(
+                os.path.abspath(
+                    os.path.join(".", self.output_directory, self.session_subdirectory, "configuration.json")
+                ),
+                "w",
+            ) as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
+                path_in_bucket=storage.path.join(
+                    self.output_directory, self.session_subdirectory, "configuration.json"
+                ),
             )
 
     def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
@@ -298,7 +303,7 @@ class PacketReader:
             self._wait_until_set_is_complete("Analog Vbat", t, data, current_timestamp, previous_ideal_timestamp)
 
             def val_to_v(val):
-                return val / 1e6 * 3  # *3 to compensate for the voltage divider
+                return val / 1e6
 
             for i in range(self.config.analog_samples_per_packet):
                 data["Analog Vbat"][0][i] = val_to_v(
@@ -413,11 +418,12 @@ class PacketReader:
 
         :param dict data: data to persist
         :param str sensor_type: sensor type to persist data from
-        :param timestamp: timestamp in s
-        :param period:
+        :param float timestamp: timestamp in s
+        :param float period:
         :return None:
         """
         number_of_samples = len(data[sensor_type][0])
+        time = None
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
@@ -428,6 +434,30 @@ class PacketReader:
                 sample.append(meas[i])
 
             self._add_to_required_storage_media_batches(sensor_type, data=sample)
+
+        # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
+        # UTC time now. Store it as the `start_timestamp` metadata in the batches.
+        if sensor_type == "Baros_P" and self.sensor_time_offset is None:
+            if time:
+                self._calculate_and_store_sensor_timestamp_offset(time)
+
+    def _calculate_and_store_sensor_timestamp_offset(self, timestamp):
+        """Calculate the offset between the given timestamp and the UTC time now, storing it in the metadata of the
+        batches in the uploader and/or writer.
+
+        :param float timestamp: posix timestamp from sensor
+        :return None:
+        """
+        now = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
+        self.sensor_time_offset = now - timestamp
+
+        if hasattr(self.writer, "current_batch"):
+            self.writer.current_batch["sensor_time_offset"] = self.sensor_time_offset
+            self.writer.ready_batch["sensor_time_offset"] = self.sensor_time_offset
+
+        if hasattr(self.uploader, "current_batch"):
+            self.uploader.current_batch["sensor_time_offset"] = self.sensor_time_offset
+            self.uploader.ready_batch["sensor_time_offset"] = self.sensor_time_offset
 
     def _add_to_required_storage_media_batches(self, sensor_type, data):
         """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader
