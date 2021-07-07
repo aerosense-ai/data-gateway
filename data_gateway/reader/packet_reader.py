@@ -43,8 +43,10 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
-        self.start_timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
-        session_subdirectory = str(hash(self.start_timestamp))[1:7]
+        self.sensor_time_offset = None
+        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
+
+        logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
@@ -52,8 +54,7 @@ class PacketReader:
                 project_name=project_name,
                 bucket_name=bucket_name,
                 batch_interval=batch_interval,
-                start_timestamp=self.start_timestamp,
-                session_subdirectory=session_subdirectory,
+                session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 metadata=self.config.user_data,
             )
@@ -64,8 +65,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
                 batch_interval=batch_interval,
-                start_timestamp=self.start_timestamp,
-                session_subdirectory=session_subdirectory,
+                session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
             )
         else:
@@ -131,34 +131,18 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.endian)
 
-        if end_handle - start_handle == 52:
+        if end_handle - start_handle == 20:
             self.handles = {
-                start_handle + 2: "Baro group 0",
-                start_handle + 4: "Baro group 1",
-                start_handle + 6: "Baro group 2",
-                start_handle + 8: "Baro group 3",
-                start_handle + 10: "Baro group 4",
-                start_handle + 12: "Baro group 5",
-                start_handle + 14: "Baro group 6",
-                start_handle + 16: "Baro group 7",
-                start_handle + 18: "Baro group 8",
-                start_handle + 20: "Baro group 9",
-                start_handle + 22: "Mic 0",
-                start_handle + 24: "Mic 1",
-                start_handle + 26: "Mic 2",
-                start_handle + 28: "Mic 3",
-                start_handle + 30: "Mic 4",
-                start_handle + 32: "Mic 5",
-                start_handle + 34: "Mic 6",
-                start_handle + 36: "Mic 7",
-                start_handle + 38: "Mic 8",
-                start_handle + 40: "Mic 9",
-                start_handle + 42: "IMU Accel",
-                start_handle + 44: "IMU Gyro",
-                start_handle + 46: "IMU Magnetometer",
-                start_handle + 48: "Analog Kinetron",
-                start_handle + 50: "Analog Vbat",
-                start_handle + 52: "Constat",
+                start_handle + 2: "Abs. baros",
+                start_handle + 4: "Diff. baros",
+                start_handle + 6: "Mic 0",
+                start_handle + 8: "Mic 1",
+                start_handle + 10: "IMU Accel",
+                start_handle + 12: "IMU Gyro",
+                start_handle + 14: "IMU Magnetometer",
+                start_handle + 16: "Analog1",
+                start_handle + 18: "Analog2",
+                start_handle + 20: "Constat",
             }
 
             logger.info("Successfully updated handles.")
@@ -174,14 +158,21 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(os.path.abspath(os.path.join(".", self.output_directory, "configuration.json")), "w") as f:
+            with open(
+                os.path.abspath(
+                    os.path.join(".", self.output_directory, self.session_subdirectory, "configuration.json")
+                ),
+                "w",
+            ) as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
+                path_in_bucket=storage.path.join(
+                    self.output_directory, self.session_subdirectory, "configuration.json"
+                ),
             )
 
     def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
@@ -199,45 +190,83 @@ class PacketReader:
 
         t = int.from_bytes(payload[240:244], self.config.endian, signed=False)
 
-        if self.handles[sensor_type].startswith("Baro group"):
+        if self.handles[sensor_type] == "Abs. baros":
             # Write data to files when set is complete.
             self._wait_until_set_is_complete("Baros_P", t, data, current_timestamp, previous_ideal_timestamp)
             self._wait_until_set_is_complete("Baros_T", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
-            baro_group_number = int(self.handles[sensor_type][11:])
-
+            # TODO bytes_per_sample should probably be in the configuration
+            bytes_per_sample = 6
             for i in range(self.config.baros_samples_per_packet):
-                for j in range(self.config.baros_group_size):
-                    data["Baros_P"][baro_group_number * self.config.baros_group_size + j][i] = int.from_bytes(
-                        payload[
-                            (5 * (self.config.baros_group_size * i + j)) : (
-                                5 * (self.config.baros_group_size * i + j) + 3
-                            )
-                        ],
+                for j in range(self.config.n_meas_qty["Baros_P"]):
+
+                    data["Baros_P"][j][i] = int.from_bytes(
+                        payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.endian,
                         signed=False,
                     )
 
-                    data["Baros_T"][baro_group_number * self.config.baros_group_size + j][i] = int.from_bytes(
-                        payload[
-                            (5 * (self.config.baros_group_size * i + j) + 3) : (
-                                5 * (self.config.baros_group_size * i + j) + 5
-                            )
-                        ],
+                    data["Baros_T"][j][i] = int.from_bytes(
+                        payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
                         self.config.endian,
                         signed=True,
                     )
 
-        elif self.handles[sensor_type].startswith("Mic"):
+        elif self.handles[sensor_type] == "Mic 0":
             self._wait_until_set_is_complete("Mics", t, data, current_timestamp, previous_ideal_timestamp)
 
             # Write the received payload to the data field
-            mic_number = int(self.handles[sensor_type][4:])
-            for i in range(self.config.mics_samples_per_packet):
-                data["Mics"][mic_number][i] = int.from_bytes(
-                    payload[(2 * i) : (2 * i + 2)], self.config.endian, signed=True
-                )
+            # TODO bytes_per_sample should probably be in the configuration
+            bytes_per_sample = 3
+
+            for i in range(self.config.mics_samples_per_packet // 2):
+                # TODO what is 5 and? move to configuration?
+                #    self.config.endian = 'big', unlike for baros..
+                for j in range(5):
+                    data["Mics"][j][2 * i] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+                    data["Mics"][j][2 * i + 1] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 5 * bytes_per_sample) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 5 * bytes_per_sample
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+                    data["Mics"][j + 5][2 * i] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 10 * bytes_per_sample) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 10 * bytes_per_sample
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 15 * bytes_per_sample) : (
+                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 15 * bytes_per_sample
+                            )
+                        ],
+                        "big",
+                        signed=True,
+                    )
+        elif self.handles[sensor_type] == "Mic 1":
+            if payload[0] == 1:
+                logger.info("Microphone data reading done")
+            elif payload[0] == 2:
+                logger.info("Microphone data erasing done")
+            elif payload[0] == 3:
+                logger.info("Microphones started ")
 
         elif self.handles[sensor_type].startswith("IMU Accel"):
             self._wait_until_set_is_complete("Acc", t, data, current_timestamp, previous_ideal_timestamp)
@@ -266,7 +295,8 @@ class PacketReader:
                 data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True)
                 data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
 
-        elif self.handles[sensor_type] == "Analog Kinetron":
+        # TODO Analog sensor definitions
+        elif self.handles[sensor_type] in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Kinetron packet. Not supported atm")
 
         elif self.handles[sensor_type] == "Analog Vbat":
@@ -283,15 +313,22 @@ class PacketReader:
         elif self.handles[sensor_type] == "Constat":
             self._wait_until_set_is_complete("Constat", t, data, current_timestamp, previous_ideal_timestamp)
 
+            print("Constat packet: %d" % (t / (2 ** 16)))
+
+            bytes_per_sample = 10
             for i in range(self.config.constat_samples_per_packet):
                 data["Constat"][0][i] = struct.unpack(
-                    "<f" if self.config.endian == "little" else ">f", payload[(6 * i) : (6 * i + 4)]
+                    "<f" if self.config.endian == "little" else ">f",
+                    payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
                 )[0]
                 data["Constat"][1][i] = int.from_bytes(
-                    payload[(6 * i + 4) : (6 * i + 5)], self.config.endian, signed=True
+                    payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)], self.config.endian, signed=True
                 )
                 data["Constat"][2][i] = int.from_bytes(
-                    payload[(6 * i + 5) : (6 * i + 6)], self.config.endian, signed=True
+                    payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)], self.config.endian, signed=True
+                )
+                data["Constat"][3][i] = int.from_bytes(
+                    payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)], self.config.endian, signed=False
                 )
 
         else:
@@ -381,11 +418,12 @@ class PacketReader:
 
         :param dict data: data to persist
         :param str sensor_type: sensor type to persist data from
-        :param timestamp: timestamp in s
-        :param period:
+        :param float timestamp: timestamp in s
+        :param float period:
         :return None:
         """
         number_of_samples = len(data[sensor_type][0])
+        time = None
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
@@ -396,6 +434,30 @@ class PacketReader:
                 sample.append(meas[i])
 
             self._add_to_required_storage_media_batches(sensor_type, data=sample)
+
+        # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
+        # UTC time now. Store it as the `start_timestamp` metadata in the batches.
+        if sensor_type == "Baros_P" and self.sensor_time_offset is None:
+            if time:
+                self._calculate_and_store_sensor_timestamp_offset(time)
+
+    def _calculate_and_store_sensor_timestamp_offset(self, timestamp):
+        """Calculate the offset between the given timestamp and the UTC time now, storing it in the metadata of the
+        batches in the uploader and/or writer.
+
+        :param float timestamp: posix timestamp from sensor
+        :return None:
+        """
+        now = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
+        self.sensor_time_offset = now - timestamp
+
+        if hasattr(self.writer, "current_batch"):
+            self.writer.current_batch["sensor_time_offset"] = self.sensor_time_offset
+            self.writer.ready_batch["sensor_time_offset"] = self.sensor_time_offset
+
+        if hasattr(self.uploader, "current_batch"):
+            self.uploader.current_batch["sensor_time_offset"] = self.sensor_time_offset
+            self.uploader.ready_batch["sensor_time_offset"] = self.sensor_time_offset
 
     def _add_to_required_storage_media_batches(self, sensor_type, data):
         """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader

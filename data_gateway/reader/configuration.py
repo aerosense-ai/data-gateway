@@ -37,7 +37,7 @@ class Configuration:
 
     def __init__(
         self,
-        mics_freq=5000,
+        mics_freq=15625,
         mics_bm=0x3FF,
         baros_freq=100,
         baros_bm=0x3FF,
@@ -56,13 +56,11 @@ class Configuration:
         max_period_drift=0.02,
         packet_key=0xFE,
         type_handle_def=0xFF,
-        mics_samples_per_packet=120,
-        baros_packet_size=48,
-        baros_group_size=4,
+        mics_samples_per_packet=8,
+        baros_samples_per_packet=1,
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
-        baros_samples_per_packet=None,
-        constat_samples_per_packet=40,
+        constat_samples_per_packet=24,
         default_handles=None,
         samples_per_packet=None,
         n_meas_qty=None,
@@ -89,40 +87,22 @@ class Configuration:
         self.packet_key = packet_key
         self.type_handle_def = type_handle_def
         self.mics_samples_per_packet = mics_samples_per_packet
-        self.baros_packet_size = baros_packet_size
-        self.baros_group_size = baros_group_size
         self.imu_samples_per_packet = imu_samples_per_packet
         self.analog_samples_per_packet = analog_samples_per_packet
-        self.baros_samples_per_packet = baros_samples_per_packet or int(baros_packet_size / baros_group_size)
+        self.baros_samples_per_packet = baros_samples_per_packet
         self.constat_samples_per_packet = constat_samples_per_packet
 
         self.default_handles = default_handles or {
-            34: "Baro group 0",
-            36: "Baro group 1",
-            38: "Baro group 2",
-            40: "Baro group 3",
-            42: "Baro group 4",
-            44: "Baro group 5",
-            46: "Baro group 6",
-            48: "Baro group 7",
-            50: "Baro group 8",
-            52: "Baro group 9",
-            54: "Mic 0",
-            56: "Mic 1",
-            58: "Mic 2",
-            60: "Mic 3",
-            62: "Mic 4",
-            64: "Mic 5",
-            66: "Mic 6",
-            68: "Mic 7",
-            70: "Mic 8",
-            72: "Mic 9",
-            74: "IMU Accel",
-            76: "IMU Gyro",
-            78: "IMU Magnetometer",
-            80: "Analog Kinetron",
-            82: "Analog Vbat",
-            84: "Constat",
+            34: "Abs. baros",
+            36: "Diff. baros",
+            38: "Mic 0",
+            40: "Mic 1",
+            42: "IMU Accel",
+            44: "IMU Gyro",
+            46: "IMU Magnetometer",
+            48: "Analog1",
+            50: "Analog2",
+            52: "Constat",
         }
 
         self.samples_per_packet = samples_per_packet or {

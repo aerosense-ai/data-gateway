@@ -30,14 +30,11 @@ def gateway_cli(logger_uri, log_level):
     """AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and send it
     to AeroSense Cloud.
     """
-    from octue.logging_handlers import apply_log_handler, get_remote_handler
+    if logger_uri is not None:
+        from octue.logging_handlers import apply_log_handler, get_remote_handler
 
-    if logger_uri:
-        handler = get_remote_handler(logger_uri=logger_uri, log_level=log_level)
-    else:
-        handler = None
-
-    apply_log_handler(logger, handler, log_level=log_level.upper())
+        handler = get_remote_handler(logger_uri=logger_uri)
+        apply_log_handler(logger_name=__name__, handler=handler, log_level=log_level.upper())
 
 
 @gateway_cli.command()

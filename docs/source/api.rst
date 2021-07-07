@@ -38,3 +38,15 @@ Cloud function
 
 .. automodule:: cloud_function.main
     :members:
+
+
+.. _api_data_preprocess:
+
+Data Pre-Process
+================
+
+.. automodule:: data_preprocess.preprocess
+    :members:
+
+.. automodule:: data_preprocess.functions
+    :members:

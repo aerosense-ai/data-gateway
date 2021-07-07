@@ -5,6 +5,8 @@ from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
 
+from data_preprocess import preprocess
+
 
 logger = logging.getLogger(__name__)
 DATAFILES_DIRECTORY = "datafiles"
@@ -65,6 +67,7 @@ class FileHandler:
         :param dict event: Google Cloud event
         :return dict:
         """
+        batch = preprocess.run(batch, batch_metadata)
         batch["cleaned"] = True
         logger.info("Cleaned batch.")
         return batch
@@ -90,10 +93,10 @@ class FileHandler:
             self.destination_project,
         )
 
-        datafile = Datafile.from_cloud(
+        datafile = Datafile(
+            path=batch_path,
             project_name=self.destination_project,
             bucket_name=self.destination_bucket,
-            datafile_path=batch_path,
         )
 
         path_from, name = os.path.split(batch_path)
