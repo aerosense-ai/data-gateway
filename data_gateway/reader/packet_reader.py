@@ -189,7 +189,8 @@ class PacketReader:
         :return None:
         """
         if sensor_type not in self.handles:
-            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
+            logger.error("Received packet with unknown type: {}".format(sensor_type))
+            #raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
         t = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
@@ -287,7 +288,7 @@ class PacketReader:
 
 
         elif self.handles[sensor_type] == "Constat":
-            print("Constat packet: %d" % (t / (2 ** 16)))
+            logger.info("Constat packet: %d" % t)
 
             bytes_per_sample = 10
             for i in range(self.config.constat_samples_per_packet):
@@ -330,6 +331,8 @@ class PacketReader:
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
                 logger.warning("Lost %s packet(s): %s ms gap", sensor_type, timestamp_deviation * 1000)
+
+        # print("timestamp = %f, previous_timestamp = %f, period = %f, n=%d" % (timestamp, previous_timestamp[sensor_type], self.config.period[sensor_type], self.config.samples_per_packet[sensor_type]))
 
         self._persist_data(data, sensor_type, timestamp, self.config.period[sensor_type])
 

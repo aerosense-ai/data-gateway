@@ -46,7 +46,7 @@ class Configuration:
         gyro_freq=100,
         gyro_range=2000,
         analog_freq=10,
-        constat_period=45,
+        constat_period=45*2.5,  #TODO: Find out why constat packets arrive less often than they should
         serial_port="COM9",
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
