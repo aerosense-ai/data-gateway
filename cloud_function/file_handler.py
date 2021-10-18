@@ -8,7 +8,6 @@ from preprocessing import preprocess
 
 
 logger = logging.getLogger(__name__)
-DATAFILES_DIRECTORY = "datafiles"
 
 
 class FileHandler:
@@ -78,39 +77,10 @@ class FileHandler:
         :param str batch_path: path to persist batch to
         :return None:
         """
-        self.destination_client.upload_from_string(
-            string=json.dumps(batch),
-            bucket_name=self.destination_bucket,
-            path_in_bucket=batch_path,
-            metadata={"sequence": int(os.path.splitext(batch_path)[0].split("-")[-1])},
-        )
+        cloud_path = storage.path.generate_gs_path(self.destination_bucket, batch_path)
 
-        logger.info(
-            "Uploaded batch to %r in bucket %r of project %r.",
-            batch_path,
-            self.destination_bucket,
-            self.destination_project,
-        )
+        with Datafile(path=cloud_path, project_name=self.destination_project, mode="w") as (datafile, f):
+            json.dump(batch, f)
+            datafile.tags["sequence"] = int(os.path.splitext(batch_path)[0].split("-")[-1])
 
-        datafile = Datafile(
-            path=batch_path,
-            project_name=self.destination_project,
-            bucket_name=self.destination_bucket,
-        )
-
-        path_from, name = os.path.split(batch_path)
-        datafile_path = storage.path.join(path_from, DATAFILES_DIRECTORY, name)
-
-        self.destination_client.upload_from_string(
-            string=datafile.serialise(),
-            bucket_name=self.destination_bucket,
-            path_in_bucket=datafile_path,
-        )
-
-        logger.info(
-            "Uploaded Datafile for %r to %r in bucket %r of project %r.",
-            batch_path,
-            datafile_path,
-            self.destination_bucket,
-            self.destination_project,
-        )
+        logger.info("Uploaded batch to %r.", cloud_path, self.destination_project)

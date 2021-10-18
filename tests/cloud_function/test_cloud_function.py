@@ -3,11 +3,9 @@ import os
 import unittest
 from unittest import mock
 from google.cloud.storage.client import Client
-from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from cloud_function import main
-from cloud_function.file_handler import DATAFILES_DIRECTORY
 from tests.base import BaseTestCase
 
 
@@ -109,7 +107,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
             "updated": "0",
         }
 
-        with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": "hello,\n"}):
+        with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": ["hello"]}):
             main.handle_upload(event=event, context=self._make_mock_context())
 
         # Check that cleaned batch has been created and is in the right place.
@@ -120,16 +118,5 @@ class TestCleanAndUploadBatch(BaseTestCase):
                     path_in_bucket=event["name"],
                 )
             ),
-            {"baros": "hello,\n"},
-        )
-
-        # Check that datafile has been created.
-        self.assertEqual(
-            json.loads(
-                self.destination_storage_client.download_as_string(
-                    bucket_name=DESTINATION_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(DATAFILES_DIRECTORY, event["name"]),
-                )
-            )["name"],
-            event["name"],
+            {"baros": ["hello"]},
         )
