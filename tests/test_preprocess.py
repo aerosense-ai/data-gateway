@@ -4,7 +4,7 @@ import os
 import unittest
 import numpy as np
 
-from data_preprocess import preprocess
+from cloud_function.data_preprocess import preprocess
 
 
 class TestDataPreProcess(unittest.TestCase):
