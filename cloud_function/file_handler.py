@@ -103,7 +103,7 @@ class FileHandler:
         datafile_path = storage.path.join(path_from, DATAFILES_DIRECTORY, name)
 
         self.destination_client.upload_from_string(
-            string=datafile.serialise(to_string=True),
+            string=datafile.serialise(),
             bucket_name=self.destination_bucket,
             path_in_bucket=datafile_path,
         )
