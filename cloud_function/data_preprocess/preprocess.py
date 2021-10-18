@@ -1,5 +1,6 @@
 import pandas as pd
-from measurements import RawSignal
+
+from .measurements import RawSignal
 
 
 def run(raw_batch, batch_metadata):
