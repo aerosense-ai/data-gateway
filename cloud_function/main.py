@@ -2,7 +2,7 @@ import os
 from file_handler import FileHandler
 
 
-def clean_and_upload_batch(event, context):
+def handle_upload(event, context):
     """Clean a batch of data received from the gateway and upload to long-term storage.
 
     :param dict event: Google Cloud event

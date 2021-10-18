@@ -84,7 +84,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
             "updated": "0",
         }
 
-        main.clean_and_upload_batch(event=event, context=self._make_mock_context())
+        main.handle_upload(event=event, context=self._make_mock_context())
 
         # Check configuration has been persisted in the right place.
         self.assertEqual(
@@ -110,7 +110,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         }
 
         with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": "hello,\n"}):
-            main.clean_and_upload_batch(event=event, context=self._make_mock_context())
+            main.handle_upload(event=event, context=self._make_mock_context())
 
         # Check that cleaned batch has been created and is in the right place.
         self.assertEqual(
