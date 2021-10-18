@@ -1,6 +1,5 @@
 import os
-
-from .file_handler import FileHandler
+from file_handler import FileHandler
 
 
 def clean_and_upload_batch(event, context):
