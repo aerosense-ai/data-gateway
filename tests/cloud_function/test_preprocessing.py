@@ -4,10 +4,10 @@ import os
 import unittest
 import numpy as np
 
-from cloud_function.data_preprocess import preprocess
+from cloud_function.preprocessing import preprocess
 
 
-class TestDataPreProcess(unittest.TestCase):
+class TestPreprocess(unittest.TestCase):
 
     path_to_sample_data = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),

@@ -4,8 +4,7 @@ import os
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
-
-from data_preprocess import preprocess
+from preprocessing import preprocess
 
 
 logger = logging.getLogger(__name__)
