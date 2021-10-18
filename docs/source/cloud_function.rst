@@ -31,9 +31,10 @@ should be edited and version controlled. When a new version is ready, it can be 
 
 .. code-block::
 
-    gcloud functions deploy clean_and_upload_batch \
+    gcloud functions deploy <name_of_cloud_function> \
         --runtime python38 \
         --trigger-resource <name_of_ingress_bucket> \
-        --trigger-event google.storage.object.finalize
+        --trigger-event google.storage.object.finalize \
+        --region <name_of_region>
 
 At some point, we will write something to trigger this deployment on changes to the cloud function file or similar.
