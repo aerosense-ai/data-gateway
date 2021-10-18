@@ -102,3 +102,6 @@ ENV/
 
 # Jetbrains project structures
 .idea/
+
+.DS_store
+.pytest_cache
