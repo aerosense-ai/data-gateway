@@ -85,8 +85,8 @@ class TestCleanAndUploadBatch(BaseTestCase):
         os.environ["DESTINATION_PROJECT_NAME"] = DESTINATION_PROJECT_NAME
         os.environ["DESTINATION_BUCKET_NAME"] = DESTINATION_BUCKET_NAME
 
-        cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
         cls.source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
+        cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
         cls._create_buckets()
 
     @classmethod
