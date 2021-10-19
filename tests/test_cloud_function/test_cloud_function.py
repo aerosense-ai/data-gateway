@@ -50,10 +50,14 @@ class TestCleanAndUploadBatch(BaseTestCase):
         """
         source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
 
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")) as f:
+            configuration = json.load(f)
+
         source_storage_client.upload_from_string(
-            string=json.dumps({"Baros": "blah,blah,hello,\n"}),
+            string=json.dumps({"Baros": ["blah", "blah", "hello"]}),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
+            metadata={"data_gateway__configuration": configuration},
         )
 
         source_storage_client.upload_from_string(
