@@ -2,9 +2,11 @@ import json
 import logging
 import os
 from octue.cloud import storage
+from octue.cloud.credentials import GCPCredentialsManager
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
-from preprocessing import preprocess
+
+from .preprocessing import preprocess
 
 
 logger = logging.getLogger(__name__)
@@ -13,17 +15,16 @@ logger = logging.getLogger(__name__)
 class FileHandler:
     """A class that get batches from a source bucket, cleans them, and persists them in a destination bucket.
 
-    :param str source_project:
     :param str source_bucket:
     :param str destination_project:
     :param str destination_bucket:
     :return None:
     """
 
-    def __init__(self, source_project, source_bucket, destination_project, destination_bucket):
-        self.source_project = source_project
+    def __init__(self, source_bucket, destination_project, destination_bucket):
+        self.source_project = GCPCredentialsManager().get_credentials().project_id
         self.source_bucket = source_bucket
-        self.source_client = GoogleCloudStorageClient(project_name=source_project, credentials=None)
+        self.source_client = GoogleCloudStorageClient(project_name=self.source_project, credentials=None)
 
         self.destination_project = destination_project
         self.destination_bucket = destination_bucket

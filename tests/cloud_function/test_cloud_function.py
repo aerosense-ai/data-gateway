@@ -20,7 +20,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
     def setUpClass(cls):
         os.environ["GCP_PROJECT"] = SOURCE_PROJECT_NAME
         os.environ["DESTINATION_PROJECT_NAME"] = DESTINATION_PROJECT_NAME
-        os.environ["DESTINATION_BUCKET"] = DESTINATION_BUCKET_NAME
+        os.environ["DESTINATION_BUCKET_NAME"] = DESTINATION_BUCKET_NAME
 
         cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
 
@@ -31,7 +31,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
     def tearDownClass(cls):
         del os.environ["GCP_PROJECT"]
         del os.environ["DESTINATION_PROJECT_NAME"]
-        del os.environ["DESTINATION_BUCKET"]
+        del os.environ["DESTINATION_BUCKET_NAME"]
 
     @staticmethod
     def _create_buckets():
