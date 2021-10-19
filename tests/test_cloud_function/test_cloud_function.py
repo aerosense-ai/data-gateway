@@ -23,7 +23,6 @@ class TestCleanAndUploadBatch(BaseTestCase):
         os.environ["DESTINATION_BUCKET_NAME"] = DESTINATION_BUCKET_NAME
 
         cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
-
         cls._create_buckets()
         cls._create_trigger_files()
 
@@ -51,17 +50,17 @@ class TestCleanAndUploadBatch(BaseTestCase):
         source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
 
         with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")) as f:
-            configuration = json.load(f)
+            cls.configuration = json.load(f)
 
         source_storage_client.upload_from_string(
             string=json.dumps({"Baros": ["blah", "blah", "hello"]}),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
-            metadata={"data_gateway__configuration": configuration},
+            metadata={"data_gateway__configuration": cls.configuration},
         )
 
         source_storage_client.upload_from_string(
-            string=json.dumps({"baudrate": 10}),
+            string=json.dumps(cls.configuration),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="configuration.json",
         )
@@ -95,7 +94,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
                     bucket_name=DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
                 )
             ),
-            {"baudrate": 10},
+            self.configuration,
         )
 
     def test_clean_and_upload_batch(self):
