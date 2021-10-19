@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import unittest
+import warnings
 
 import numpy as np
 from octue.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
@@ -39,3 +40,6 @@ class BaseTestCase(unittest.TestCase, DatasetMixin):
     test_result_modifier = GoogleCloudStorageEmulatorTestResultModifier(default_bucket_name=TEST_BUCKET_NAME)
     setattr(unittest.TestResult, "startTestRun", test_result_modifier.startTestRun)
     setattr(unittest.TestResult, "stopTestRun", test_result_modifier.stopTestRun)
+
+    def setUp(self):
+        warnings.simplefilter("ignore", category=ResourceWarning)

@@ -2,6 +2,7 @@ import json
 import os
 import time
 import unittest
+import warnings
 
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
@@ -21,6 +22,9 @@ DESTINATION_BUCKET_NAME = "test-data-gateway-processed-data"
 )
 class TestDeployment(unittest.TestCase, DatasetMixin):
     storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
+
+    def setUp(self):
+        warnings.simplefilter("ignore", category=ResourceWarning)
 
     def test_configuration_upload(self):
         """Test that uploading a configuration file to the source bucket results in it being uploaded to the destination
