@@ -44,9 +44,8 @@ class FileHandler:
     def get_batch(self, batch_path):
         """Get the batch from Google Cloud storage.
 
-        :param octue.cloud.storage.client.GoogleCloudStorageClient storage_client: client for accessing Google Cloud storage
-        :param dict event: Google Cloud event
-        :return (dict, dict, str):
+        :param str batch_path: cloud path to batch
+        :return (dict, dict):
         """
         batch = json.loads(
             self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=batch_path)
@@ -55,7 +54,7 @@ class FileHandler:
 
         batch_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
         logger.info("Downloaded metadata for batch %r from bucket %r.", batch_path, self.source_bucket)
-        return batch, batch_metadata, batch_path
+        return batch, batch_metadata
 
     def clean(self, batch, batch_metadata, event):
         """Clean and return the given batch.

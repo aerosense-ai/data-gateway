@@ -35,6 +35,7 @@ should be edited and version controlled. When a new version is ready, it can be 
         --runtime python38 \
         --trigger-resource <name_of_ingress_bucket> \
         --trigger-event google.storage.object.finalize \
+        --memory 1GB \
         --region <name_of_region> \
         --set-env-vars SOURCE_PROJECT_NAME=<source_project_name>,DESTINATION_PROJECT_NAME=<destination_project_name>,DESTINATION_BUCKET_NAME=<destination_bucket_name>
 
