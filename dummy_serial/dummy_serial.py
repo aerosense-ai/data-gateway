@@ -1,5 +1,6 @@
 import logging.handlers
 import time
+
 from serial.serialutil import PortNotOpenError, SerialException
 
 from . import constants, exceptions

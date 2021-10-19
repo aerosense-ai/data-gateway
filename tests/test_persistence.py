@@ -4,6 +4,7 @@ import os
 import tempfile
 import time
 from unittest import mock
+
 import google.api_core.exceptions
 from google.cloud.storage.blob import Blob
 from octue.cloud import storage

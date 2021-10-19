@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 from unittest import mock
+
 from click.testing import CliRunner
 
 from data_gateway.cli import gateway_cli
@@ -162,7 +163,7 @@ class TestCLI(BaseTestCase):
         GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            config_path = os.path.join(os.path.dirname(__file__), "cloud_function/valid_configuration.json")
+            config_path = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
 
             with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
                 with tempfile.TemporaryDirectory() as temporary_directory:

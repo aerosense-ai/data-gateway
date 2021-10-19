@@ -1,13 +1,13 @@
-import datetime
 import json
 import os
-import unittest
+
 import numpy as np
 
 from cloud_function.preprocessing import preprocess
+from tests.base import BaseTestCase
 
 
-class TestPreprocess(unittest.TestCase):
+class TestPreprocess(BaseTestCase):
 
     path_to_sample_data = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
@@ -18,35 +18,11 @@ class TestPreprocess(unittest.TestCase):
         "424536",
         "window-0.json",
     )
-    configuration_path = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
-
-    with open(configuration_path) as f:
-        VALID_CONFIGURATION = json.load(f)
 
     def sample_dataset(self):
         with open(self.path_to_sample_data, "r") as in_file:
             sample_data = json.load(in_file)
         return sample_data
-
-    def random_dataset(self, rows, cols):
-        data = np.random.rand(rows, cols)
-        time = np.linspace(0, 10, rows)
-        random_data = np.append(np.transpose([time]), data, axis=1)
-        return random_data
-
-    def random_batch(self):
-        sensors = {"Mics"}
-        # sensors = {"Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag"}
-
-        test_batch = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
-
-        for sensor in sensors:
-            test_batch["sensor_data"][sensor] = self.random_dataset(
-                int(10 / self.VALID_CONFIGURATION["period"][sensor]),  # 10 seconds long
-                self.VALID_CONFIGURATION["n_meas_qty"][sensor],
-            )
-
-        return test_batch
 
     def test_missing_data(self):
         test_batch = self.random_batch()

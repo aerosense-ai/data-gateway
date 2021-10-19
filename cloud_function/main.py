@@ -1,4 +1,5 @@
 import os
+
 from file_handler import FileHandler
 
 
@@ -13,16 +14,16 @@ def handle_upload(event, context):
     file_path = event["name"]
 
     file_handler = FileHandler(
-        source_project=os.environ["GCP_PROJECT"],
+        source_project=os.environ["SOURCE_PROJECT_NAME"],
         source_bucket=event["bucket"],
         destination_project=os.environ["DESTINATION_PROJECT_NAME"],
-        destination_bucket=os.environ["DESTINATION_BUCKET"],
+        destination_bucket=os.environ["DESTINATION_BUCKET_NAME"],
     )
 
     if file_path.endswith("configuration.json"):
         file_handler.persist_configuration(file_path)
         return
 
-    batch, batch_metadata, file_path = file_handler.get_batch(file_path)
-    cleaned_batch = file_handler.clean(batch, batch_metadata, event)
+    batch, batch_metadata = file_handler.get_batch(file_path)
+    cleaned_batch = file_handler.clean_batch(batch, batch_metadata, event)
     file_handler.persist_batch(cleaned_batch, file_path)

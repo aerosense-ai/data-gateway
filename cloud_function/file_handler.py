@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
@@ -44,20 +45,22 @@ class FileHandler:
     def get_batch(self, batch_path):
         """Get the batch from Google Cloud storage.
 
-        :param octue.cloud.storage.client.GoogleCloudStorageClient storage_client: client for accessing Google Cloud storage
-        :param dict event: Google Cloud event
-        :return (dict, dict, str):
+        :param str batch_path: cloud path to batch
+        :return (dict, dict):
         """
         batch = json.loads(
             self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=batch_path)
         )
+
         logger.info("Downloaded batch %r from bucket %r.", batch_path, self.source_bucket)
 
-        batch_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
+        cloud_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
+        batch_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
         logger.info("Downloaded metadata for batch %r from bucket %r.", batch_path, self.source_bucket)
-        return batch, batch_metadata, batch_path
 
-    def clean(self, batch, batch_metadata, event):
+        return batch, batch_metadata
+
+    def clean_batch(self, batch, batch_metadata, event):
         """Clean and return the given batch.
 
         :param dict batch: batch to clean
@@ -83,4 +86,4 @@ class FileHandler:
             json.dump(batch, f)
             datafile.tags["sequence"] = int(os.path.splitext(batch_path)[0].split("-")[-1])
 
-        logger.info("Uploaded batch to %r.", cloud_path, self.destination_project)
+        logger.info("Uploaded batch to %r.", cloud_path)
