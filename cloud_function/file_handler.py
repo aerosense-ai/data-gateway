@@ -50,10 +50,13 @@ class FileHandler:
         batch = json.loads(
             self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=batch_path)
         )
+
         logger.info("Downloaded batch %r from bucket %r.", batch_path, self.source_bucket)
 
-        batch_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
+        cloud_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
+        batch_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
         logger.info("Downloaded metadata for batch %r from bucket %r.", batch_path, self.source_bucket)
+
         return batch, batch_metadata
 
     def clean(self, batch, batch_metadata, event):

@@ -56,7 +56,7 @@ class PacketReader:
                 batch_interval=batch_interval,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
-                metadata=self.config,
+                metadata={"data_gateway__configuration": self.config},
             )
         else:
             self.uploader = NoOperationContextManager()
