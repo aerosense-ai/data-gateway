@@ -15,6 +15,10 @@ DESTINATION_PROJECT_NAME = SOURCE_PROJECT_NAME
 DESTINATION_BUCKET_NAME = "test-data-gateway-processed-data"
 
 
+@unittest.skipUnless(
+    condition=os.getenv("RUN_DEPLOYMENT_TESTS", "").lower() == "true",
+    reason="'RUN_DEPLOYMENT_TESTS' environment variable is False or not present.",
+)
 class TestDeployment(unittest.TestCase, DatasetMixin):
     storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
 
