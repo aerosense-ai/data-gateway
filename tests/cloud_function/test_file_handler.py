@@ -12,8 +12,8 @@ class TestFileHandler(unittest.TestCase):
             "sensor_data": {"Baros_P": [[0, 1, 2, 3], [1, 1, 2, 3]]},
         }
 
-        cleaned_batch = FileHandler(source_bucket="test", destination_project="test", destination_bucket="test").clean(
-            batch, {"period": {"Baros_P": 1}}, {}
-        )
+        cleaned_batch = FileHandler(
+            source_project="test", source_bucket="test", destination_project="test", destination_bucket="test"
+        ).clean(batch, {"period": {"Baros_P": 1}}, {})
 
         self.assertTrue("cleaned" in cleaned_batch.keys())

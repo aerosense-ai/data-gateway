@@ -13,9 +13,10 @@ def handle_upload(event, context):
     file_path = event["name"]
 
     file_handler = FileHandler(
+        source_project=os.environ["GCP_PROJECT"],
         source_bucket=event["bucket"],
         destination_project=os.environ["DESTINATION_PROJECT_NAME"],
-        destination_bucket=os.environ["DESTINATION_BUCKET_NAME"],
+        destination_bucket=os.environ["DESTINATION_BUCKET"],
     )
 
     if file_path.endswith("configuration.json"):
