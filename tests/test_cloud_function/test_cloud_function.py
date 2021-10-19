@@ -1,6 +1,6 @@
 import json
 import os
-import unittest
+from unittest.mock import MagicMock
 
 from google.cloud.storage.client import Client
 from octue.cloud.storage.client import GoogleCloudStorageClient
@@ -19,7 +19,11 @@ DESTINATION_BUCKET_NAME = "destination-bucket"
 class TestCleanAndUploadBatch(BaseTestCase):
     def test_persist_configuration(self):
         """Test that configuration files are persisted to the destination bucket."""
-        self._create_trigger_files()
+        self.source_storage_client.upload_from_string(
+            string=json.dumps(self.VALID_CONFIGURATION),
+            bucket_name=SOURCE_BUCKET_NAME,
+            path_in_bucket="configuration.json",
+        )
 
         event = {
             "bucket": SOURCE_BUCKET_NAME,
@@ -38,7 +42,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
                     cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/configuration.json"
                 )
             ),
-            self.configuration,
+            self.VALID_CONFIGURATION,
         )
 
     def test_clean_and_upload_batch(self):
@@ -46,7 +50,14 @@ class TestCleanAndUploadBatch(BaseTestCase):
         storage trigger. The same source and destination bucket are used in this test although different ones will most
         likely be used in production.
         """
-        self._create_trigger_files()
+        batch = self.random_batch()
+
+        self.source_storage_client.upload_from_string(
+            string=json.dumps(batch, cls=OctueJSONEncoder),
+            bucket_name=SOURCE_BUCKET_NAME,
+            path_in_bucket="window-0.json",
+            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+        )
 
         event = {
             "bucket": SOURCE_BUCKET_NAME,
@@ -56,18 +67,17 @@ class TestCleanAndUploadBatch(BaseTestCase):
             "updated": "0",
         }
 
-        # with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": ["hello"]}):
         main.handle_upload(event=event, context=self._make_mock_context())
 
         # Check that cleaned batch has been created and is in the right place.
-        self.assertEqual(
-            json.loads(
-                self.destination_storage_client.download_as_string(
-                    cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
-                )
-            ),
-            {"baros": ["hello"]},
+        cleaned_batch = json.loads(
+            self.destination_storage_client.download_as_string(
+                cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
+            )
         )
+
+        self.assertEqual(cleaned_batch["cleaned"], True)
+        self.assertIn("Mics", cleaned_batch)
 
     @classmethod
     def setUpClass(cls):
@@ -76,6 +86,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         os.environ["DESTINATION_BUCKET_NAME"] = DESTINATION_BUCKET_NAME
 
         cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
+        cls.source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
         cls._create_buckets()
 
     @classmethod
@@ -93,35 +104,12 @@ class TestCleanAndUploadBatch(BaseTestCase):
         Client(project=SOURCE_PROJECT_NAME).create_bucket(SOURCE_BUCKET_NAME)
         Client(project=DESTINATION_PROJECT_NAME).create_bucket(DESTINATION_BUCKET_NAME)
 
-    def _create_trigger_files(self):
-        """Create a batch file and a configuration file in the source bucket.
-
-        :return None:
-        """
-        source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
-
-        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")) as f:
-            self.configuration = json.load(f)
-
-        source_storage_client.upload_from_string(
-            string=json.dumps(self.random_batch(), cls=OctueJSONEncoder),
-            bucket_name=SOURCE_BUCKET_NAME,
-            path_in_bucket="window-0.json",
-            metadata={"data_gateway__configuration": self.configuration},
-        )
-
-        source_storage_client.upload_from_string(
-            string=json.dumps(self.configuration),
-            bucket_name=SOURCE_BUCKET_NAME,
-            path_in_bucket="configuration.json",
-        )
-
     @staticmethod
     def _make_mock_context():
         """Make a mock Google Cloud Functions event context object.
 
         :return unittest.mock.MagicMock:
         """
-        context = unittest.mock.MagicMock()
+        context = MagicMock()
         context.event_id = "some-id"
         context.event_type = "google.storage.object.finalize"
