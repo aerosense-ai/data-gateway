@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile

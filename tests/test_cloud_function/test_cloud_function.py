@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+
 from google.cloud.storage.client import Client
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder

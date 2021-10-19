@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 from unittest.mock import patch
+
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 

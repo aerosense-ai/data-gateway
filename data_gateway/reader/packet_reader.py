@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import struct
+
 from octue.cloud import storage
 
 from data_gateway import exceptions

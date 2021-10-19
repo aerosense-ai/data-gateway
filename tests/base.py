@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import unittest
+
 import numpy as np
 from octue.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
 

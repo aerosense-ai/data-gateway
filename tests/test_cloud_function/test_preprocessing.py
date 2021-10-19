@@ -1,5 +1,6 @@
 import json
 import os
+
 import numpy as np
 
 from cloud_function.preprocessing import preprocess
