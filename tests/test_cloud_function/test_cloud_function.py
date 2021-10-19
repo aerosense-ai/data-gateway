@@ -16,6 +16,55 @@ DESTINATION_BUCKET_NAME = "destination-bucket"
 
 
 class TestCleanAndUploadBatch(BaseTestCase):
+    def test_persist_configuration(self):
+        """Test that configuration files are persisted to the destination bucket."""
+        event = {
+            "bucket": SOURCE_BUCKET_NAME,
+            "name": "configuration.json",
+            "metageneration": "some-metageneration",
+            "timeCreated": "0",
+            "updated": "0",
+        }
+
+        main.handle_upload(event=event, context=self._make_mock_context())
+
+        # Check configuration has been persisted in the right place.
+        self.assertEqual(
+            json.loads(
+                self.destination_storage_client.download_as_string(
+                    bucket_name=DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
+                )
+            ),
+            self.configuration,
+        )
+
+    def test_clean_and_upload_batch(self):
+        """Test that a batch file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
+        storage trigger. The same source and destination bucket are used in this test although different ones will most
+        likely be used in production.
+        """
+        event = {
+            "bucket": SOURCE_BUCKET_NAME,
+            "name": "window-0.json",
+            "metageneration": "some-metageneration",
+            "timeCreated": "0",
+            "updated": "0",
+        }
+
+        with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": ["hello"]}):
+            main.handle_upload(event=event, context=self._make_mock_context())
+
+        # Check that cleaned batch has been created and is in the right place.
+        self.assertEqual(
+            json.loads(
+                self.destination_storage_client.download_as_string(
+                    bucket_name=DESTINATION_BUCKET_NAME,
+                    path_in_bucket=event["name"],
+                )
+            ),
+            {"baros": ["hello"]},
+        )
+
     @classmethod
     def setUpClass(cls):
         os.environ["SOURCE_PROJECT_NAME"] = SOURCE_PROJECT_NAME
@@ -74,52 +123,3 @@ class TestCleanAndUploadBatch(BaseTestCase):
         context = unittest.mock.MagicMock()
         context.event_id = "some-id"
         context.event_type = "google.storage.object.finalize"
-
-    def test_persist_configuration(self):
-        """Test that configuration files are persisted to the destination bucket."""
-        event = {
-            "bucket": SOURCE_BUCKET_NAME,
-            "name": "configuration.json",
-            "metageneration": "some-metageneration",
-            "timeCreated": "0",
-            "updated": "0",
-        }
-
-        main.handle_upload(event=event, context=self._make_mock_context())
-
-        # Check configuration has been persisted in the right place.
-        self.assertEqual(
-            json.loads(
-                self.destination_storage_client.download_as_string(
-                    bucket_name=DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
-                )
-            ),
-            self.configuration,
-        )
-
-    def test_clean_and_upload_batch(self):
-        """Test that a batch file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
-        storage trigger. The same source and destination bucket are used in this test although different ones will most
-        likely be used in production.
-        """
-        event = {
-            "bucket": SOURCE_BUCKET_NAME,
-            "name": "window-0.json",
-            "metageneration": "some-metageneration",
-            "timeCreated": "0",
-            "updated": "0",
-        }
-
-        with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": ["hello"]}):
-            main.handle_upload(event=event, context=self._make_mock_context())
-
-        # Check that cleaned batch has been created and is in the right place.
-        self.assertEqual(
-            json.loads(
-                self.destination_storage_client.download_as_string(
-                    bucket_name=DESTINATION_BUCKET_NAME,
-                    path_in_bucket=event["name"],
-                )
-            ),
-            {"baros": ["hello"]},
-        )
