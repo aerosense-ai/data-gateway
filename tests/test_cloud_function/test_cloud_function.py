@@ -1,9 +1,9 @@
 import json
 import os
 import unittest
-from unittest import mock
 from google.cloud.storage.client import Client
 from octue.cloud.storage.client import GoogleCloudStorageClient
+from octue.utils.encoders import OctueJSONEncoder
 
 from cloud_function import main
 from tests.base import BaseTestCase
@@ -18,6 +18,8 @@ DESTINATION_BUCKET_NAME = "destination-bucket"
 class TestCleanAndUploadBatch(BaseTestCase):
     def test_persist_configuration(self):
         """Test that configuration files are persisted to the destination bucket."""
+        self._create_trigger_files()
+
         event = {
             "bucket": SOURCE_BUCKET_NAME,
             "name": "configuration.json",
@@ -43,6 +45,8 @@ class TestCleanAndUploadBatch(BaseTestCase):
         storage trigger. The same source and destination bucket are used in this test although different ones will most
         likely be used in production.
         """
+        self._create_trigger_files()
+
         event = {
             "bucket": SOURCE_BUCKET_NAME,
             "name": "window-0.json",
@@ -51,8 +55,8 @@ class TestCleanAndUploadBatch(BaseTestCase):
             "updated": "0",
         }
 
-        with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": ["hello"]}):
-            main.handle_upload(event=event, context=self._make_mock_context())
+        # with mock.patch("cloud_function.file_handler.FileHandler.clean", return_value={"baros": ["hello"]}):
+        main.handle_upload(event=event, context=self._make_mock_context())
 
         # Check that cleaned batch has been created and is in the right place.
         self.assertEqual(
@@ -72,7 +76,6 @@ class TestCleanAndUploadBatch(BaseTestCase):
 
         cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
         cls._create_buckets()
-        cls._create_trigger_files()
 
     @classmethod
     def tearDownClass(cls):
@@ -89,8 +92,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         Client(project=SOURCE_PROJECT_NAME).create_bucket(SOURCE_BUCKET_NAME)
         Client(project=DESTINATION_PROJECT_NAME).create_bucket(DESTINATION_BUCKET_NAME)
 
-    @classmethod
-    def _create_trigger_files(cls):
+    def _create_trigger_files(self):
         """Create a batch file and a configuration file in the source bucket.
 
         :return None:
@@ -98,17 +100,17 @@ class TestCleanAndUploadBatch(BaseTestCase):
         source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
 
         with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")) as f:
-            cls.configuration = json.load(f)
+            self.configuration = json.load(f)
 
         source_storage_client.upload_from_string(
-            string=json.dumps({"Baros": ["blah", "blah", "hello"]}),
+            string=json.dumps(self.random_batch(), cls=OctueJSONEncoder),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
-            metadata={"data_gateway__configuration": cls.configuration},
+            metadata={"data_gateway__configuration": self.configuration},
         )
 
         source_storage_client.upload_from_string(
-            string=json.dumps(cls.configuration),
+            string=json.dumps(self.configuration),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="configuration.json",
         )
