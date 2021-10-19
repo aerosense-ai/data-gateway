@@ -24,5 +24,5 @@ def handle_upload(event, context):
         return
 
     batch, batch_metadata = file_handler.get_batch(file_path)
-    cleaned_batch = file_handler.clean(batch, batch_metadata, event)
+    cleaned_batch = file_handler.clean_batch(batch, batch_metadata, event)
     file_handler.persist_batch(cleaned_batch, file_path)

@@ -59,7 +59,7 @@ class FileHandler:
 
         return batch, batch_metadata
 
-    def clean(self, batch, batch_metadata, event):
+    def clean_batch(self, batch, batch_metadata, event):
         """Clean and return the given batch.
 
         :param dict batch: batch to clean
