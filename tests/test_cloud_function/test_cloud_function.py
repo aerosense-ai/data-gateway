@@ -18,7 +18,7 @@ DESTINATION_BUCKET_NAME = "destination-bucket"
 class TestCleanAndUploadBatch(BaseTestCase):
     @classmethod
     def setUpClass(cls):
-        os.environ["GCP_PROJECT"] = SOURCE_PROJECT_NAME
+        os.environ["SOURCE_PROJECT_NAME"] = SOURCE_PROJECT_NAME
         os.environ["DESTINATION_PROJECT_NAME"] = DESTINATION_PROJECT_NAME
         os.environ["DESTINATION_BUCKET_NAME"] = DESTINATION_BUCKET_NAME
 
@@ -29,7 +29,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        del os.environ["GCP_PROJECT"]
+        del os.environ["SOURCE_PROJECT_NAME"]
         del os.environ["DESTINATION_PROJECT_NAME"]
         del os.environ["DESTINATION_BUCKET_NAME"]
 
