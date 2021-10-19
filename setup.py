@@ -17,7 +17,6 @@ with open("LICENSE") as f:
 setup(
     name="data_gateway",
     version="0.1.0",
-    py_modules=[],
     install_requires=[
         "click>=7.1.2",
         "pyserial==3.5",
