@@ -32,7 +32,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    bucket_name=DESTINATION_BUCKET_NAME, path_in_bucket=event["name"]
+                    cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/configuration.json"
                 )
             ),
             self.configuration,
@@ -58,8 +58,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.destination_storage_client.download_as_string(
-                    bucket_name=DESTINATION_BUCKET_NAME,
-                    path_in_bucket=event["name"],
+                    cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
                 )
             ),
             {"baros": ["hello"]},
