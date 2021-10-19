@@ -58,7 +58,7 @@ class TestCleanAndUploadBatch(BaseTestCase):
         storage trigger. The same source and destination bucket are used in this test although different ones will most
         likely be used in production.
         """
-        batch = self.random_batch()
+        batch = self.random_batch(10, 10)
 
         self.source_storage_client.upload_from_string(
             string=json.dumps(batch, cls=OctueJSONEncoder),

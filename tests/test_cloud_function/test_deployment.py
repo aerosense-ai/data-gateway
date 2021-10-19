@@ -4,6 +4,7 @@ import time
 import unittest
 import warnings
 
+import google.api_core.exceptions
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
@@ -38,14 +39,8 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
                 configuration = json.load(f)
 
             self.storage_client.upload_from_string(string=json.dumps(configuration), cloud_path=upload_path)
-
-            time.sleep(10)
-
-            # Check configuration has been persisted in the destination bucket.
-            self.assertEqual(
-                json.loads(self.storage_client.download_as_string(cloud_path=destination_path)),
-                configuration,
-            )
+            uploaded_configuration = self._poll_for_uploaded_file(destination_path, timeout=30)
+            self.assertEqual(uploaded_configuration, configuration)
 
         finally:
             self.storage_client.delete(cloud_path=upload_path)
@@ -59,7 +54,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         destination_path = f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
 
         try:
-            batch = self.random_batch()
+            batch = self.random_batch(10, 10)
 
             self.storage_client.upload_from_string(
                 string=json.dumps(batch, cls=OctueJSONEncoder),
@@ -67,13 +62,27 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
                 metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
             )
 
-            time.sleep(10)
-
-            # Check that cleaned batch has been created and is in the right place.
-            cleaned_batch = json.loads(self.storage_client.download_as_string(cloud_path=destination_path))
+            cleaned_batch = self._poll_for_uploaded_file(destination_path, timeout=30)
             self.assertEqual(cleaned_batch["cleaned"], True)
             self.assertIn("Mics", cleaned_batch)
 
         finally:
             self.storage_client.delete(cloud_path=upload_path)
             self.storage_client.delete(cloud_path=destination_path)
+
+    def _poll_for_uploaded_file(self, cloud_path, timeout):
+        """Poll Google Cloud storage for the file at the given path until it is available or the timeout is reached.
+
+        :param str cloud_path:
+        :param float timeout:
+        :return dict|None:
+        """
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            try:
+                return json.loads(self.storage_client.download_as_string(cloud_path=cloud_path))
+            except google.api_core.exceptions.NotFound:
+                time.sleep(5)
+
+        return None
