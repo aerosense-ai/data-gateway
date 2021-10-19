@@ -86,4 +86,4 @@ class FileHandler:
             json.dump(batch, f)
             datafile.tags["sequence"] = int(os.path.splitext(batch_path)[0].split("-")[-1])
 
-        logger.info("Uploaded batch to %r.", cloud_path, self.destination_project)
+        logger.info("Uploaded batch to %r.", cloud_path)
