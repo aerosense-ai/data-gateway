@@ -113,7 +113,9 @@ def start(
         logger.info("Using default configuration.")
 
     serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
-    serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
+
+    if os.name == "nt":  # set_buffer_size is available only on windows
+        serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
 
     if not interactive:
         logger.info(
