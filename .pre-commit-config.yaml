@@ -38,7 +38,7 @@ repos:
           - 'Sphinx>=2,<3'
           - 'sphinx-rtd-theme==0.5.0'
           - 'sphinx-tabs==1.2.1'
-          - 'octue==0.2.3'
+          - 'octue==0.4.3'
           - 'pyserial==3.5'
 
   - repo: https://github.com/windpioneers/pre-commit-hooks
@@ -57,3 +57,9 @@ repos:
           - '^review/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
           - '^release/(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
           - '^refactor/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
+
+  - repo: https://github.com/octue/conventional-commits
+    rev: 0.3.1
+    hooks:
+      - id: check-commit-message-is-conventional
+        stages: [commit-msg]

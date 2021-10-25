@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import struct
+
 from octue.cloud import storage
 
 from data_gateway import exceptions
@@ -56,7 +57,7 @@ class PacketReader:
                 batch_interval=batch_interval,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
-                metadata=self.config.user_data,
+                metadata={"data_gateway__configuration": self.config},
             )
         else:
             self.uploader = NoOperationContextManager()

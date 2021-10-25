@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+
 import click
 import pkg_resources
 
@@ -98,6 +99,7 @@ def start(
     """Start the gateway service (daemonise this for a deployment)."""
     import json
     import threading
+
     import serial
 
     import sys

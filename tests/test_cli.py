@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 from unittest import mock
+
 from click.testing import CliRunner
 
 from data_gateway.cli import gateway_cli

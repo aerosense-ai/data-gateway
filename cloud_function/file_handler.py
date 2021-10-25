@@ -1,15 +1,14 @@
 import json
 import logging
 import os
+
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
-
-from data_preprocess import preprocess
+from preprocessing import preprocess
 
 
 logger = logging.getLogger(__name__)
-DATAFILES_DIRECTORY = "datafiles"
 
 
 class FileHandler:
@@ -46,20 +45,22 @@ class FileHandler:
     def get_batch(self, batch_path):
         """Get the batch from Google Cloud storage.
 
-        :param octue.cloud.storage.client.GoogleCloudStorageClient storage_client: client for accessing Google Cloud storage
-        :param dict event: Google Cloud event
-        :return (dict, dict, str):
+        :param str batch_path: cloud path to batch
+        :return (dict, dict):
         """
         batch = json.loads(
             self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=batch_path)
         )
+
         logger.info("Downloaded batch %r from bucket %r.", batch_path, self.source_bucket)
 
-        batch_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
+        cloud_metadata = self.source_client.get_metadata(bucket_name=self.source_bucket, path_in_bucket=batch_path)
+        batch_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
         logger.info("Downloaded metadata for batch %r from bucket %r.", batch_path, self.source_bucket)
-        return batch, batch_metadata, batch_path
 
-    def clean(self, batch, batch_metadata, event):
+        return batch, batch_metadata
+
+    def clean_batch(self, batch, batch_metadata, event):
         """Clean and return the given batch.
 
         :param dict batch: batch to clean
@@ -79,39 +80,10 @@ class FileHandler:
         :param str batch_path: path to persist batch to
         :return None:
         """
-        self.destination_client.upload_from_string(
-            string=json.dumps(batch),
-            bucket_name=self.destination_bucket,
-            path_in_bucket=batch_path,
-            metadata={"sequence": int(os.path.splitext(batch_path)[0].split("-")[-1])},
-        )
+        cloud_path = storage.path.generate_gs_path(self.destination_bucket, batch_path)
 
-        logger.info(
-            "Uploaded batch to %r in bucket %r of project %r.",
-            batch_path,
-            self.destination_bucket,
-            self.destination_project,
-        )
+        with Datafile(path=cloud_path, project_name=self.destination_project, mode="w") as (datafile, f):
+            json.dump(batch, f)
+            datafile.tags["sequence"] = int(os.path.splitext(batch_path)[0].split("-")[-1])
 
-        datafile = Datafile(
-            path=batch_path,
-            project_name=self.destination_project,
-            bucket_name=self.destination_bucket,
-        )
-
-        path_from, name = os.path.split(batch_path)
-        datafile_path = storage.path.join(path_from, DATAFILES_DIRECTORY, name)
-
-        self.destination_client.upload_from_string(
-            string=datafile.serialise(to_string=True),
-            bucket_name=self.destination_bucket,
-            path_in_bucket=datafile_path,
-        )
-
-        logger.info(
-            "Uploaded Datafile for %r to %r in bucket %r of project %r.",
-            batch_path,
-            datafile_path,
-            self.destination_bucket,
-            self.destination_project,
-        )
+        logger.info("Uploaded batch to %r.", cloud_path)
