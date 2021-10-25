@@ -326,7 +326,7 @@ class PacketReader:
                 self._check_and_write_packet("Analog Vbat", timestamp, data, previous_timestamp)
 
             elif self.handles[sensor_type] == "Constat":
-                logger.info("Constat packet: %d" % timestamp)
+                logger.debug("Constat packet: %d" % timestamp)
 
                 bytes_per_sample = 10
                 for i in range(self.config.constat_samples_per_packet):
