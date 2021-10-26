@@ -366,6 +366,10 @@ class PacketReader:
 
     def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
         """
+        The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
+        packet contains 40 samples from 4 barometers each.
+        For each sensor type (e.g. baro), this function checks if the packets from all sensors have arrived.
+
         :param str sensor_type:
         :param timestamp: Unit: s
         :param dict data:
@@ -387,12 +391,14 @@ class PacketReader:
 
         # print("timestamp = %f, previous_timestamp = %f, period = %f, n=%d" % (timestamp, previous_timestamp[sensor_type], self.config.period[sensor_type], self.config.samples_per_packet[sensor_type]))
 
-        self._persist_data(data, sensor_type, timestamp, self.config.period[sensor_type])
+        self._timestamp_and_persist_data(data, sensor_type, timestamp, self.config.period[sensor_type])
 
         previous_timestamp[sensor_type] = timestamp
 
-    def _persist_data(self, data, sensor_type, timestamp, period):
+    def _timestamp_and_persist_data(self, data, sensor_type, timestamp, period):
         """Persist data to the required storage media.
+        Since timestamps only come at a packet level, this function assumes constant period for
+         the within-packet-timestamps
 
         :param dict data: data to persist
         :param str sensor_type: sensor type to persist data from
