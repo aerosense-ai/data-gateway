@@ -72,7 +72,7 @@ class Configuration:
         self.mics_freq = mics_freq
         self.mics_bm = mics_bm
         self.baros_freq = baros_freq
-        self.dif_baros_freq = diff_baros_freq
+        self.diff_baros_freq = diff_baros_freq
         self.baros_bm = baros_bm
         self.acc_freq = acc_freq
         self.acc_range = acc_range
@@ -137,7 +137,7 @@ class Configuration:
             "Mics": 1 / self.mics_freq,
             "Baros_P": 1 / self.baros_freq,
             "Baros_T": 1 / self.baros_freq,
-            "Diff_Baros": 1 / self.dif_baros_freq,
+            "Diff_Baros": 1 / self.diff_baros_freq,
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
