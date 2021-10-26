@@ -181,6 +181,7 @@ def start(
                     packet_reader.stop = True
                     break
 
+                # Send the command to the node
                 serial_port.write(line.encode("utf_8"))
 
     except KeyboardInterrupt:
