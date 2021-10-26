@@ -96,7 +96,10 @@ def gateway_cli(logger_uri, log_level):
 def start(
     config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name, stop_when_no_more_data
 ):
-    """Start the gateway service (daemonise this for a deployment)."""
+    """Start the gateway service (daemonise this for a deployment).
+
+    Node commands are: [startBaros, startMics, startIMU ...]
+    """
     import json
     import threading
 
