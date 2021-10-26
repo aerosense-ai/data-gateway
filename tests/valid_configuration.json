@@ -2,14 +2,15 @@
   "mics_freq": 15625,
   "mics_bm": 1023,
   "baros_freq": 100,
+  "dif_baros_freq": 1000,
   "baros_bm": 1023,
   "acc_freq": 100,
   "acc_range": 16,
   "gyro_freq": 100,
   "gyro_range": 2000,
-  "analog_freq": 10,
-  "constat_period": 45,
-  "serial_port": "COM9",
+  "analog_freq": 16384,
+  "constat_period": 112.5,
+  "serial_port": "/dev/ttyACM0",
   "serial_buffer_rx_size": 100000,
   "serial_buffer_tx_size": 1280,
   "baudrate": 2300000,
@@ -22,6 +23,7 @@
   "imu_samples_per_packet": 40,
   "analog_samples_per_packet": 60,
   "baros_samples_per_packet": 1,
+  "diff_baros_samples_per_packet": 1,
   "constat_samples_per_packet": 24,
   "default_handles": {
     "34": "Abs. baros",
@@ -37,6 +39,7 @@
   },
   "samples_per_packet": {
     "Mics": 8,
+    "Diff_Baros": 1,
     "Baros_P": 1,
     "Baros_T": 1,
     "Acc": 40,
@@ -49,6 +52,7 @@
     "Mics": 10,
     "Baros_P": 40,
     "Baros_T": 40,
+    "Diff_Baros": 5,
     "Acc": 3,
     "Gyro": 3,
     "Mag": 3,
@@ -59,11 +63,12 @@
     "Mics": 6.4e-05,
     "Baros_P": 0.01,
     "Baros_T": 0.01,
+    "Diff_Baros": 0.001,
     "Acc": 0.01,
     "Gyro": 0.01,
     "Mag": 0.08,
-    "Analog Vbat": 0.1,
-    "Constat": 0.045
+    "Analog Vbat": 6.103515625e-05,
+    "Constat": 0.1125
   },
   "user_data": {}
 }
