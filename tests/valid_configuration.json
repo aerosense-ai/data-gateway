@@ -2,7 +2,7 @@
   "mics_freq": 15625,
   "mics_bm": 1023,
   "baros_freq": 100,
-  "dif_baros_freq": 1000,
+  "diff_baros_freq": 1000,
   "baros_bm": 1023,
   "acc_freq": 100,
   "acc_range": 16,
