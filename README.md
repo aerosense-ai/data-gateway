@@ -30,7 +30,7 @@ Prerequisites:
 3. Execute ```pip install virtualenv```
 
 Installation:
-1. clone this repo.
+1. Clone this repo.
 2. ``` cd data-gateway```
 2. ``` pyenv install 3.7.0``` (or higher)
 3. ``` pyenv local 3.7.0 ```
@@ -82,18 +82,18 @@ These environment variables need to be set to run the tests:
 
 Then, from the repository root, run
 ```bash
-python3 -m unittest
+tox
 ```
 
 ### Features
 
 This library is written with:
 
- - black style
- - sphinx docs including automated doc build
- - pre-commit hooks
- - tox tests
- - code coverage
+ - `black` style
+ - `sphinx` docs including automated doc build
+ - `pre-commit` hooks
+ - `tox` tests
+ - Code coverage
 
 ### Pre-Commit
 
@@ -101,21 +101,24 @@ You need to install pre-commit to get the hooks working. Do:
 ```
 pip install pre-commit
 pre-commit install
+pre-commit install -t commit-msg
 ```
 
 Once that's done, each time you make a commit, the following checks are made:
 
-- valid github repo and files
-- code style
-- import order
+- Valid github repo and files
+- Code style
+- Import order
 - PEP8 compliance
-- documentation build
-- branch naming convention
+- Documentation build
+- Branch naming convention
+- Conventional Commit messages
 
 Upon failure, the commit will halt. **Re-running the commit will automatically fix most issues** except:
 
 - The flake8 checks... hopefully over time Black (which fixes most things automatically already) will negate need for it.
 - You'll have to fix documentation yourself prior to a successful commit (there's no auto fix for that!!).
+- Any issues with the commit message will have to be fixed manually
 
 You can run pre-commit hooks without making a commit, too, like:
 ```
