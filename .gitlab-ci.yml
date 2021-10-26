@@ -19,8 +19,6 @@ pages:
     when: 'on_success'
     key: 'pages'
   script:
-    - python3 -m venv docs-venv
-    - bash docs-venv/bin/activate
     - pip install -r docs/requirements.txt
     - sphinx-build -b html docs/source public
   artifacts:
