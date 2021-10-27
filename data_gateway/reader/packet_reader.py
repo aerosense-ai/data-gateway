@@ -263,14 +263,6 @@ class PacketReader:
 
                 self._check_and_write_packet("Mics", timestamp, data, previous_timestamp)
 
-            elif self.handles[sensor_type] == "Mic 1":
-                if payload[0] == 1:
-                    logger.info("Mics reading done")
-                elif payload[0] == 2:
-                    logger.info("Mics erasing done")
-                elif payload[0] == 3:
-                    logger.info("Mics started")
-
             elif self.handles[sensor_type].startswith("IMU Accel"):
                 # Write the received payload to the data field
                 for i in range(self.config.imu_samples_per_packet):
