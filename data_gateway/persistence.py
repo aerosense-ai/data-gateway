@@ -32,24 +32,24 @@ class NoOperationContextManager:
 
 
 class TimeBatcher:
-    """A batcher that groups the data given to it into batches of the duration of the time interval.
+    """A batcher that groups the given data into time windows.
 
-    :param iter(str) sensor_names: names of sensors to make batches for
-    :param float batch_interval: time interval with which to batch data (in seconds)
+    :param iter(str) sensor_names: names of sensors to group data for
+    :param float window_size: length of time window in seconds
     :param str session_subdirectory: directory within output directory to persist into
-    :param str output_directory: directory to write batches to
+    :param str output_directory: directory to write windows to
     :return None:
     """
 
-    def __init__(self, sensor_names, batch_interval, session_subdirectory, output_directory=DEFAULT_OUTPUT_DIRECTORY):
-        self.current_batch = {"sensor_time_offset": None, "sensor_data": {name: [] for name in sensor_names}}
-        self.batch_interval = batch_interval
+    def __init__(self, sensor_names, window_size, session_subdirectory, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+        self.current_window = {"sensor_time_offset": None, "sensor_data": {name: [] for name in sensor_names}}
+        self.window_size = window_size
         self.output_directory = output_directory
-        self.ready_batch = {"sensor_time_offset": None, "sensor_data": {}}
+        self.ready_window = {"sensor_time_offset": None, "sensor_data": {}}
         self._session_subdirectory = session_subdirectory
         self._start_time = time.perf_counter()
-        self._batch_number = 0
-        self._batch_prefix = "window"
+        self._window_number = 0
+        self._file_prefix = "window"
 
     def __enter__(self):
         return self
@@ -57,62 +57,62 @@ class TimeBatcher:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.force_persist()
 
-    def add_to_current_batch(self, sensor_name, data):
-        """Add serialised data (a string) to the current batch for the given sensor name.
+    def add_to_current_window(self, sensor_name, data):
+        """Add serialised data (a string) to the current window for the given sensor name.
 
         :param str sensor_name: name of sensor
-        :param iter data: data to add to batch
+        :param iter data: data to add to window
         :return None:
         """
-        # Finalise the batch and persist it if enough time has elapsed.
-        if time.perf_counter() - self._start_time >= self.batch_interval:
-            self.finalise_current_batch()
-            self._persist_batch()
-            self._prepare_for_next_batch()
+        # Finalise the window and persist it if enough time has elapsed.
+        if time.perf_counter() - self._start_time >= self.window_size:
+            self.finalise_current_window()
+            self._persist_window()
+            self._prepare_for_next_window()
 
-        # Then add data to the current/new batch.
-        self.current_batch["sensor_data"][sensor_name].append(data)
+        # Then add data to the current/new window.
+        self.current_window["sensor_data"][sensor_name].append(data)
 
-    def finalise_current_batch(self):
-        """Finalise the current batch for the given sensor name. This puts the current batch into the queue of ready
-        batches, resets the clock for the next batch, and increases the batch number for it.
+    def finalise_current_window(self):
+        """Finalise the current window for the given sensor name. This puts the current window into the queue of ready
+        windows, resets the clock for the next window, and increases the window number for it.
 
         :return None:
         """
-        for sensor_name, data in self.current_batch["sensor_data"].items():
+        for sensor_name, data in self.current_window["sensor_data"].items():
             if data:
-                self.ready_batch["sensor_data"][sensor_name] = copy.deepcopy(data)
+                self.ready_window["sensor_data"][sensor_name] = copy.deepcopy(data)
                 data.clear()
 
     def force_persist(self):
-        """Persist all current batches, regardless of whether a complete batch interval has passed.
+        """Persist all current windows, regardless of whether a complete time window has passed.
 
         :return None:
         """
-        self.finalise_current_batch()
-        self._persist_batch()
-        self._prepare_for_next_batch()
+        self.finalise_current_window()
+        self._persist_window()
+        self._prepare_for_next_window()
 
     @abc.abstractmethod
-    def _persist_batch(self):
-        """Persist the batch to whatever medium is required (e.g. to disk, to a database, or to the cloud).
+    def _persist_window(self):
+        """Persist the window to whatever medium is required (e.g. to disk, to a database, or to the cloud).
 
         :return None:
         """
         pass
 
-    def _prepare_for_next_batch(self):
-        """Prepare the batcher for the next batch.
+    def _prepare_for_next_window(self):
+        """Prepare the batcher for the next window.
 
         :return None:
         """
-        self._batch_number += 1
-        self.ready_batch["sensor_data"] = {}
+        self._window_number += 1
+        self.ready_window["sensor_data"] = {}
         self._start_time = time.perf_counter()
 
     @abc.abstractmethod
-    def _generate_batch_path(self):
-        """Generate the path that the batch should be persisted to. This should start by joining the output directory
+    def _generate_window_path(self):
+        """Generate the path that the window should be persisted to. This should start by joining the output directory
         and the session subdirectory.
 
         :return str:
@@ -121,13 +121,12 @@ class TimeBatcher:
 
 
 class BatchingFileWriter(TimeBatcher):
-    """A file writer that batches the data given to it over time into batches of the duration of the given time
-    interval, saving each batch to disk.
+    """A file writer that groups the given into time windows, saving each window to disk.
 
-    :param iter(str) sensor_names: names of sensors to make batches for
-    :param float batch_interval: time interval with which to batch data (in seconds)
+    :param iter(str) sensor_names: names of sensors to make windows for
+    :param float window_size:     :param float window_size: length of time window in seconds
     :param str session_subdirectory: directory within output directory to persist into
-    :param str output_directory: directory to write batches to
+    :param str output_directory: directory to write windows to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
     """
@@ -135,32 +134,32 @@ class BatchingFileWriter(TimeBatcher):
     def __init__(
         self,
         sensor_names,
-        batch_interval,
+        window_size,
         session_subdirectory,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         storage_limit=1024 ** 3,
     ):
         self.storage_limit = storage_limit
-        super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
+        super().__init__(sensor_names, window_size, session_subdirectory, output_directory)
         os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
 
-    def _persist_batch(self, batch=None):
-        """Write a batch of serialised data to disk, deleting the oldest batch first if the storage limit has been
+    def _persist_window(self, window=None):
+        """Write a window of serialised data to disk, deleting the oldest window first if the storage limit has been
         reached.
 
-        :param dict|None batch: batch to persist
+        :param dict|None window: window to persist
         :return None:
         """
         self._manage_storage()
-        batch_path = os.path.abspath(os.path.join(".", self._generate_batch_path()))
+        window_path = os.path.abspath(os.path.join(".", self._generate_window_path()))
 
-        with open(batch_path, "w") as f:
-            json.dump(batch or self.ready_batch, f)
+        with open(window_path, "w") as f:
+            json.dump(window or self.ready_window, f)
 
-        logger.info(f"{self._batch_prefix.capitalize()} {self._batch_number} written to disk.")
+        logger.info(f"{self._file_prefix.capitalize()} {self._window_number} written to disk.")
 
     def _manage_storage(self):
-        """Check if the output directory has reached its storage limit and, if it has, delete the oldest batch.
+        """Check if the output directory has reached its storage limit and, if it has, delete the oldest window.
 
         :return None:
         """
@@ -170,41 +169,41 @@ class BatchingFileWriter(TimeBatcher):
         storage_limit_in_mb = self.storage_limit / 1024 ** 2
 
         if calculate_disk_usage(session_directory, filter) >= self.storage_limit:
-            oldest_batch = get_oldest_file_in_directory(session_directory, filter)
+            oldest_window = get_oldest_file_in_directory(session_directory, filter)
 
             logger.warning(
-                "Storage limit reached (%s MB) - deleting oldest batch (%r).",
+                "Storage limit reached (%s MB) - deleting oldest window (%r).",
                 storage_limit_in_mb,
-                oldest_batch,
+                oldest_window,
             )
 
-            os.remove(oldest_batch)
+            os.remove(oldest_window)
 
         elif calculate_disk_usage(session_directory, filter) >= 0.9 * self.storage_limit:
             logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * storage_limit_in_mb)
 
-    def _generate_batch_path(self):
-        """Generate the path that the batch should be persisted to.
+    def _generate_window_path(self):
+        """Generate the path that the window should be persisted to.
 
         :return str:
         """
-        filename = f"{self._batch_prefix}-{self._batch_number}.json"
+        filename = f"{self._file_prefix}-{self._window_number}.json"
         return os.path.join(self.output_directory, self._session_subdirectory, filename)
 
 
 class BatchingUploader(TimeBatcher):
-    """A Google Cloud Storage uploader that will upload the data given to it to a GCP storage bucket at the given
-    interval of time. If upload fails for a batch, it will be written to the backup directory. If the
-    `upload_backup_files` flag is `True`, its upload will then be reattempted after the upload of each subsequent batch.
+    """A Google Cloud Storage uploader that will group the given data into time windows and upload it to a Google Cloud
+    Storage.  If upload fails for a window, it will be written to the backup directory. If the `upload_backup_files`
+    flag is `True`, its upload will then be reattempted after the upload of each subsequent window.
 
-    :param iter(str) sensor_names: names of sensors to make batches for
+    :param iter(str) sensor_names: names of sensors to group data for
     :param str project_name: name of Google Cloud project to upload to
     :param str bucket_name: name of Google Cloud bucket to upload to
-    :param float batch_interval: time interval with which to batch data (in seconds)
+    :param float window_size: length of time window in seconds
     :param str session_subdirectory: directory within output directory to persist into
-    :param str output_directory: directory to write batches to
+    :param str output_directory: directory to write windows to
     :param float upload_timeout: time after which to give up trying to upload to the cloud
-    :param bool upload_backup_files: attempt to upload backed-up batches on next batch upload
+    :param bool upload_backup_files: attempt to upload backed-up windows on next window upload
     :return None:
     """
 
@@ -213,7 +212,7 @@ class BatchingUploader(TimeBatcher):
         sensor_names,
         project_name,
         bucket_name,
-        batch_interval,
+        window_size,
         session_subdirectory,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         metadata=None,
@@ -226,47 +225,46 @@ class BatchingUploader(TimeBatcher):
         self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
-        super().__init__(sensor_names, batch_interval, session_subdirectory, output_directory)
+        super().__init__(sensor_names, window_size, session_subdirectory, output_directory)
         self._backup_directory = os.path.join(self.output_directory, ".backup")
         self._backup_writer = BatchingFileWriter(
-            sensor_names, batch_interval, session_subdirectory, output_directory=self._backup_directory
+            sensor_names, window_size, session_subdirectory, output_directory=self._backup_directory
         )
 
-    def _persist_batch(self):
-        """Upload a batch to Google Cloud storage. If the batch fails to upload, it is instead written to disk.
+    def _persist_window(self):
+        """Upload a window to Google Cloud storage. If the window fails to upload, it is instead written to disk.
 
         :return None:
         """
         try:
             self.client.upload_from_string(
-                string=json.dumps(self.ready_batch),
+                string=json.dumps(self.ready_window),
                 bucket_name=self.bucket_name,
-                path_in_bucket=self._generate_batch_path(),
+                path_in_bucket=self._generate_window_path(),
                 metadata=self.metadata,
                 timeout=self.upload_timeout,
             )
 
         except Exception:  # noqa
             logger.warning(
-                "Upload of batch failed - writing to disk at %r instead.",
-                self._backup_writer._generate_batch_path(),
+                "Upload of window failed - writing to disk at %r instead.",
+                self._backup_writer._generate_window_path(),
             )
 
-            self._backup_writer._persist_batch(batch=self.ready_batch)
+            self._backup_writer._persist_window(window=self.ready_window)
             return
 
-        logger.info(f"{self._batch_prefix.capitalize()} {self._batch_number} uploaded to cloud.")
+        logger.info(f"{self._file_prefix.capitalize()} {self._window_number} uploaded to cloud.")
 
         if self.upload_backup_files:
             self._attempt_to_upload_backup_files()
 
-    def _generate_batch_path(self):
-        """Generate the path that the batch should be persisted to.
+    def _generate_window_path(self):
+        """Generate the path that the window should be persisted to.
 
-        :param bool backup: generate batch path for a backup
         :return str:
         """
-        filename = f"{self._batch_prefix}-{self._batch_number}.json"
+        filename = f"{self._file_prefix}-{self._window_number}.json"
         return storage.path.join(self.output_directory, self._session_subdirectory, filename)
 
     def _attempt_to_upload_backup_files(self):
@@ -281,7 +279,7 @@ class BatchingUploader(TimeBatcher):
 
         for filename in backup_filenames:
 
-            if not filename.startswith(self._batch_prefix):
+            if not filename.startswith(self._file_prefix):
                 continue
 
             local_path = os.path.join(self._backup_directory, self._session_subdirectory, filename)

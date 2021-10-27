@@ -3,7 +3,7 @@
 ==============
 Cloud function
 ==============
-We've written a Google Cloud Function (a serverless deployed app) that, when a batch is uploaded to the storage ingress
+We've written a Google Cloud Function (a serverless deployed app) that, when a window is uploaded to the storage ingress
 bucket, pre-processes/cleans it before moving it to a more permanent home in a different bucket. The ingress bucket is
 currently set to ``aerosense-ingress-eu`` and the output bucket is set to ``data-gateway-processed-data``. Both are
 part of the ``aerosense-twined`` Google Cloud project. You can view the deployed Cloud Function
@@ -33,7 +33,7 @@ Manual redeployment
 ===================
 The cloud function package is included in this (``data-gateway``) repository in ``cloud_function``, which is where it
 should be edited and version controlled. When a new version is ready, it must be manually deployed to the cloud for it
-to be used for new batch uploads (there is no automatic deployment enabled currently):
+to be used for new window uploads (there is no automatic deployment enabled currently):
 
 .. code-block::
 

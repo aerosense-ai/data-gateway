@@ -22,16 +22,16 @@ class DatasetMixin:
         random_data = np.append(np.transpose([time]), data, axis=1)
         return random_data
 
-    def random_batch(self, rows=None, cols=None):
+    def random_window(self, rows=None, cols=None):
         sensors = {"Mics"}
-        test_batch = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
+        window = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
 
         for sensor in sensors:
             rows = rows or int(10 / self.VALID_CONFIGURATION["period"][sensor])  # 10 seconds long
             cols = cols or self.VALID_CONFIGURATION["n_meas_qty"][sensor]
-            test_batch["sensor_data"][sensor] = self.random_dataset(rows, cols)
+            window["sensor_data"][sensor] = self.random_dataset(rows, cols)
 
-        return test_batch
+        return window
 
 
 class BaseTestCase(unittest.TestCase, DatasetMixin):

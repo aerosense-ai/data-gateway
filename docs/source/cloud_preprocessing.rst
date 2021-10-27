@@ -7,10 +7,10 @@ Cloud pre-processing
 .. ATTENTION::
    This part of the documentation is still in progress. Please check back soon.
 
-Structured raw data (bytes) batches are pre-processed by the ``cloud_function.preprocessing`` package. See
+Structured raw data (bytes) windows are pre-processed by the ``cloud_function.preprocessing`` package. See
 :ref:`here <installation>` for example output data from ``data-gateway`` that is the input to the preprocessor.
 
-The configuration used to read the batch is included as metadata on the cloud objects. The following is used currently:
+The configuration used to read the window is included as metadata on the cloud objects. The following is used currently:
 
 - Node ID
 

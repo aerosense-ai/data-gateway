@@ -24,7 +24,7 @@ DESTINATION_PROJECT_NAME = "destination-project"
 DESTINATION_BUCKET_NAME = "destination-bucket"
 
 
-class TestCleanAndUploadBatch(BaseTestCase):
+class TestCleanAndUploadWindow(BaseTestCase):
     def test_persist_configuration(self):
         """Test that configuration files are persisted to the destination bucket."""
         self.source_storage_client.upload_from_string(
@@ -53,15 +53,15 @@ class TestCleanAndUploadBatch(BaseTestCase):
             self.VALID_CONFIGURATION,
         )
 
-    def test_clean_and_upload_batch(self):
-        """Test that a batch file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
+    def test_clean_and_upload_window(self):
+        """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger. The same source and destination bucket are used in this test although different ones will most
         likely be used in production.
         """
-        batch = self.random_batch(10, 10)
+        window = self.random_window(10, 10)
 
         self.source_storage_client.upload_from_string(
-            string=json.dumps(batch, cls=OctueJSONEncoder),
+            string=json.dumps(window, cls=OctueJSONEncoder),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
@@ -77,15 +77,15 @@ class TestCleanAndUploadBatch(BaseTestCase):
 
         main.handle_upload(event=event, context=self._make_mock_context())
 
-        # Check that cleaned batch has been created and is in the right place.
-        cleaned_batch = json.loads(
+        # Check that cleaned window has been created and is in the right place.
+        cleaned_window = json.loads(
             self.destination_storage_client.download_as_string(
                 cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
             )
         )
 
-        self.assertEqual(cleaned_batch["cleaned"], True)
-        self.assertIn("Mics", cleaned_batch)
+        self.assertEqual(cleaned_window["cleaned"], True)
+        self.assertIn("Mics", cleaned_window)
 
     @classmethod
     def setUpClass(cls):
