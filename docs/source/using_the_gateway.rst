@@ -79,8 +79,8 @@ Configuring the Gateway
 =======================
 
 Configuration options for the gateway can be supplied via a configuration file. By default, **data-gateway** looks for
-a file named ``config.json`` in the working directory, although the CLI allows this to be overridden, to use a specific
-configuration file. Here is the contents of an example file:
+a file named ``config.json`` in the working directory, although the CLI allows this to be overridden to use a specific
+configuration file. Here is the contents of an example configuration file:
 
 .. code-block::
 
@@ -147,7 +147,8 @@ and one is not found in the working directory. If a configuration file is specif
 be present for it to be valid. Any extra metadata you'd like to include can be specified in the ``user_data`` field as
 a JSON object. See the :ref:`Configuration API <configuration_api>` for more information.
 
-One configuration is used per run of the ``start`` command and is a copy is saved with the output data. To supply the
+One configuration is used per run of the ``start`` command and is a copy is saved with the output data. The
+configuration is also saved as metadata on the output files uploaded to the cloud. To supply the
 configuration file and start the gateway, type the following, supplying any other options you need:
 
 .. code-block::
