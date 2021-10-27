@@ -4,11 +4,10 @@ from file_handler import FileHandler
 
 
 def handle_upload(event, context):
-    """Clean a batch of data received from the gateway and upload to long-term storage.
+    """Clean a data window received from the gateway and upload to long-term storage.
 
     :param dict event: Google Cloud event
     :param google.cloud.functions.Context context: metadata for the event
-    :param str cleaned_batch_name: new name for cleaned batch file
     :return None:
     """
     file_path = event["name"]
@@ -24,6 +23,6 @@ def handle_upload(event, context):
         file_handler.persist_configuration(file_path)
         return
 
-    batch, batch_metadata = file_handler.get_batch(file_path)
-    cleaned_batch = file_handler.clean_batch(batch, batch_metadata, event)
-    file_handler.persist_batch(cleaned_batch, file_path)
+    window, window_metadata = file_handler.get_window(file_path)
+    cleaned_window = file_handler.clean_window(window, window_metadata, event)
+    file_handler.persist_window(cleaned_window, file_path)
