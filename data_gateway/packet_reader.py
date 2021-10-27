@@ -7,8 +7,8 @@ import struct
 from octue.cloud import storage
 
 from data_gateway import exceptions
+from data_gateway.configuration import Configuration
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
-from data_gateway.reader.configuration import Configuration
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class PacketReader:
     :param float window_size: length of time window in seconds
     :param str|None project_name: name of Google Cloud project to upload to
     :param str|None bucket_name: name of Google Cloud project to upload to
-    :param data_gateway.reader.configuration.Configuration|None configuration:
+    :param data_gateway.configuration.Configuration|None configuration:
     :return None:
     """
 
@@ -161,7 +161,7 @@ class PacketReader:
         if self.save_locally:
             with open(
                 os.path.abspath(
-                    os.path.join(".", self.output_directory, self.session_subdirectory, "configuration.json")
+                    os.path.join("reader", self.output_directory, self.session_subdirectory, "configuration.json")
                 ),
                 "w",
             ) as f:

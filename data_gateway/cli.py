@@ -101,8 +101,8 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
     import serial
 
     import sys
-    from data_gateway.reader import PacketReader
-    from data_gateway.reader.configuration import Configuration
+    from data_gateway.configuration import Configuration
+    from data_gateway.packet_reader import PacketReader
 
     if os.path.exists(config_file):
         with open(config_file) as f:

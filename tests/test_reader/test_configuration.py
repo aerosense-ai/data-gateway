@@ -1,7 +1,7 @@
 import json
 import os
 
-from data_gateway.reader.configuration import Configuration
+from data_gateway.configuration import Configuration
 from tests.base import BaseTestCase
 
 

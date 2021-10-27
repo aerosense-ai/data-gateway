@@ -7,8 +7,8 @@ from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway import exceptions
-from data_gateway.reader.configuration import Configuration
-from data_gateway.reader.packet_reader import PacketReader
+from data_gateway.configuration import Configuration
+from data_gateway.packet_reader import PacketReader
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
 from tests.dummy_serial import DummySerial
@@ -136,7 +136,7 @@ class TestPacketReader(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            with patch("data_gateway.reader.packet_reader.logger") as mock_logger:
+            with patch("data_gateway.packet_reader.logger") as mock_logger:
                 packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
                 self.assertIn("Handle error", mock_logger.method_calls[0].args[0])
 
@@ -163,7 +163,7 @@ class TestPacketReader(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            with patch("data_gateway.reader.packet_reader.logger") as mock_logger:
+            with patch("data_gateway.packet_reader.logger") as mock_logger:
                 packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
                 self.assertIn("Successfully updated handles", mock_logger.method_calls[0].args[0])
 
