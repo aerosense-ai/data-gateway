@@ -32,8 +32,8 @@ class TestBatchingWriter(BaseTestCase):
         writer.add_to_current_window(sensor_name="test", data="blah,")
         self.assertEqual(writer.current_window["sensor_data"]["test"], ["blah,"])
 
-    def test_data_is_written_to_disk_in_batches(self):
-        """Test that data is written to disk in batches of whatever units it is added in."""
+    def test_data_is_written_to_disk_in_windows(self):
+        """Test that data is written to disk as time windows."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
@@ -60,8 +60,8 @@ class TestBatchingWriter(BaseTestCase):
             with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-1.json")) as f:
                 self.assertEqual(json.load(f)["sensor_data"], {"test": ["ding", "dong"]})
 
-    def test_oldest_batch_is_deleted_when_storage_limit_reached(self):
-        """Check that (only) the oldest batch is deleted when the storage limit is reached."""
+    def test_oldest_window_is_deleted_when_storage_limit_reached(self):
+        """Check that (only) the oldest window is deleted when the storage limit is reached."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
@@ -74,16 +74,16 @@ class TestBatchingWriter(BaseTestCase):
             with writer:
                 writer.add_to_current_window(sensor_name="test", data="ping,")
 
-            first_batch_path = os.path.join(temporary_directory, writer._session_subdirectory, "window-0.json")
+            first_window_path = os.path.join(temporary_directory, writer._session_subdirectory, "window-0.json")
 
             # Check first file is written to disk.
-            self.assertTrue(os.path.exists(first_batch_path))
+            self.assertTrue(os.path.exists(first_window_path))
 
             with writer:
                 writer.add_to_current_window(sensor_name="test", data="pong,\n")
 
             # Check first (oldest) file has now been deleted.
-            self.assertFalse(os.path.exists(first_batch_path))
+            self.assertFalse(os.path.exists(first_window_path))
 
             # Check the second file has not been deleted.
             self.assertTrue(
@@ -110,10 +110,8 @@ class TestBatchingUploader(BaseTestCase):
         uploader.add_to_current_window(sensor_name="test", data="blah,")
         self.assertEqual(uploader.current_window["sensor_data"]["test"], ["blah,"])
 
-    def test_data_is_uploaded_in_batches_and_can_be_retrieved_from_cloud_storage(self):
-        """Test that data is uploaded in batches of whatever units it is added in, and that it can be retrieved from
-        cloud storage.
-        """
+    def test_data_is_uploaded_in_windows_and_can_be_retrieved_from_cloud_storage(self):
+        """Test that data is uploaded in time windows that can be retrieved from cloud storage."""
         uploader = BatchingUploader(
             sensor_names=["test"],
             project_name=TEST_PROJECT_NAME,
@@ -162,8 +160,8 @@ class TestBatchingUploader(BaseTestCase):
             {"test": ["ding", "dong"]},
         )
 
-    def test_batch_is_written_to_disk_if_upload_fails(self):
-        """Test that a batch is written to disk if it fails to upload to the cloud."""
+    def test_window_is_written_to_disk_if_upload_fails(self):
+        """Test that a window is written to disk if it fails to upload to the cloud."""
         with tempfile.TemporaryDirectory() as temporary_directory:
 
             with mock.patch.object(Blob, "upload_from_string", Exception):
@@ -233,7 +231,7 @@ class TestBatchingUploader(BaseTestCase):
             with uploader:
                 uploader.add_to_current_window(sensor_name="test", data=["ding", "dong"])
 
-        # Check that both batches are now in cloud storage.
+        # Check that both windows are now in cloud storage.
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(

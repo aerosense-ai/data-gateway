@@ -34,8 +34,9 @@ You can see help about this command by executing:
 Automatic (non-interactive) mode
 --------------------------------
 Running the gateway in automatic (non-interactive) mode doesn't allow further commands to be passed to the serial port.
-Data from the serial port is processed, batched, and uploaded to an ingress Google Cloud storage bucket where it is
-cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in production.
+Data from the serial port is processed, batched into time windows, and uploaded to an ingress Google Cloud storage
+bucket where it is cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in
+production.
 
 Before starting this mode, this environment variable must be defined to allow a cloud connection:
 ``GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json``
@@ -49,7 +50,7 @@ To start this mode, type:
         --gcp-bucket-name=<name-of-google-cloud-bucket> \
         --output-dir=<path/to/output-directory-in-cloud-bucket> \
 
-If the connection to Google Cloud fails, batches will be written to the hidden directory
+If the connection to Google Cloud fails, windows will be written to the hidden directory
 ``./<output_directory>/.backup`` where they will stay until the connection resumes. Backup files will be deleted upon
 successful cloud upload.
 
@@ -70,7 +71,7 @@ To start this mode, type:
 
 Other options
 -------------
-* The batch interval (default 600 seconds) can be set by using ``--batch-interval=<number_of_seconds>`` after the `start` command
+* The window size (default 600 seconds) can be set by using ``--window-size=<number_of_seconds>`` after the `start` command
 
 
 .. _configuring:
