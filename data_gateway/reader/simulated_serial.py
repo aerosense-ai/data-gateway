@@ -1,4 +1,4 @@
-from dummy_serial import DummySerial, random_bytes
+from tests.dummy_serial import DummySerial, random_bytes
 
 
 def generate_packet():
