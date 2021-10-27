@@ -43,7 +43,7 @@ class PacketReader:
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.stop = False
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
+        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
@@ -186,7 +186,7 @@ class PacketReader:
         """
         if sensor_type not in self.handles:
             logger.error("Received packet with unknown type: {}".format(sensor_type))
-            return
+            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
         if len(payload) == 244:
             timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
@@ -213,7 +213,7 @@ class PacketReader:
                 self._check_and_write_packet("Baros_P", timestamp, data, previous_timestamp)
                 self._check_and_write_packet("Baros_T", timestamp, data, previous_timestamp)
 
-            if self.handles[sensor_type] == "Diff. baros":
+            elif self.handles[sensor_type] == "Diff. baros":
                 # TODO bytes_per_sample should probably be in the configuration
                 bytes_per_sample = 2
                 for i in range(self.config.diff_baros_samples_per_packet):
@@ -227,6 +227,7 @@ class PacketReader:
                             self.config.endian,
                             signed=False,
                         )
+                self._check_and_write_packet("Diff_Baros", timestamp, data, previous_timestamp)
 
             elif self.handles[sensor_type] == "Mic 0":
                 # Write the received payload to the data field
@@ -281,7 +282,7 @@ class PacketReader:
                         payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
                     )
 
-                self._check_and_write_packet("IMU Accel", timestamp, data, previous_timestamp)
+                self._check_and_write_packet("Acc", timestamp, data, previous_timestamp)
 
             elif self.handles[sensor_type] == "IMU Gyro":
                 # Write the received payload to the data field
@@ -294,7 +295,7 @@ class PacketReader:
                         payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
                     )
 
-                self._check_and_write_packet("IMU Gyro", timestamp, data, previous_timestamp)
+                self._check_and_write_packet("Gyro", timestamp, data, previous_timestamp)
 
             elif self.handles[sensor_type] == "IMU Magnetometer":
                 # Write the received payload to the data field
