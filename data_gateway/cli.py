@@ -63,14 +63,14 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(file_okay=False),
     default="data_gateway",
     show_default=True,
-    help="The directory in which to save batch files from the data gateway.",
+    help="The directory in which to save data windows from the gateway.",
 )
 @click.option(
-    "--batch-interval",
+    "--window-size",
     type=click.FLOAT,
     default=600,
     show_default=True,
-    help="The time interval for which data is collected into a batch before being persisted locally or to the cloud.",
+    help="The window length in seconds that data is grouped into before being persisted locally or to the cloud.",
 )
 @click.option(
     "--gcp-project-name",
@@ -93,9 +93,7 @@ def gateway_cli(logger_uri, log_level):
     show_default=True,
     help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
 )
-def start(
-    config_file, interactive, output_dir, batch_interval, gcp_project_name, gcp_bucket_name, stop_when_no_more_data
-):
+def start(config_file, interactive, output_dir, window_size, gcp_project_name, gcp_bucket_name, stop_when_no_more_data):
     """Start the gateway service (daemonise this for a deployment).
 
     Node commands are: [startBaros, startMics, startIMU ...]
@@ -106,8 +104,8 @@ def start(
     import serial
 
     import sys
-    from data_gateway.reader import PacketReader
-    from data_gateway.reader.configuration import Configuration
+    from data_gateway.configuration import Configuration
+    from data_gateway.packet_reader import PacketReader
 
     if os.path.exists(config_file):
         with open(config_file) as f:
@@ -126,14 +124,14 @@ def start(
         logger.info(
             "Starting packet reader in non-interactive mode - files will be uploaded to cloud storage at intervals of "
             "%s seconds.",
-            batch_interval,
+            window_size,
         )
 
         PacketReader(
             save_locally=False,
             upload_to_cloud=True,
             output_directory=output_dir,
-            batch_interval=batch_interval,
+            window_size=window_size,
             project_name=gcp_project_name,
             bucket_name=gcp_bucket_name,
             configuration=config,
@@ -146,7 +144,7 @@ def start(
         save_locally=True,
         upload_to_cloud=False,
         output_directory=output_dir,
-        batch_interval=batch_interval,
+        window_size=window_size,
         configuration=config,
     )
 
@@ -162,7 +160,7 @@ def start(
         "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
         " to disk at %r at intervals of %s seconds.",
         output_dir,
-        batch_interval,
+        window_size,
     )
 
     # Keep a record of the commands given.

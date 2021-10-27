@@ -1,4 +1,4 @@
-from data_gateway.reader.configuration import Configuration
+from data_gateway.configuration import Configuration
 
 
 TEST_PROJECT_NAME = "a-project-name"

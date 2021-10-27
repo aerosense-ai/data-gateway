@@ -34,8 +34,9 @@ You can see help about this command by executing:
 Automatic (non-interactive) mode
 --------------------------------
 Running the gateway in automatic (non-interactive) mode doesn't allow further commands to be passed to the serial port.
-Data from the serial port is processed, batched, and uploaded to an ingress Google Cloud storage bucket where it is
-cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in production.
+Data from the serial port is processed, batched into time windows, and uploaded to an ingress Google Cloud storage
+bucket where it is cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in
+production.
 
 Before starting this mode, this environment variable must be defined to allow a cloud connection:
 ``GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json``
@@ -49,7 +50,7 @@ To start this mode, type:
         --gcp-bucket-name=<name-of-google-cloud-bucket> \
         --output-dir=<path/to/output-directory-in-cloud-bucket> \
 
-If the connection to Google Cloud fails, batches will be written to the hidden directory
+If the connection to Google Cloud fails, windows will be written to the hidden directory
 ``./<output_directory>/.backup`` where they will stay until the connection resumes. Backup files will be deleted upon
 successful cloud upload.
 
@@ -70,7 +71,7 @@ To start this mode, type:
 
 Other options
 -------------
-* The batch interval (default 600 seconds) can be set by using ``--batch-interval=<number_of_seconds>`` after the `start` command
+* The window size (default 600 seconds) can be set by using ``--window-size=<number_of_seconds>`` after the `start` command
 
 
 .. _configuring:
@@ -79,8 +80,8 @@ Configuring the Gateway
 =======================
 
 Configuration options for the gateway can be supplied via a configuration file. By default, **data-gateway** looks for
-a file named ``config.json`` in the working directory, although the CLI allows this to be overridden, to use a specific
-configuration file. Here is the contents of an example file:
+a file named ``config.json`` in the working directory, although the CLI allows this to be overridden to use a specific
+configuration file. Here is the contents of an example configuration file:
 
 .. code-block::
 
@@ -147,7 +148,8 @@ and one is not found in the working directory. If a configuration file is specif
 be present for it to be valid. Any extra metadata you'd like to include can be specified in the ``user_data`` field as
 a JSON object. See the :ref:`Configuration API <configuration_api>` for more information.
 
-One configuration is used per run of the ``start`` command and is a copy is saved with the output data. To supply the
+One configuration is used per run of the ``start`` command and is a copy is saved with the output data. The
+configuration is also saved as metadata on the output files uploaded to the cloud. To supply the
 configuration file and start the gateway, type the following, supplying any other options you need:
 
 .. code-block::

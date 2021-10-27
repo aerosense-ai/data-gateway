@@ -42,7 +42,7 @@ outages.
    output_data
    deployment
    cloud_function
-   data_preprocess
+   cloud_preprocessing
    hardware_and_firmware_versions
    api
    version_history
