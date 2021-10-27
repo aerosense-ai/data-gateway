@@ -50,7 +50,7 @@ When booted into your **pi**, use the following commands to install...
 
 .. code-block::
 
-   export GATEWAY_VERSION="0.1.0" # Or whatever release number you aim to use, check the latest available on GitLab
+   export GATEWAY_VERSION="0.2.0" # Or whatever release number you aim to use, check the latest available on GitLab
    export PERSONAL_ACCESS_TOKEN=abcdef123456 # See above for how to generate the PAT
    pip install git+https://${PERSONAL_ACCESS_TOKEN}@gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway@${GATEWAY_VERSION}
 
