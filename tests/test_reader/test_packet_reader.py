@@ -17,7 +17,7 @@ from tests.base import BaseTestCase
 class TestPacketReader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.BATCH_INTERVAL = 10
+        cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_batches_to_check=5):
@@ -68,7 +68,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -88,7 +88,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -131,7 +131,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=False,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -158,7 +158,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=False,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -180,7 +180,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -202,7 +202,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -224,7 +224,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -246,7 +246,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -268,7 +268,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -290,7 +290,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
@@ -312,7 +312,7 @@ class TestPacketReader(BaseTestCase):
     #             save_locally=True,
     #             upload_to_cloud=True,
     #             output_directory=temporary_directory,
-    #             batch_interval=self.BATCH_INTERVAL,
+    #             window_size=self.WINDOW_SIZE,
     #             project_name=TEST_PROJECT_NAME,
     #             bucket_name=TEST_BUCKET_NAME,
     #         )
@@ -337,7 +337,7 @@ class TestPacketReader(BaseTestCase):
                 save_locally=True,
                 upload_to_cloud=True,
                 output_directory=temporary_directory,
-                batch_interval=self.BATCH_INTERVAL,
+                window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )

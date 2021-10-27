@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 class PacketReader:
     """A serial port packet reader.
 
-    :param bool save_locally: save batches of data locally
-    :param bool upload_to_cloud: upload batches of data to Google cloud
+    :param bool save_locally: save data windows locally
+    :param bool upload_to_cloud: upload data windows to Google cloud
     :param str|None output_directory:
-    :param float batch_interval: the interval of time in seconds between batches
+    :param float window_size: length of time window in seconds
     :param str|None project_name: name of Google Cloud project to upload to
     :param str|None bucket_name: name of Google Cloud project to upload to
     :param data_gateway.reader.configuration.Configuration|None configuration:
@@ -32,7 +32,7 @@ class PacketReader:
         save_locally,
         upload_to_cloud,
         output_directory=None,
-        batch_interval=600,
+        window_size=600,
         project_name=None,
         bucket_name=None,
         configuration=None,
@@ -54,7 +54,7 @@ class PacketReader:
                 sensor_names=self.sensor_names,
                 project_name=project_name,
                 bucket_name=bucket_name,
-                window_size=batch_interval,
+                window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 metadata={"data_gateway__configuration": self.config},
@@ -65,7 +65,7 @@ class PacketReader:
         if save_locally:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
-                window_size=batch_interval,
+                window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
             )
@@ -434,17 +434,17 @@ class PacketReader:
             for meas in data[sensor_type]:
                 sample.append(meas[i])
 
-            self._add_to_required_storage_media_batches(sensor_type, data=sample)
+            self._add_data_to_current_window(sensor_type, data=sample)
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
-        # UTC time now. Store it as the `start_timestamp` metadata in the batches.
+        # UTC time now. Store it as the `start_timestamp` metadata in the windows.
         if sensor_type == "Baros_P" and self.sensor_time_offset is None:
             if time:
                 self._calculate_and_store_sensor_timestamp_offset(time)
 
     def _calculate_and_store_sensor_timestamp_offset(self, timestamp):
         """Calculate the offset between the given timestamp and the UTC time now, storing it in the metadata of the
-        batches in the uploader and/or writer.
+        windows in the uploader and/or writer.
 
         :param float timestamp: posix timestamp from sensor
         :return None:
@@ -452,17 +452,16 @@ class PacketReader:
         now = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
         self.sensor_time_offset = now - timestamp
 
-        if hasattr(self.writer, "current_batch"):
-            self.writer.current_batch["sensor_time_offset"] = self.sensor_time_offset
-            self.writer.ready_batch["sensor_time_offset"] = self.sensor_time_offset
+        if hasattr(self.writer, "current_window"):
+            self.writer.current_window["sensor_time_offset"] = self.sensor_time_offset
+            self.writer.ready_window["sensor_time_offset"] = self.sensor_time_offset
 
-        if hasattr(self.uploader, "current_batch"):
-            self.uploader.current_batch["sensor_time_offset"] = self.sensor_time_offset
-            self.uploader.ready_batch["sensor_time_offset"] = self.sensor_time_offset
+        if hasattr(self.uploader, "current_window"):
+            self.uploader.current_window["sensor_time_offset"] = self.sensor_time_offset
+            self.uploader.ready_window["sensor_time_offset"] = self.sensor_time_offset
 
-    def _add_to_required_storage_media_batches(self, sensor_type, data):
-        """Add the data to the required storage media batches (currently a file writer batch and/or a cloud uploader
-        batch).
+    def _add_data_to_current_window(self, sensor_type, data):
+        """Add data to the current window.
 
         :param str sensor_type: sensor type to persist data from
         :param iter data: data to persist
