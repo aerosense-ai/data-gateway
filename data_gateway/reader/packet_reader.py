@@ -54,7 +54,7 @@ class PacketReader:
                 sensor_names=self.sensor_names,
                 project_name=project_name,
                 bucket_name=bucket_name,
-                batch_interval=batch_interval,
+                window_size=batch_interval,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 metadata={"data_gateway__configuration": self.config},
@@ -65,7 +65,7 @@ class PacketReader:
         if save_locally:
             self.writer = BatchingFileWriter(
                 sensor_names=self.sensor_names,
-                batch_interval=batch_interval,
+                window_size=batch_interval,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
             )
@@ -469,7 +469,7 @@ class PacketReader:
         :return None:
         """
         if self.save_locally:
-            self.writer.add_to_current_batch(sensor_type, data)
+            self.writer.add_to_current_window(sensor_type, data)
 
         if self.upload_to_cloud:
-            self.uploader.add_to_current_batch(sensor_type, data)
+            self.uploader.add_to_current_window(sensor_type, data)

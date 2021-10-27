@@ -22,7 +22,7 @@ class TestPacketReader(BaseTestCase):
 
     def _check_batches_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_batches_to_check=5):
         """Check that non-trivial batches from a packet reader for a particular sensor are uploaded to cloud storage."""
-        number_of_batches = packet_reader.uploader._batch_number
+        number_of_batches = packet_reader.uploader._window_number
         self.assertTrue(number_of_batches > 0)
 
         for i in range(number_of_batches_to_check):
@@ -44,7 +44,7 @@ class TestPacketReader(BaseTestCase):
     def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
         batch_directory = os.path.join(temporary_directory, packet_reader.writer._session_subdirectory)
-        batches = [file for file in os.listdir(batch_directory) if file.startswith(packet_reader.writer._batch_prefix)]
+        batches = [file for file in os.listdir(batch_directory) if file.startswith(packet_reader.writer._file_prefix)]
         self.assertTrue(len(batches) > 0)
 
         for batch in batches:
