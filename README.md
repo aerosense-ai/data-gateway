@@ -15,13 +15,48 @@ Documentation for `data-gateway` can be found [here.](https://windenergie-hsr.gi
 
 ### Installation
 
-#### On Linux/MacOS
+#### Clone the repository
+First, clone the repository. It's a private repository, so you'll either need to clone it via:
+- `ssh`, or
+- `https` with:
+  - a personal access token (PAT), or
+  - your GitLab username and password entered into the command line when asked.
+
+To use a PAT, run the following:
+```shell
+export GATEWAY_VERSION="0.2.0" # Or whatever release number you aim to use, check the latest available on GitLab;
+export PERSONAL_ACCESS_TOKEN=abcdef123456
+git clone git+https://${PERSONAL_ACCESS_TOKEN_GITHUB}@gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway@${GATEWAY_VERSION}
+```
+
+For instructions on how to create a PAT, [click here](https://windenergie-hsr.gitlab.io/aerosense/digital-twin/data-gateway/installation.html).
+
+Finally, change directory into the repository:
+```shell
+cd data-gateway
+```
+
+#### Install on Linux or MacOS
 For development, run the following from the repository root.
 ```bash
+# Create a virtual environment.
+python3 -m venv venv
+
+# Activate the virtual environment.
+source ./venv/bin/activate
+
+# Editably install data-gateway.
 pip install -r requirements-dev.txt
 ```
 
-#### On Windows
+This will editably install `data-gateway` in a virtual environment, meaning:
+- Any local changes you make to it will be automatically used when running it locally
+- It won't be affected by changes to other python packages you have installed on your system, making development much
+  easier and more deterministic
+
+Don't forget to re-activate the virtual environment each time you use a new terminal window to work in the repository.
+
+#### Install on Windows
 This workflow works for Windows using Powershell.
 
 Prerequisites:
@@ -30,7 +65,7 @@ Prerequisites:
 3. Execute ```pip install virtualenv```
 
 Installation:
-1. clone this repo.
+1. Clone this repo as described above.
 2. ``` cd data-gateway```
 2. ``` pyenv install 3.7.0``` (or higher)
 3. ``` pyenv local 3.7.0 ```
@@ -82,18 +117,18 @@ These environment variables need to be set to run the tests:
 
 Then, from the repository root, run
 ```bash
-python3 -m unittest
+tox
 ```
 
 ### Features
 
 This library is written with:
 
- - black style
- - sphinx docs including automated doc build
- - pre-commit hooks
- - tox tests
- - code coverage
+ - `black` style
+ - `sphinx` docs including automated doc build
+ - `pre-commit` hooks
+ - `tox` tests
+ - Code coverage
 
 ### Pre-Commit
 
@@ -101,21 +136,24 @@ You need to install pre-commit to get the hooks working. Do:
 ```
 pip install pre-commit
 pre-commit install
+pre-commit install -t commit-msg
 ```
 
 Once that's done, each time you make a commit, the following checks are made:
 
-- valid github repo and files
-- code style
-- import order
+- Valid github repo and files
+- Code style
+- Import order
 - PEP8 compliance
-- documentation build
-- branch naming convention
+- Documentation build
+- Branch naming convention
+- Conventional Commit messages
 
 Upon failure, the commit will halt. **Re-running the commit will automatically fix most issues** except:
 
 - The flake8 checks... hopefully over time Black (which fixes most things automatically already) will negate need for it.
 - You'll have to fix documentation yourself prior to a successful commit (there's no auto fix for that!!).
+- Any issues with the commit message will have to be fixed manually
 
 You can run pre-commit hooks without making a commit, too, like:
 ```
