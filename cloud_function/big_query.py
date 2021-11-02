@@ -35,8 +35,10 @@ class BigQueryClient:
         :param dict data:
         :param str configuration_reference:
         :param str installation_reference:
+        :raise ValueError: if the write operation fails
         :return None:
         """
+        rows = []
         table_name = f"{self.dataset_id}.sensor_data"
 
         for sensor_name, samples in data["sensor_data"].items():
@@ -45,19 +47,24 @@ class BigQueryClient:
             for sample in samples:
                 sample_datetime = datetime.datetime.fromtimestamp(data["sensor_time_offset"] + sample[0])
 
-                rows = [
-                    {
-                        "datetime": sample_datetime,
-                        "sensor_type_reference": sensor_type_reference,
-                        "sensor_number": i,
-                        "sensor_value": value,
-                        "configuration_reference": configuration_reference,
-                        "installation_reference": installation_reference,
-                    }
-                    for i, value in enumerate(sample[1:])
-                ]
+                rows.extend(
+                    [
+                        {
+                            "datetime": sample_datetime,
+                            "sensor_type_reference": sensor_type_reference,
+                            "sensor_number": i,
+                            "sensor_value": value,
+                            "configuration_reference": configuration_reference,
+                            "installation_reference": installation_reference,
+                        }
+                        for i, value in enumerate(sample[1:])
+                    ]
+                )
 
-                self.client.insert_rows(table=self.client.get_table(table_name), rows=rows)
+        errors = self.client.insert_rows(table=self.client.get_table(table_name), rows=rows)
+
+        if errors:
+            raise ValueError(errors)
 
     def add_new_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset.
