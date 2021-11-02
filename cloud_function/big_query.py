@@ -29,12 +29,13 @@ class BigQueryClient:
         self.client = bigquery.Client()
         self.dataset_id = f"{project_name}.{dataset_name}"
 
-    def insert_sensor_data(self, data, configuration_reference, installation_reference):
+    def insert_sensor_data(self, data, configuration_reference, installation_reference, label=None):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data:
         :param str configuration_reference:
         :param str installation_reference:
+        :param str|None label:
         :raise ValueError: if the write operation fails
         :return None:
         """
@@ -56,6 +57,7 @@ class BigQueryClient:
                             "sensor_value": value,
                             "configuration_reference": configuration_reference,
                             "installation_reference": installation_reference,
+                            "label": label,
                         }
                         for i, value in enumerate(sample[1:])
                     ]
