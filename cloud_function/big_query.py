@@ -1,7 +1,20 @@
+import datetime
 import json
 
 from blake3 import blake3
 from google.cloud import bigquery
+
+
+sensor_name_mapping = {
+    "Mics": "microphone",
+    "Baros_P": "barometer-pressure-sensor",
+    "Baros_T": "barometer-thermometer",
+    "Acc": "accelerometer",
+    "Gyro": "gyroscope",
+    "Mag": "magnetometer",
+    "Analog Vbat": "analogue-battery-voltmeter",
+    "Constat": "connection-statistics",
+}
 
 
 class BigQueryClient:
@@ -16,8 +29,35 @@ class BigQueryClient:
         self.client = bigquery.Client()
         self.dataset_id = f"{project_name}.{dataset_name}"
 
-    def translate_data_to_big_query_schema_format(self, data):
-        pass
+    def insert_sensor_data(self, data, configuration_reference, installation_reference):
+        """Insert sensor data into the dataset for the given configuration and installation references.
+
+        :param dict data:
+        :param str configuration_reference:
+        :param str installation_reference:
+        :return None:
+        """
+        table_name = f"{self.dataset_id}.sensor_data"
+
+        for sensor_name, samples in data["sensor_data"].items():
+            sensor_type_reference = sensor_name_mapping[sensor_name]
+
+            for sample in samples:
+                sample_datetime = datetime.datetime.fromtimestamp(data["sensor_time_offset"] + sample[0])
+
+                rows = [
+                    {
+                        "datetime": sample_datetime,
+                        "sensor_type_reference": sensor_type_reference,
+                        "sensor_number": i,
+                        "sensor_value": value,
+                        "configuration_reference": configuration_reference,
+                        "installation_reference": installation_reference,
+                    }
+                    for i, value in enumerate(sample[1:])
+                ]
+
+                self.client.insert_rows(table=self.client.get_table(table_name), rows=rows)
 
     def add_new_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset.
