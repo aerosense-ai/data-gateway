@@ -128,7 +128,7 @@ class BigQueryDataset:
         table_name = f"{self.dataset_id}.configuration"
 
         configuration_is_unique = (
-            self.client.query(f"SELECT 1 FROM `{table_name}` WHERE reference='{hash}' LIMIT 1").result().total_rows == 0
+            self.client.query(f"SELECT 1 FROM `{table_name}` WHERE hash='{hash}' LIMIT 1").result().total_rows == 0
         )
 
         if not configuration_is_unique:
