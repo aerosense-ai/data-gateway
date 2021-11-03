@@ -76,6 +76,8 @@ class FileHandler:
             dataset_name=self.destination_big_query_dataset,
         )
 
+        user_data = window_metadata.pop("user_data")
+
         try:
             configuration_id = dataset.add_configuration(window_metadata)
         except ConfigurationAlreadyExists as e:
@@ -84,8 +86,8 @@ class FileHandler:
         dataset.insert_sensor_data(
             data=window,
             configuration_id=configuration_id,
-            installation_reference=window_metadata["user_data"]["installation_reference"],
-            label=window_metadata["user_data"]["label"],
+            installation_reference=user_data["installation_reference"],
+            label=user_data["label"],
         )
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
