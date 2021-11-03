@@ -7,17 +7,17 @@ from google.cloud import bigquery
 
 sensor_name_mapping = {
     "Mics": "microphone",
-    "Baros_P": "barometer-pressure-sensor",
-    "Baros_T": "barometer-thermometer",
+    "Baros_P": "barometer_pressure_sensor",
+    "Baros_T": "barometer_thermometer",
     "Acc": "accelerometer",
     "Gyro": "gyroscope",
     "Mag": "magnetometer",
-    "Analog Vbat": "analogue-battery-voltmeter",
-    "Constat": "connection-statistics",
+    "Analog Vbat": "analogue_battery_voltmeter",
+    "Constat": "connection_statistics",
 }
 
 
-class BigQueryClient:
+class BigQueryDataset:
     """A wrapper for the Google BigQuery client for adding sensor data for an installation to a BigQuery dataset.
 
     :param str project_name:
