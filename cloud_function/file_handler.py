@@ -1,10 +1,9 @@
 import json
 import logging
-import os
 
-from octue.cloud import storage
+from big_query import BigQueryDataset
+from exceptions import ConfigurationAlreadyExists
 from octue.cloud.storage.client import GoogleCloudStorageClient
-from octue.resources import Datafile
 from preprocessing import preprocess
 
 
@@ -12,36 +11,23 @@ logger = logging.getLogger(__name__)
 
 
 class FileHandler:
-    """A handler for data windows that gets them from a source bucket, cleans them, and persists them into a destination
-    bucket.
+    """A handler for data windows that gets them from a source bucket, cleans them, and inserts them into a Google
+    BigQuery dataset.
 
     :param str source_project:
     :param str source_bucket:
     :param str destination_project:
-    :param str destination_bucket:
+    :param str destination_biq_query_dataset:
     :return None:
     """
 
-    def __init__(self, source_project, source_bucket, destination_project, destination_bucket):
+    def __init__(self, source_project, source_bucket, destination_project, destination_biq_query_dataset):
         self.source_project = source_project
         self.source_bucket = source_bucket
         self.source_client = GoogleCloudStorageClient(project_name=source_project, credentials=None)
 
         self.destination_project = destination_project
-        self.destination_bucket = destination_bucket
-        self.destination_client = GoogleCloudStorageClient(project_name=destination_project, credentials=None)
-
-    def persist_configuration(self, path):
-        """Persist a configuration file to the destination bucket.
-
-        :param str path:
-        :return None:
-        """
-        configuration = self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=path)
-
-        self.destination_client.upload_from_string(
-            string=configuration, bucket_name=self.destination_bucket, path_in_bucket=path
-        )
+        self.destination_big_query_dataset = destination_biq_query_dataset
 
     def get_window(self, window_cloud_path):
         """Get the window from Google Cloud storage.
@@ -78,17 +64,28 @@ class FileHandler:
         logger.info("Cleaned window.")
         return window
 
-    def persist_window(self, window, window_cloud_path):
-        """Persist the window to the destination bucket in the destination project, along with an associated Datafile.
+    def persist_window(self, window, window_metadata):
+        """Persist the window to the Google BigQuery dataset.
 
         :param dict window:
-        :param str window_cloud_path:
+        :param dict window_metadata:
         :return None:
         """
-        cloud_path = storage.path.generate_gs_path(self.destination_bucket, window_cloud_path)
+        dataset = BigQueryDataset(
+            project_name=self.destination_project,
+            dataset_name=self.destination_big_query_dataset,
+        )
 
-        with Datafile(path=cloud_path, project_name=self.destination_project, mode="w") as (datafile, f):
-            json.dump(window, f)
-            datafile.tags["sequence"] = int(os.path.splitext(window_cloud_path)[0].split("-")[-1])
+        try:
+            configuration_id = dataset.add_configuration(window_metadata)
+        except ConfigurationAlreadyExists as e:
+            configuration_id = e.args[1]
 
-        logger.info("Uploaded window to %r.", cloud_path)
+        dataset.insert_sensor_data(
+            data=window,
+            configuration_id=configuration_id,
+            installation_reference=window_metadata["user_data"]["installation_reference"],
+            label=window_metadata["user_data"]["label"],
+        )
+
+        logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)

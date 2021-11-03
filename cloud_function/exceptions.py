@@ -1,0 +1,2 @@
+class ConfigurationAlreadyExists(BaseException):
+    pass
