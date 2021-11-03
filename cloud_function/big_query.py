@@ -29,11 +29,11 @@ class BigQueryDataset:
         self.client = bigquery.Client()
         self.dataset_id = f"{project_name}.{dataset_name}"
 
-    def insert_sensor_data(self, data, configuration_reference, installation_reference, label=None):
+    def insert_sensor_data(self, data, configuration_id, installation_reference, label=None):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data:
-        :param str configuration_reference:
+        :param str configuration_id:
         :param str installation_reference:
         :param str|None label:
         :raise ValueError: if the write operation fails
@@ -51,7 +51,7 @@ class BigQueryDataset:
                         "datetime": datetime.datetime.fromtimestamp(data["sensor_time_offset"] + sample[0]),
                         "sensor_type_reference": sensor_type_reference,
                         "sensor_value": sample[1:],
-                        "configuration_reference": configuration_reference,
+                        "configuration_id": configuration_id,
                         "installation_reference": installation_reference,
                         "label": label,
                     }
