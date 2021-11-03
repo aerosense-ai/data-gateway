@@ -46,21 +46,15 @@ class BigQueryDataset:
             sensor_type_reference = sensor_name_mapping[sensor_name]
 
             for sample in samples:
-                sample_datetime = datetime.datetime.fromtimestamp(data["sensor_time_offset"] + sample[0])
-
-                rows.extend(
-                    [
-                        {
-                            "datetime": sample_datetime,
-                            "sensor_type_reference": sensor_type_reference,
-                            "sensor_number": i,
-                            "sensor_value": value,
-                            "configuration_reference": configuration_reference,
-                            "installation_reference": installation_reference,
-                            "label": label,
-                        }
-                        for i, value in enumerate(sample[1:])
-                    ]
+                rows.append(
+                    {
+                        "datetime": datetime.datetime.fromtimestamp(data["sensor_time_offset"] + sample[0]),
+                        "sensor_type_reference": sensor_type_reference,
+                        "sensor_value": sample[1:],
+                        "configuration_reference": configuration_reference,
+                        "installation_reference": installation_reference,
+                        "label": label,
+                    }
                 )
 
         errors = self.client.insert_rows(table=self.client.get_table(table_name), rows=rows)
