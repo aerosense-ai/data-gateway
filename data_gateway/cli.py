@@ -39,6 +39,7 @@ def gateway_cli(logger_uri, log_level):
 
 
 @gateway_cli.command()
+@click.argument("installation_reference", type=str)
 @click.option(
     "--config-file",
     type=click.Path(dir_okay=False),
@@ -93,8 +94,21 @@ def gateway_cli(logger_uri, log_level):
     show_default=True,
     help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
 )
-def start(config_file, interactive, output_dir, window_size, gcp_project_name, gcp_bucket_name, stop_when_no_more_data):
-    """Start the gateway service (daemonise this for a deployment)."""
+def start(
+    installation_reference,
+    config_file,
+    interactive,
+    output_dir,
+    window_size,
+    gcp_project_name,
+    gcp_bucket_name,
+    stop_when_no_more_data,
+):
+    """Begin persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for a deployment.
+
+    INSTALLATION_REFERENCE is the name associated with the geographical installation of sensors e.g. on a specific wind
+    turbine or wind tunnel.
+    """
     import json
     import threading
 
@@ -111,6 +125,8 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
     else:
         config = Configuration()
         logger.info("Using default configuration.")
+
+    config.user_data["installation_reference"] = installation_reference
 
     serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
     serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
