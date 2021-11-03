@@ -65,5 +65,8 @@
     "Analog Vbat": 0.1,
     "Constat": 0.045
   },
-  "user_data": {}
+  "user_data": {
+    "label": "my_test_1",
+    "installation_reference": "aventa_turbine"
+  }
 }

@@ -1,8 +1,7 @@
 import json
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from google.cloud.storage.client import Client
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
@@ -15,44 +14,17 @@ REPOSITORY_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_function")))
 
 from cloud_function import main  # noqa
+from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 
 
 SOURCE_PROJECT_NAME = "source-project"
-SOURCE_BUCKET_NAME = "source-bucket"
+SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
 DESTINATION_PROJECT_NAME = "destination-project"
-DESTINATION_BUCKET_NAME = "destination-bucket"
+BIG_QUERY_DATASET_NAME = "destination-dataset"
 
 
 class TestCleanAndUploadWindow(BaseTestCase):
-    def test_persist_configuration(self):
-        """Test that configuration files are persisted to the destination bucket."""
-        self.source_storage_client.upload_from_string(
-            string=json.dumps(self.VALID_CONFIGURATION),
-            bucket_name=SOURCE_BUCKET_NAME,
-            path_in_bucket="configuration.json",
-        )
-
-        event = {
-            "bucket": SOURCE_BUCKET_NAME,
-            "name": "configuration.json",
-            "metageneration": "some-metageneration",
-            "timeCreated": "0",
-            "updated": "0",
-        }
-
-        main.handle_upload(event=event, context=self._make_mock_context())
-
-        # Check configuration has been persisted in the right place.
-        self.assertEqual(
-            json.loads(
-                self.destination_storage_client.download_as_string(
-                    cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/configuration.json"
-                )
-            ),
-            self.VALID_CONFIGURATION,
-        )
-
     def test_clean_and_upload_window(self):
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger. The same source and destination bucket are used in this test although different ones will most
@@ -60,7 +32,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
         """
         window = self.random_window(10, 10)
 
-        self.source_storage_client.upload_from_string(
+        GoogleCloudStorageClient(SOURCE_PROJECT_NAME).upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             bucket_name=SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
@@ -75,42 +47,27 @@ class TestCleanAndUploadWindow(BaseTestCase):
             "updated": "0",
         }
 
-        main.handle_upload(event=event, context=self._make_mock_context())
+        with patch.dict(
+            os.environ,
+            {
+                "SOURCE_PROJECT_NAME": SOURCE_PROJECT_NAME,
+                "DESTINATION_PROJECT_NAME": DESTINATION_PROJECT_NAME,
+                "BIG_QUERY_DATASET_NAME": BIG_QUERY_DATASET_NAME,
+            },
+        ):
+            with patch("file_handler.BigQueryDataset") as mock_dataset:
+                main.handle_upload(event=event, context=self._make_mock_context())
 
-        # Check that cleaned window has been created and is in the right place.
-        cleaned_window = json.loads(
-            self.destination_storage_client.download_as_string(
-                cloud_path=f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
-            )
-        )
+        # Check configuration without user data was added.
+        del self.VALID_CONFIGURATION["user_data"]
+        self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
+        self.assertEqual(mock_dataset.mock_calls[1].args[0], self.VALID_CONFIGURATION)
 
-        self.assertEqual(cleaned_window["cleaned"], True)
-        self.assertIn("Mics", cleaned_window)
-
-    @classmethod
-    def setUpClass(cls):
-        os.environ["SOURCE_PROJECT_NAME"] = SOURCE_PROJECT_NAME
-        os.environ["DESTINATION_PROJECT_NAME"] = DESTINATION_PROJECT_NAME
-        os.environ["DESTINATION_BUCKET_NAME"] = DESTINATION_BUCKET_NAME
-
-        cls.source_storage_client = GoogleCloudStorageClient(SOURCE_PROJECT_NAME)
-        cls.destination_storage_client = GoogleCloudStorageClient(DESTINATION_PROJECT_NAME)
-        cls._create_buckets()
-
-    @classmethod
-    def tearDownClass(cls):
-        del os.environ["SOURCE_PROJECT_NAME"]
-        del os.environ["DESTINATION_PROJECT_NAME"]
-        del os.environ["DESTINATION_BUCKET_NAME"]
-
-    @staticmethod
-    def _create_buckets():
-        """Create the source and destination buckets.
-
-        :return None:
-        """
-        Client(project=SOURCE_PROJECT_NAME).create_bucket(SOURCE_BUCKET_NAME)
-        Client(project=DESTINATION_PROJECT_NAME).create_bucket(DESTINATION_BUCKET_NAME)
+        # Check data was persisted.
+        self.assertIn("insert_sensor_data", mock_dataset.mock_calls[2][0])
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Mics", "cleaned"})
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my_test_1")
 
     @staticmethod
     def _make_mock_context():
