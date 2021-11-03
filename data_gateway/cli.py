@@ -88,6 +88,13 @@ def gateway_cli(logger_uri, log_level):
     help="The name of the Google Cloud Platform (GCP) storage bucket to use.",
 )
 @click.option(
+    "--label",
+    type=str,
+    default=None,
+    show_default=True,
+    help="An optional label to associate with data persisted in this run of the gateway.",
+)
+@click.option(
     "--stop-when-no-more-data",
     is_flag=True,
     default=False,
@@ -102,6 +109,7 @@ def start(
     window_size,
     gcp_project_name,
     gcp_bucket_name,
+    label,
     stop_when_no_more_data,
 ):
     """Begin persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for a deployment.
@@ -127,6 +135,7 @@ def start(
         logger.info("Using default configuration.")
 
     config.user_data["installation_reference"] = installation_reference
+    config.user_data["label"] = label
 
     serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
     serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
