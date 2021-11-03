@@ -4,6 +4,7 @@ import time
 
 import click
 import pkg_resources
+import requests
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -209,6 +210,14 @@ def start(
 
     logger.info("Stopping gateway.")
     packet_reader.writer.force_persist()
+
+
+@gateway_cli.command()
+@click.argument("name", type=str)
+def create_installation(name, hardware_version, longitude=None, latitude=None):
+    url = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
+    parameters = {"name": name, "hardware_version": hardware_version, "longitude": longitude, "latitude": latitude}
+    requests.post(url=url, json=parameters)
 
 
 @gateway_cli.command()
