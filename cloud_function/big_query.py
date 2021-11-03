@@ -1,7 +1,9 @@
 import datetime
 import json
+import uuid
 
 from blake3 import blake3
+from exceptions import ConfigurationAlreadyExists
 from google.cloud import bigquery
 
 
@@ -115,23 +117,31 @@ class BigQueryDataset:
 
         :param dict configuration:
         :raise ValueError: if an identical configuration already exists in the dataset or the write operation fails
-        :return None:
+        :return str: UUID of configuration
         """
-        configuration_json = json.dumps(configuration)
-        hash = blake3(configuration_json.encode()).hexdigest()
         table_name = f"{self.dataset_id}.configuration"
 
-        configuration_is_unique = (
-            self.client.query(f"SELECT 1 FROM `{table_name}` WHERE hash='{hash}' LIMIT 1").result().total_rows == 0
+        configuration_json = json.dumps(configuration)
+        configuration_hash = blake3(configuration_json.encode()).hexdigest()
+
+        configurations = list(
+            self.client.query(f"SELECT id FROM `{table_name}` WHERE `hash`='{configuration_hash}' LIMIT 1").result()
         )
 
-        if not configuration_is_unique:
-            raise ValueError("An identical configuration already exists in the database.")
+        if len(configurations) > 0:
+            raise ConfigurationAlreadyExists(
+                f"An identical configuration already exists in the database with UUID {configurations[0].id}.",
+                configurations[0].id,
+            )
+
+        configuration_id = str(uuid.uuid4())
 
         errors = self.client.insert_rows(
             table=self.client.get_table(table_name),
-            rows=[{"configuration": configuration_json, "reference": hash}],
+            rows=[{"id": configuration_id, "configuration": configuration_json, "hash": configuration_hash}],
         )
 
         if errors:
             raise ValueError(errors)
+
+        return configuration_id
