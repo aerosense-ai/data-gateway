@@ -43,7 +43,7 @@ class PacketReader:
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.stop = False
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
+        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
@@ -84,11 +84,13 @@ class PacketReader:
 
         current_timestamp = {}
         previous_ideal_timestamp = {}
+        previous_timestamp = {}
         data = {}
 
         for sensor_name in self.sensor_names:
             current_timestamp[sensor_name] = 0
             previous_ideal_timestamp[sensor_name] = 0
+            previous_timestamp[sensor_name] = -1
             data[sensor_name] = [
                 ([0] * self.config.samples_per_packet[sensor_name]) for _ in range(self.config.n_meas_qty[sensor_name])
             ]
@@ -116,11 +118,7 @@ class PacketReader:
                         continue
 
                     self._parse_sensor_packet(
-                        sensor_type=packet_type,
-                        payload=payload,
-                        data=data,
-                        current_timestamp=current_timestamp,
-                        previous_ideal_timestamp=previous_ideal_timestamp,
+                        sensor_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
                     )
 
     def update_handles(self, payload):
@@ -176,7 +174,7 @@ class PacketReader:
                 ),
             )
 
-    def _parse_sensor_packet(self, sensor_type, payload, data, current_timestamp, previous_ideal_timestamp):
+    def _parse_sensor_packet(self, sensor_type, payload, data, previous_timestamp):
         """Parse a packet from a sensor.
 
         :param int sensor_type:
@@ -187,81 +185,171 @@ class PacketReader:
         :return None:
         """
         if sensor_type not in self.handles:
+            logger.error("Received packet with unknown type: {}".format(sensor_type))
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
 
-        t = int.from_bytes(payload[240:244], self.config.endian, signed=False)
+        if len(payload) == 244:
+            timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
-        if self.handles[sensor_type] == "Abs. baros":
-            # Write data to files when set is complete.
-            self._wait_until_set_is_complete("Baros_P", t, data, current_timestamp, previous_ideal_timestamp)
-            self._wait_until_set_is_complete("Baros_T", t, data, current_timestamp, previous_ideal_timestamp)
+            if self.handles[sensor_type] == "Abs. baros":
+                # Write the received payload to the data field
+                # TODO bytes_per_sample should probably be in the configuration
+                bytes_per_sample = 6
+                for i in range(self.config.baros_samples_per_packet):
+                    for j in range(self.config.n_meas_qty["Baros_P"]):
 
-            # Write the received payload to the data field
-            # TODO bytes_per_sample should probably be in the configuration
-            bytes_per_sample = 6
-            for i in range(self.config.baros_samples_per_packet):
-                for j in range(self.config.n_meas_qty["Baros_P"]):
+                        data["Baros_P"][j][i] = int.from_bytes(
+                            payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
+                            self.config.endian,
+                            signed=False,
+                        )
 
-                    data["Baros_P"][j][i] = int.from_bytes(
-                        payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
+                        data["Baros_T"][j][i] = int.from_bytes(
+                            payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
+                            self.config.endian,
+                            signed=True,
+                        )
+
+                self._check_and_write_packet("Baros_P", timestamp, data, previous_timestamp)
+                self._check_and_write_packet("Baros_T", timestamp, data, previous_timestamp)
+
+            elif self.handles[sensor_type] == "Diff. baros":
+                # TODO bytes_per_sample should probably be in the configuration
+                bytes_per_sample = 2
+                for i in range(self.config.diff_baros_samples_per_packet):
+                    for j in range(self.config.n_meas_qty["Diff_Baros"]):
+                        data["Diff_Baros"][j][i] = int.from_bytes(
+                            payload[
+                                (bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j)) : (
+                                    bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j + 1)
+                                )
+                            ],
+                            self.config.endian,
+                            signed=False,
+                        )
+                self._check_and_write_packet("Diff_Baros", timestamp, data, previous_timestamp)
+
+            elif self.handles[sensor_type] == "Mic 0":
+                # Write the received payload to the data field
+                # TODO bytes_per_sample should probably be in the configuration
+                bytes_per_sample = 3
+
+                for i in range(self.config.mics_samples_per_packet // 2):
+                    for j in range(self.config.n_meas_qty["Mics"] // 2):
+                        data["Mics"][j][2 * i] = int.from_bytes(
+                            payload[(bytes_per_sample * (j + 20 * i)) : (bytes_per_sample * (j + 20 * i) + 3)],
+                            "big",  # Unlike the other sensors, the microphone data come in big-endian
+                            signed=True,
+                        )
+                        data["Mics"][j][2 * i + 1] = int.from_bytes(
+                            payload[(bytes_per_sample * (j + 20 * i + 5)) : (bytes_per_sample * (j + 20 * i + 5) + 3)],
+                            "big",  # Unlike the other sensors, the microphone data come in big-endian
+                            signed=True,
+                        )
+                        data["Mics"][j + 5][2 * i] = int.from_bytes(
+                            payload[
+                                (bytes_per_sample * (j + 20 * i + 10)) : (bytes_per_sample * (j + 20 * i + 10) + 3)
+                            ],
+                            "big",  # Unlike the other sensors, the microphone data come in big-endian
+                            signed=True,
+                        )
+                        data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                            payload[
+                                (bytes_per_sample * (j + 20 * i + 15)) : (bytes_per_sample * (j + 20 * i + 15) + 3)
+                            ],
+                            "big",  # Unlike the other sensors, the microphone data come in big-endian
+                            signed=True,
+                        )
+
+                self._check_and_write_packet("Mics", timestamp, data, previous_timestamp)
+
+            elif self.handles[sensor_type].startswith("IMU Accel"):
+                # Write the received payload to the data field
+                for i in range(self.config.imu_samples_per_packet):
+                    data["Acc"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
+                    data["Acc"][1][i] = int.from_bytes(
+                        payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
+                    )
+                    data["Acc"][2][i] = int.from_bytes(
+                        payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
+                    )
+
+                self._check_and_write_packet("Acc", timestamp, data, previous_timestamp)
+
+            elif self.handles[sensor_type] == "IMU Gyro":
+                # Write the received payload to the data field
+                for i in range(self.config.imu_samples_per_packet):
+                    data["Gyro"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
+                    data["Gyro"][1][i] = int.from_bytes(
+                        payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
+                    )
+                    data["Gyro"][2][i] = int.from_bytes(
+                        payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
+                    )
+
+                self._check_and_write_packet("Gyro", timestamp, data, previous_timestamp)
+
+            elif self.handles[sensor_type] == "IMU Magnetometer":
+                # Write the received payload to the data field
+                for i in range(self.config.imu_samples_per_packet):
+                    data["Mag"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
+                    data["Mag"][1][i] = int.from_bytes(
+                        payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
+                    )
+                    data["Mag"][2][i] = int.from_bytes(
+                        payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
+                    )
+
+                self._check_and_write_packet("Mag", timestamp, data, previous_timestamp)
+
+            # TODO Analog sensor definitions
+            elif self.handles[sensor_type] in {"Analog Kinetron", "Analog1", "Analog2"}:
+                logger.error("Received Analog packet. Not supported atm")
+
+            elif self.handles[sensor_type] == "Analog Vbat":
+
+                def val_to_v(val):
+                    return val / 1e6
+
+                for i in range(self.config.analog_samples_per_packet):
+                    data["Analog Vbat"][0][i] = val_to_v(
+                        int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
+                    )
+
+                self._check_and_write_packet("Analog Vbat", timestamp, data, previous_timestamp)
+
+            elif self.handles[sensor_type] == "Constat":
+                logger.debug("Constat packet: %d" % timestamp)
+
+                bytes_per_sample = 10
+                for i in range(self.config.constat_samples_per_packet):
+                    data["Constat"][0][i] = struct.unpack(
+                        "<f" if self.config.endian == "little" else ">f",
+                        payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
+                    )[0]
+                    data["Constat"][1][i] = int.from_bytes(
+                        payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)],
+                        self.config.endian,
+                        signed=True,
+                    )
+                    data["Constat"][2][i] = int.from_bytes(
+                        payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)],
+                        self.config.endian,
+                        signed=True,
+                    )
+                    data["Constat"][3][i] = int.from_bytes(
+                        payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)],
                         self.config.endian,
                         signed=False,
                     )
 
-                    data["Baros_T"][j][i] = int.from_bytes(
-                        payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
-                        self.config.endian,
-                        signed=True,
-                    )
+                self._check_and_write_packet("Constat", timestamp, data, previous_timestamp)
 
-        elif self.handles[sensor_type] == "Mic 0":
-            self._wait_until_set_is_complete("Mics", t, data, current_timestamp, previous_ideal_timestamp)
+            else:  # if sensor_type not in self.handles
+                logger.error(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
+                raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
 
-            # Write the received payload to the data field
-            # TODO bytes_per_sample should probably be in the configuration
-            bytes_per_sample = 3
-
-            for i in range(self.config.mics_samples_per_packet // 2):
-                # TODO what is 5 and? move to configuration?
-                #    self.config.endian = 'big', unlike for baros..
-                for j in range(5):
-                    data["Mics"][j][2 * i] = int.from_bytes(
-                        payload[
-                            (bytes_per_sample * j + 20 * bytes_per_sample * i) : (
-                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3
-                            )
-                        ],
-                        "big",
-                        signed=True,
-                    )
-                    data["Mics"][j][2 * i + 1] = int.from_bytes(
-                        payload[
-                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 5 * bytes_per_sample) : (
-                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 5 * bytes_per_sample
-                            )
-                        ],
-                        "big",
-                        signed=True,
-                    )
-                    data["Mics"][j + 5][2 * i] = int.from_bytes(
-                        payload[
-                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 10 * bytes_per_sample) : (
-                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 10 * bytes_per_sample
-                            )
-                        ],
-                        "big",
-                        signed=True,
-                    )
-                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
-                        payload[
-                            (bytes_per_sample * j + 20 * bytes_per_sample * i + 15 * bytes_per_sample) : (
-                                bytes_per_sample * j + 20 * bytes_per_sample * i + 3 + 15 * bytes_per_sample
-                            )
-                        ],
-                        "big",
-                        signed=True,
-                    )
-        elif self.handles[sensor_type] == "Mic 1":
+        elif len(payload) >= 1 and self.handles[sensor_type] == "Mic 1":  # if payload not 244 bytes long
             if payload[0] == 1:
                 logger.info("Microphone data reading done")
             elif payload[0] == 2:
@@ -269,153 +357,41 @@ class PacketReader:
             elif payload[0] == 3:
                 logger.info("Microphones started ")
 
-        elif self.handles[sensor_type].startswith("IMU Accel"):
-            self._wait_until_set_is_complete("Acc", t, data, current_timestamp, previous_ideal_timestamp)
-
-            # Write the received payload to the data field
-            for i in range(self.config.imu_samples_per_packet):
-                data["Acc"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
-                data["Acc"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True)
-                data["Acc"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
-
-        elif self.handles[sensor_type] == "IMU Gyro":
-            self._wait_until_set_is_complete("Gyro", t, data, current_timestamp, previous_ideal_timestamp)
-
-            # Write the received payload to the data field
-            for i in range(self.config.imu_samples_per_packet):
-                data["Gyro"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
-                data["Gyro"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True)
-                data["Gyro"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
-
-        elif self.handles[sensor_type] == "IMU Magnetometer":
-            self._wait_until_set_is_complete("Mag", t, data, current_timestamp, previous_ideal_timestamp)
-
-            # Write the received payload to the data field
-            for i in range(self.config.imu_samples_per_packet):
-                data["Mag"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
-                data["Mag"][1][i] = int.from_bytes(payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True)
-                data["Mag"][2][i] = int.from_bytes(payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True)
-
-        # TODO Analog sensor definitions
-        elif self.handles[sensor_type] in {"Analog Kinetron", "Analog1", "Analog2"}:
-            logger.error("Received Kinetron packet. Not supported atm")
-
-        elif self.handles[sensor_type] == "Analog Vbat":
-            self._wait_until_set_is_complete("Analog Vbat", t, data, current_timestamp, previous_ideal_timestamp)
-
-            def val_to_v(val):
-                return val / 1e6
-
-            for i in range(self.config.analog_samples_per_packet):
-                data["Analog Vbat"][0][i] = val_to_v(
-                    int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
-                )
-
-        elif self.handles[sensor_type] == "Constat":
-            self._wait_until_set_is_complete("Constat", t, data, current_timestamp, previous_ideal_timestamp)
-
-            print("Constat packet: %d" % (t / (2 ** 16)))
-
-            bytes_per_sample = 10
-            for i in range(self.config.constat_samples_per_packet):
-                data["Constat"][0][i] = struct.unpack(
-                    "<f" if self.config.endian == "little" else ">f",
-                    payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
-                )[0]
-                data["Constat"][1][i] = int.from_bytes(
-                    payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)], self.config.endian, signed=True
-                )
-                data["Constat"][2][i] = int.from_bytes(
-                    payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)], self.config.endian, signed=True
-                )
-                data["Constat"][3][i] = int.from_bytes(
-                    payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)], self.config.endian, signed=False
-                )
-
-        else:
-            raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
-
-    def _wait_until_set_is_complete(self, sensor_type, t, data, current_timestamp, prev_ideal_timestamp):
-        """timestamp in 1/(2**16) s
+    def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
+        """
+        The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
+        packet contains 40 samples from 4 barometers each.
+        For each sensor type (e.g. baro), this function checks if the packets from all sensors have arrived.
 
         :param str sensor_type:
-        :param t:
+        :param timestamp: Unit: s
         :param dict data:
-        :param dict current_timestamp:
-        :param dict prev_ideal_timestamp:
+        :param dict previous_timestamp: Must be initialized with -1. Unit: s
         :return None:
         """
-        if sensor_type in {"Mics", "Baros_P", "Baros_T", "Analog Vbat", "Constat"}:
-            # For those measurement types, the samples are inherently synchronized to the CPU time already. The
-            # timestamps may be slightly off, so it takes the first one as a reference and then uses the following ones
-            # only to check if a packet has been dropped. Also, for mics and baros, there exist packet sets: Several
-            # packets arrive with the same timestamp.
-            if t != current_timestamp[sensor_type] and current_timestamp[sensor_type] != 0:
 
-                ideal_new_timestamp = prev_ideal_timestamp[sensor_type] + self.config.samples_per_packet[
-                    sensor_type
-                ] * self.config.period[sensor_type] * (2 ** 16)
+        if previous_timestamp[sensor_type] == -1:
+            logger.info("Received first %s packet" % sensor_type)
+        else:
+            interpolated_current_timestamp = (
+                previous_timestamp[sensor_type]
+                + self.config.samples_per_packet[sensor_type] * self.config.period[sensor_type]
+            )
+            timestamp_deviation = interpolated_current_timestamp - timestamp
 
-                # If at least one set (= one packet per mic/baro group) of packets was lost
-                if abs(ideal_new_timestamp - current_timestamp[sensor_type]) > self.config.max_timestamp_slack * (
-                    2 ** 16
-                ):
+            if abs(timestamp_deviation) > self.config.max_timestamp_slack:
+                logger.warning("Lost %s packet(s): %s ms gap", sensor_type, timestamp_deviation * 1000)
 
-                    if prev_ideal_timestamp[sensor_type] != 0:
-                        ms_gap = (current_timestamp[sensor_type] - ideal_new_timestamp) / (2 ** 16) * 1000
-                        logger.warning("Lost set of %s packets: %s ms gap", sensor_type, ms_gap)
-                    else:
-                        logger.info("Received first set of %s packets", sensor_type)
+        # print("timestamp = %f, previous_timestamp = %f, period = %f, n=%d" % (timestamp, previous_timestamp[sensor_type], self.config.period[sensor_type], self.config.samples_per_packet[sensor_type]))
 
-                    ideal_new_timestamp = current_timestamp[sensor_type]
+        self._timestamp_and_persist_data(data, sensor_type, timestamp, self.config.period[sensor_type])
 
-                self._persist_data(data, sensor_type, ideal_new_timestamp / (2 ** 16), self.config.period[sensor_type])
+        previous_timestamp[sensor_type] = timestamp
 
-                # clean up data buffer(?)
-                data[sensor_type] = [
-                    ([0] * self.config.samples_per_packet[sensor_type])
-                    for _ in range(self.config.n_meas_qty[sensor_type])
-                ]
-
-                prev_ideal_timestamp[sensor_type] = ideal_new_timestamp
-                current_timestamp[sensor_type] = t
-
-            elif current_timestamp[sensor_type] == 0:
-                current_timestamp[sensor_type] = t
-
-        else:  # The IMU values are not synchronized to the CPU time, so we simply always take the timestamp we have
-            if current_timestamp[sensor_type] != 0:
-
-                # If there is a previous timestamp, calculate the actual sampling period from the difference to the
-                # current timestamp
-                if prev_ideal_timestamp[sensor_type] != 0:
-                    period = (
-                        (current_timestamp[sensor_type] - prev_ideal_timestamp[sensor_type])
-                        / self.config.samples_per_packet[sensor_type]
-                        / (2 ** 16)
-                    )
-
-                    # If the calculated period is reasonable, accept it. If not, most likely a packet got lost
-                    if (
-                        abs(period - self.config.period[sensor_type]) / self.config.period[sensor_type]
-                        < self.config.max_period_drift
-                    ):
-                        self.config.period[sensor_type] = period
-
-                    else:
-                        ms_gap = (current_timestamp[sensor_type] - prev_ideal_timestamp[sensor_type]) / (2 ** 16) * 1000
-                        logger.warning("Lost %s packet: %s ms gap", sensor_type, ms_gap)
-
-                else:
-                    logger.info("Received first %s packet", sensor_type)
-
-                self._persist_data(data, sensor_type, t / (2 ** 16), self.config.period[sensor_type])
-
-            prev_ideal_timestamp[sensor_type] = current_timestamp[sensor_type]
-            current_timestamp[sensor_type] = t
-
-    def _persist_data(self, data, sensor_type, timestamp, period):
+    def _timestamp_and_persist_data(self, data, sensor_type, timestamp, period):
         """Persist data to the required storage media.
+        Since timestamps only come at a packet level, this function assumes constant period for
+         the within-packet-timestamps
 
         :param dict data: data to persist
         :param str sensor_type: sensor type to persist data from
@@ -428,7 +404,7 @@ class PacketReader:
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
-            time = timestamp - (number_of_samples - i) * period
+            time = timestamp + i * period
             sample = [time]
 
             for meas in data[sensor_type]:

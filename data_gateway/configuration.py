@@ -40,14 +40,15 @@ class Configuration:
         mics_freq=15625,
         mics_bm=0x3FF,
         baros_freq=100,
+        diff_baros_freq=1000,
         baros_bm=0x3FF,
         acc_freq=100,
         acc_range=16,
         gyro_freq=100,
         gyro_range=2000,
-        analog_freq=10,
-        constat_period=45,
-        serial_port="COM9",
+        analog_freq=16384,
+        constat_period=45 * 2.5,  # TODO: Find out why constat packets arrive less often than they should
+        serial_port="/dev/ttyACM0",
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
         baudrate=2300000,
@@ -58,6 +59,7 @@ class Configuration:
         type_handle_def=0xFF,
         mics_samples_per_packet=8,
         baros_samples_per_packet=1,
+        diff_baros_samples_per_packet=1,
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         constat_samples_per_packet=24,
@@ -70,6 +72,7 @@ class Configuration:
         self.mics_freq = mics_freq
         self.mics_bm = mics_bm
         self.baros_freq = baros_freq
+        self.diff_baros_freq = diff_baros_freq
         self.baros_bm = baros_bm
         self.acc_freq = acc_freq
         self.acc_range = acc_range
@@ -90,6 +93,7 @@ class Configuration:
         self.imu_samples_per_packet = imu_samples_per_packet
         self.analog_samples_per_packet = analog_samples_per_packet
         self.baros_samples_per_packet = baros_samples_per_packet
+        self.diff_baros_samples_per_packet = diff_baros_samples_per_packet
         self.constat_samples_per_packet = constat_samples_per_packet
 
         self.default_handles = default_handles or {
@@ -107,6 +111,7 @@ class Configuration:
 
         self.samples_per_packet = samples_per_packet or {
             "Mics": self.mics_samples_per_packet,
+            "Diff_Baros": self.baros_samples_per_packet,
             "Baros_P": self.baros_samples_per_packet,
             "Baros_T": self.baros_samples_per_packet,
             "Acc": self.imu_samples_per_packet,
@@ -120,17 +125,19 @@ class Configuration:
             "Mics": 10,
             "Baros_P": 40,
             "Baros_T": 40,
+            "Diff_Baros": 5,
             "Acc": 3,
             "Gyro": 3,
             "Mag": 3,
             "Analog Vbat": 1,
-            "Constat": 3,
+            "Constat": 4,
         }
 
         self.period = period or {
             "Mics": 1 / self.mics_freq,
             "Baros_P": 1 / self.baros_freq,
             "Baros_T": 1 / self.baros_freq,
+            "Diff_Baros": 1 / self.diff_baros_freq,
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
             "Mag": 1 / 12.5,
