@@ -59,7 +59,7 @@ class Configuration:
         type_handle_def=0xFF,
         mics_samples_per_packet=8,
         baros_samples_per_packet=1,
-        diff_baros_samples_per_packet=1,
+        diff_baros_samples_per_packet=24,
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         constat_samples_per_packet=24,
@@ -125,7 +125,7 @@ class Configuration:
 
         self.samples_per_packet = samples_per_packet or {
             "Mics": self.mics_samples_per_packet,
-            "Diff_Baros": self.baros_samples_per_packet,
+            "Diff_Baros": self.diff_baros_samples_per_packet,
             "Baros_P": self.baros_samples_per_packet,
             "Baros_T": self.baros_samples_per_packet,
             "Acc": self.imu_samples_per_packet,
