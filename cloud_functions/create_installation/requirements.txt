@@ -1,5 +1,0 @@
-flask_wtf
-wtforms[email]
-hubspot3
-google-cloud-bigquery==2.29.0
-shapely
