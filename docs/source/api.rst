@@ -10,12 +10,12 @@ API
 Gateway
 =======
 
-.. autoclass:: data_gateway.reader.packet_reader.PacketReader
+.. autoclass:: data_gateway.packet_reader.PacketReader
     :members:
 
 .. _configuration_api:
 
-.. autoclass:: data_gateway.reader.configuration.Configuration
+.. autoclass:: data_gateway.configuration.Configuration
     :members:
 
 .. autoclass:: data_gateway.persistence.TimeBatcher
