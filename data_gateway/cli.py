@@ -5,6 +5,7 @@ import time
 import click
 import pkg_resources
 import requests
+from requests import HTTPError
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -259,11 +260,11 @@ def create_installation(name, hardware_version, longitude, latitude):
     HARDWARE_VERSION is the hardware version of the collection of sensors.
     """
     url = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
-    parameters = {"name": name, "hardware_version": hardware_version, "longitude": longitude, "latitude": latitude}
+    parameters = {"reference": name, "hardware_version": hardware_version, "longitude": longitude, "latitude": latitude}
     response = requests.post(url=url, json=parameters)
 
     if not response.status_code == 200:
-        response.raise_for_status()
+        raise HTTPError(f"{response.status_code}: {response.text}")
 
     logger.info("Installation created: %r", parameters)
 

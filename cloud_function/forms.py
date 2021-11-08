@@ -1,9 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, validators
+from wtforms import FloatField, StringField, validators
 
 
 class CreateInstallationForm(FlaskForm):
     reference = StringField("Reference", [validators.DataRequired()])
     hardware_version = StringField("Hardware version", [validators.DataRequired()])
-    longitude = StringField("Longitude", [validators.DataRequired()])
-    latitude = StringField("Latitude", [validators.DataRequired()])
+    longitude = FloatField("Longitude", [validators.DataRequired()])
+    latitude = FloatField("Latitude", [validators.DataRequired()])

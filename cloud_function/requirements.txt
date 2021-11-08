@@ -5,6 +5,5 @@ pandas>=1.2.3
 scipy>=1.6.1
 flask_wtf
 wtforms[email]
-hubspot3
 google-cloud-bigquery==2.29.0
 shapely

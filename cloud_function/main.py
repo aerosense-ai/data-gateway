@@ -41,18 +41,18 @@ def create_installation(request):
         try:
             dataset = BigQueryDataset(
                 project_name=os.environ["DESTINATION_PROJECT_NAME"],
-                dataset_name=os.environ["DESTINATION_DATASET_NAME"],
+                dataset_name=os.environ["BIG_QUERY_DATASET_NAME"],
             )
 
             # TODO Put this into form validation
-            reference = form.reference.replace("_", "-").replace(" ", "-").lower()
+            reference = form.reference.data.replace("_", "-").replace(" ", "-").lower()
 
             # TODO Should this be easting and northing?
-            location = shapely.geometry.Point(form.longitude, form.latitude)
+            location = shapely.geometry.Point(form.longitude.data, form.latitude.data)
 
             errors = dataset.add_installation(
                 reference=reference,
-                hardware_version=form.hardware_version,
+                hardware_version=form.hardware_version.data,
                 location=shapely.wkt.dumps(location),
             )
 
