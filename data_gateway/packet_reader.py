@@ -358,6 +358,26 @@ class PacketReader:
             elif payload[0] == 3:
                 logger.info("Microphones started ")
 
+        elif len(payload) >= 1 and self.handles[sensor_type] == "Cmd Decline":
+            reason_index = int.from_bytes(payload, self.config.endian, signed=False)
+            logger.info("Command declined, " + self.config.decline_reason[reason_index])
+
+        elif len(payload) >= 1 and self.handles[sensor_type] == "Sleep State":
+            state_index = int.from_bytes(payload, self.config.endian, signed=False)
+            logger.info("\n" + self.config.sleep_state[state_index] + "\n")
+
+        elif len(payload) >= 1 and self.handles[sensor_type] == "Info Message":
+            info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
+            logger.info(info_index)
+
+            if self.config.info_type[info_index] == "Battery info":
+                voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
+                cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
+                state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
+                logger.info(
+                    f"Voltage : {voltage / 1000000} v \n Cycle count: {cycle / 100} \n State of charge: {state_of_charge / 256}%"
+                )
+
     def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
         """
         The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
