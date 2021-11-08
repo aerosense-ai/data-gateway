@@ -107,7 +107,21 @@ class Configuration:
             48: "Analog1",
             50: "Analog2",
             52: "Constat",
+            54: "Cmd Decline",
+            56: "Sleep State",
+            58: "Info Message",
         }
+
+        self.decline_reason = {
+            0: "Bad block detection ongoing",
+            1: "Task already registered, cannot register again",
+            2: "Task is not registered, cannot de-register",
+            3: "Connection Parameter update unfinished",
+        }
+
+        self.sleep_state = {0: "Exiting sleep", 1: "Entering sleep"}
+
+        self.info_type = {0: "Battery info"}
 
         self.samples_per_packet = samples_per_packet or {
             "Mics": self.mics_samples_per_packet,
