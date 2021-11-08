@@ -111,7 +111,7 @@ def start(
 ):
     """Start the gateway service (daemonise this for a deployment). In interactive mode, commands can be sent to the
     nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
-    [startBaros, startMics, startIMU, stop]
+    [startBaros, startMics, startIMU, getBattery, stop]
     """
     import json
     import threading
