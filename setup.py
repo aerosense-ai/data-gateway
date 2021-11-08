@@ -16,11 +16,11 @@ with open("LICENSE") as f:
 
 setup(
     name="data_gateway",
-    version="0.3.1",
+    version="0.3.2",
     install_requires=[
         "click>=7.1.2",
         "pyserial==3.5",
-        "octue==0.4.3",
+        "octue==0.4.10",
     ],
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",
