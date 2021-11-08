@@ -31,11 +31,14 @@ def gateway_cli(logger_uri, log_level):
     """AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and send it
     to AeroSense Cloud.
     """
-    if logger_uri is not None:
-        from octue.log_handlers import apply_log_handler, get_remote_handler
+    from octue.log_handlers import apply_log_handler, get_remote_handler
 
-        handler = get_remote_handler(logger_uri=logger_uri)
-        apply_log_handler(logger_name=__name__, handler=handler, log_level=log_level.upper())
+    # Apply log handler locally.
+    apply_log_handler(log_level=log_level.upper())
+
+    # Stream logs to remote handler if required.
+    if logger_uri is not None:
+        apply_log_handler(handler=get_remote_handler(logger_uri=logger_uri), log_level=log_level.upper())
 
 
 @gateway_cli.command()
@@ -134,6 +137,7 @@ def start(
         serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
     else:
         from data_gateway.dummy_serial import DummySerial
+
         serial_port = DummySerial(port=config.serial_port, baudrate=config.baudrate)
 
     # `set_buffer_size` is only available on Windows.
