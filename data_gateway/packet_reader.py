@@ -130,7 +130,7 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.endian)
 
-        if end_handle - start_handle == 20:
+        if end_handle - start_handle == 26:
             self.handles = {
                 start_handle + 2: "Abs. baros",
                 start_handle + 4: "Diff. baros",
@@ -142,6 +142,9 @@ class PacketReader:
                 start_handle + 16: "Analog1",
                 start_handle + 18: "Analog2",
                 start_handle + 20: "Constat",
+                start_handle + 22: "Cmd Decline",
+                start_handle + 24: "Sleep State",
+                start_handle + 26: "Info message",
             }
 
             logger.info("Successfully updated handles.")
