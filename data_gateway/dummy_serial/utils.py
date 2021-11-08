@@ -1,7 +1,7 @@
 import random
 from os import urandom
 
-from tests.dummy_serial.constants import ALPHABET, NUMBERS
+from data_gateway.dummy_serial.constants import ALPHABET, NUMBERS
 
 
 def random_bytes(length=8, as_bytearray=False):
