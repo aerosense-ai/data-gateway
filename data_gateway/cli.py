@@ -237,10 +237,35 @@ def start(
 
 @gateway_cli.command()
 @click.argument("name", type=str)
-def create_installation(name, hardware_version, longitude=None, latitude=None):
+@click.argument("hardware_version", type=str)
+@click.option(
+    "--longitude",
+    type=str,
+    default=None,
+    help="The longitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
+)
+@click.option(
+    "--latitude",
+    type=str,
+    default=None,
+    help="The latitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
+)
+def create_installation(name, hardware_version, longitude, latitude):
+    """Create an installation representing a collection of sensors that data can be collected from.
+
+    NAME is the name associated with the collection of sensors e.g. a collection on a specific wind turbine or wind
+    tunnel.
+
+    HARDWARE_VERSION is the hardware version of the collection of sensors.
+    """
     url = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
     parameters = {"name": name, "hardware_version": hardware_version, "longitude": longitude, "latitude": latitude}
-    requests.post(url=url, json=parameters)
+    response = requests.post(url=url, json=parameters)
+
+    if not response.status_code == 200:
+        response.raise_for_status()
+
+    logger.info("Installation created: %r", parameters)
 
 
 @gateway_cli.command()
