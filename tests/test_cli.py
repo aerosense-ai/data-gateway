@@ -104,7 +104,7 @@ class TestCLI(BaseTestCase):
                 self.assertIsNone(result.exception)
                 self.assertEqual(result.exit_code, 0)
 
-                with open(os.path.join(temporary_directory, "commands.txt")) as f:
+                with open(os.path.join(temporary_directory, os.listdir(temporary_directory)[0], "commands.txt")) as f:
                     self.assertEqual(f.read(), commands)
 
     def test_log_level_can_be_set(self):
