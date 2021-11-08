@@ -120,7 +120,15 @@ class TestCLI(BaseTestCase):
 
                     self.assertIsNone(result.exception)
                     self.assertEqual(result.exit_code, 0)
-                    self.assertIn("DEBUG", mock_logger.output[1])
+
+                    debug_message_found = False
+
+                    for message in mock_logger.output:
+                        if "DEBUG" in message:
+                            debug_message_found = True
+                            break
+
+                    self.assertTrue(debug_message_found)
 
     def test_start_and_stop_in_interactive_mode(self):
         """Ensure the gateway can be started and stopped via the CLI in interactive mode. Interactive mode should work
