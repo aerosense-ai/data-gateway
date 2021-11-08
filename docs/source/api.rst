@@ -13,8 +13,6 @@ Gateway
 .. autoclass:: data_gateway.packet_reader.PacketReader
     :members:
 
-.. _configuration_api:
-
 .. autoclass:: data_gateway.configuration.Configuration
     :members:
 
