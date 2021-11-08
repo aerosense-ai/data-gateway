@@ -104,8 +104,31 @@ class TestCLI(BaseTestCase):
                 self.assertIsNone(result.exception)
                 self.assertEqual(result.exit_code, 0)
 
-                with open(os.path.join(temporary_directory, "commands.txt")) as f:
+                with open(os.path.join(temporary_directory, os.listdir(temporary_directory)[0], "commands.txt")) as f:
                     self.assertEqual(f.read(), commands)
+
+    def test_log_level_can_be_set(self):
+        """Test that the log level can be set."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch("serial.Serial", new=DummySerial):
+                with self.assertLogs(level="DEBUG") as mock_logger:
+                    result = CliRunner().invoke(
+                        gateway_cli,
+                        ["--log-level=debug", "start", "--interactive", f"--output-dir={temporary_directory}"],
+                        input="stop\n",
+                    )
+
+                    self.assertIsNone(result.exception)
+                    self.assertEqual(result.exit_code, 0)
+
+                    debug_message_found = False
+
+                    for message in mock_logger.output:
+                        if "DEBUG" in message:
+                            debug_message_found = True
+                            break
+
+                    self.assertTrue(debug_message_found)
 
     def test_start_and_stop_in_interactive_mode(self):
         """Ensure the gateway can be started and stopped via the CLI in interactive mode. Interactive mode should work

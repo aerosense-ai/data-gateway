@@ -2,6 +2,6 @@
 Sphinx>=2,<3
 sphinx-rtd-theme==0.5.0
 sphinx-tabs==1.2.1
-octue==0.4.3
+octue==0.4.10
 pyserial==3.5
 docutils==0.12
