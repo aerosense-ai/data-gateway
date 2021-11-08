@@ -64,6 +64,9 @@ class Configuration:
         analog_samples_per_packet=60,
         constat_samples_per_packet=24,
         default_handles=None,
+        decline_reason=None,
+        sleep_state=None,
+        info_type=None,
         samples_per_packet=None,
         n_meas_qty=None,
         period=None,
@@ -112,16 +115,16 @@ class Configuration:
             58: "Info Message",
         }
 
-        self.decline_reason = {
+        self.decline_reason = decline_reason or {
             0: "Bad block detection ongoing",
             1: "Task already registered, cannot register again",
             2: "Task is not registered, cannot de-register",
             3: "Connection Parameter update unfinished",
         }
 
-        self.sleep_state = {0: "Exiting sleep", 1: "Entering sleep"}
+        self.sleep_state = sleep_state or {0: "Exiting sleep", 1: "Entering sleep"}
 
-        self.info_type = {0: "Battery info"}
+        self.info_type = info_type or {0: "Battery info"}
 
         self.samples_per_packet = samples_per_packet or {
             "Mics": self.mics_samples_per_packet,
