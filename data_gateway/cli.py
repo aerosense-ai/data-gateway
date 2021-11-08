@@ -90,13 +90,28 @@ def gateway_cli(logger_uri, log_level):
     "--stop-when-no-more-data",
     is_flag=True,
     default=False,
-    show_default=True,
     help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
 )
-def start(config_file, interactive, output_dir, window_size, gcp_project_name, gcp_bucket_name, stop_when_no_more_data):
-    """Start the gateway service (daemonise this for a deployment).
-
-    Node commands are: [startBaros, startMics, startIMU ...]
+@click.option(
+    "--use-dummy-serial-port",
+    is_flag=True,
+    default=False,
+    help="Use a dummy serial port instead of a real one (useful for certain tests and demonstrating the CLI on machines "
+    "with no serial port).",
+)
+def start(
+    config_file,
+    interactive,
+    output_dir,
+    window_size,
+    gcp_project_name,
+    gcp_bucket_name,
+    stop_when_no_more_data,
+    use_dummy_serial_port,
+):
+    """Start the gateway service (daemonise this for a deployment). In interactive mode, commands can be sent to the
+    nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
+    [startBaros, startMics, startIMU, stop]
     """
     import json
     import threading
@@ -115,9 +130,14 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
         config = Configuration()
         logger.info("Using default configuration.")
 
-    serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+    if not use_dummy_serial_port:
+        serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+    else:
+        from data_gateway.dummy_serial import DummySerial
+        serial_port = DummySerial(port=config.serial_port, baudrate=config.baudrate)
 
-    if os.name == "nt":  # set_buffer_size is available only on windows
+    # `set_buffer_size` is only available on Windows.
+    if os.name == "nt":
         serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
 
     if not interactive:
@@ -139,6 +159,12 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
 
         return
 
+    if not output_dir.startswith("/"):
+        output_dir = os.path.join(".", output_dir)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
     packet_reader = PacketReader(
         save_locally=True,
@@ -147,9 +173,6 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
         window_size=window_size,
         configuration=config,
     )
-
-    if not output_dir.startswith("/"):
-        output_dir = os.path.join(".", output_dir)
 
     thread = threading.Thread(
         target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True
@@ -165,9 +188,6 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
 
     # Keep a record of the commands given.
     commands_record_file = os.path.join(output_dir, "commands.txt")
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
     try:
         while not packet_reader.stop:
@@ -211,3 +231,7 @@ command=gateway start --config-file {os.path.abspath(config_file)}"""
 
     print(supervisord_conf_str)
     return 0
+
+
+if __name__ == "__main__":
+    gateway_cli()
