@@ -186,12 +186,14 @@ def start(
     logger.info(
         "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
         " to disk at %r at intervals of %s seconds.",
-        output_dir,
+        os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory),
         window_size,
     )
 
     # Keep a record of the commands given.
-    commands_record_file = os.path.join(output_dir, "commands.txt")
+    commands_record_file = os.path.join(
+        packet_reader.output_directory, packet_reader.session_subdirectory, "commands.txt"
+    )
 
     try:
         while not packet_reader.stop:
