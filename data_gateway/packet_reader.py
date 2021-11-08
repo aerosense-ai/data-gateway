@@ -158,9 +158,7 @@ class PacketReader:
 
         if self.save_locally:
             with open(
-                os.path.abspath(
-                    os.path.join("reader", self.output_directory, self.session_subdirectory, "configuration.json")
-                ),
+                os.path.abspath(os.path.join(self.output_directory, self.session_subdirectory, "configuration.json")),
                 "w",
             ) as f:
                 json.dump(configuration_dictionary, f)

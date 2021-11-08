@@ -139,6 +139,12 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
 
         return
 
+    if not output_dir.startswith("/"):
+        output_dir = os.path.join(".", output_dir)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
     packet_reader = PacketReader(
         save_locally=True,
@@ -147,9 +153,6 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
         window_size=window_size,
         configuration=config,
     )
-
-    if not output_dir.startswith("/"):
-        output_dir = os.path.join(".", output_dir)
 
     thread = threading.Thread(
         target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True
@@ -165,9 +168,6 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
 
     # Keep a record of the commands given.
     commands_record_file = os.path.join(output_dir, "commands.txt")
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
     try:
         while not packet_reader.stop:
@@ -211,3 +211,7 @@ command=gateway start --config-file {os.path.abspath(config_file)}"""
 
     print(supervisord_conf_str)
     return 0
+
+
+if __name__ == "__main__":
+    gateway_cli()
