@@ -6,9 +6,9 @@ from unittest import mock
 from click.testing import CliRunner
 
 from data_gateway.cli import gateway_cli
+from data_gateway.dummy_serial import DummySerial
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
-from tests.dummy_serial import DummySerial
 
 
 class EnvironmentVariableRemover:

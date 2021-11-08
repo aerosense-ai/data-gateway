@@ -8,10 +8,10 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway import exceptions
 from data_gateway.configuration import Configuration
+from data_gateway.dummy_serial import DummySerial
 from data_gateway.packet_reader import PacketReader
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
-from tests.dummy_serial import DummySerial
 
 
 class TestPacketReader(BaseTestCase):

@@ -90,10 +90,25 @@ def gateway_cli(logger_uri, log_level):
     "--stop-when-no-more-data",
     is_flag=True,
     default=False,
-    show_default=True,
     help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
 )
-def start(config_file, interactive, output_dir, window_size, gcp_project_name, gcp_bucket_name, stop_when_no_more_data):
+@click.option(
+    "--use-dummy-serial-port",
+    is_flag=True,
+    default=False,
+    help="Use a dummy serial port instead of a real one (useful for certain tests and demonstrating the CLI on machines "
+    "with no serial port).",
+)
+def start(
+    config_file,
+    interactive,
+    output_dir,
+    window_size,
+    gcp_project_name,
+    gcp_bucket_name,
+    stop_when_no_more_data,
+    use_dummy_serial_port,
+):
     """Start the gateway service (daemonise this for a deployment). In interactive mode, commands can be sent to the
     nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
     [startBaros, startMics, startIMU, stop]
@@ -115,7 +130,11 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
         config = Configuration()
         logger.info("Using default configuration.")
 
-    serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+    if not use_dummy_serial_port:
+        serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+    else:
+        from data_gateway.dummy_serial import DummySerial
+        serial_port = DummySerial(port=config.serial_port, baudrate=config.baudrate)
 
     # `set_buffer_size` is only available on Windows.
     if os.name == "nt":
