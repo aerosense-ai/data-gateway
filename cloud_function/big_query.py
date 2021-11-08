@@ -3,7 +3,7 @@ import json
 import uuid
 
 from blake3 import blake3
-from exceptions import ConfigurationAlreadyExists
+from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 from google.cloud import bigquery
 
 
@@ -102,10 +102,25 @@ class BigQueryDataset:
         :raise ValueError: if the write operation fails
         :return None:
         """
+        table_name = f"{self.dataset_id}.installation"
         reference = reference.replace("_", "-").replace(" ", "-").lower()
 
+        installation_already_exists = (
+            len(
+                list(
+                    self.client.query(f"SELECT 1 FROM `{table_name}` WHERE `reference`='{reference}' LIMIT 1").result()
+                )
+            )
+            > 0
+        )
+
+        if installation_already_exists:
+            raise InstallationWithSameNameAlreadyExists(
+                f"An installation with the reference {reference} already exists."
+            )
+
         errors = self.client.insert_rows(
-            table=self.client.get_table(f"{self.dataset_id}.installation"),
+            table=self.client.get_table(table_name),
             rows=[{"reference": reference, "hardware_version": hardware_version, "location": location}],
         )
 

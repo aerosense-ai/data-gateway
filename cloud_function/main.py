@@ -5,6 +5,7 @@ import os
 import shapely.geometry
 import shapely.wkt
 from big_query import BigQueryDataset
+from exceptions import InstallationWithSameNameAlreadyExists
 from file_handler import FileHandler
 from forms import CreateInstallationForm
 
@@ -55,25 +56,25 @@ def create_installation(request):
 
     if form.validate_on_submit():
         try:
-            dataset = BigQueryDataset(
-                project_name=os.environ["DESTINATION_PROJECT_NAME"],
-                dataset_name=os.environ["BIG_QUERY_DATASET_NAME"],
-            )
-
             # TODO Put this into form validation
             reference = form.reference.data.replace("_", "-").replace(" ", "-").lower()
 
             # TODO Should this be easting and northing?
             location = shapely.geometry.Point(form.longitude.data, form.latitude.data)
 
-            errors = dataset.add_installation(
+            dataset = BigQueryDataset(
+                project_name=os.environ["DESTINATION_PROJECT_NAME"],
+                dataset_name=os.environ["BIG_QUERY_DATASET_NAME"],
+            )
+
+            dataset.add_installation(
                 reference=reference,
                 hardware_version=form.hardware_version.data,
                 location=shapely.wkt.dumps(location),
             )
 
-            if errors:
-                raise ValueError(errors)
+        except InstallationWithSameNameAlreadyExists:
+            return f"An installation with the reference {form.reference.data!r} already exists.", 409
 
         except Exception:
             # Blanket exception because we don't want to show internal errors to customers.
