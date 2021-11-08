@@ -54,6 +54,7 @@ class TestCLI(BaseTestCase):
                     gateway_cli,
                     [
                         "start",
+                        "my-installation",
                         f"--gcp-project-name={TEST_PROJECT_NAME}",
                         f"--gcp-bucket-name={TEST_BUCKET_NAME}",
                         f"--output-dir={temporary_directory}",
@@ -78,6 +79,7 @@ class TestCLI(BaseTestCase):
                     gateway_cli,
                     [
                         "start",
+                        "my-installation",
                         f"--gcp-project-name={TEST_PROJECT_NAME}",
                         f"--gcp-bucket-name={TEST_BUCKET_NAME}",
                         "--stop-when-no-more-data",
@@ -98,7 +100,9 @@ class TestCLI(BaseTestCase):
             with tempfile.TemporaryDirectory() as temporary_directory:
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
-                        gateway_cli, ["start", "--interactive", f"--output-dir={temporary_directory}"], input=commands
+                        gateway_cli,
+                        ["start", "my-installation", "--interactive", f"--output-dir={temporary_directory}"],
+                        input=commands,
                     )
 
                 self.assertIsNone(result.exception)
@@ -114,7 +118,13 @@ class TestCLI(BaseTestCase):
                 with self.assertLogs(level="DEBUG") as mock_logger:
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["--log-level=debug", "start", "--interactive", f"--output-dir={temporary_directory}"],
+                        [
+                            "--log-level=debug",
+                            "start",
+                            "my-installation",
+                            "--interactive",
+                            f"--output-dir={temporary_directory}",
+                        ],
                         input="stop\n",
                     )
 
@@ -140,7 +150,7 @@ class TestCLI(BaseTestCase):
                     with mock.patch("serial.Serial", new=DummySerial):
                         result = CliRunner().invoke(
                             gateway_cli,
-                            ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                            ["start", "my-installation", "--interactive", f"--output-dir={temporary_directory}"],
                             input="stop\n",
                         )
 
@@ -165,7 +175,7 @@ class TestCLI(BaseTestCase):
                 with mock.patch("serial.Serial", return_value=serial_port):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                        ["start", "my-installation", "--interactive", f"--output-dir={temporary_directory}"],
                         input="sleep 2\nstop\n",
                     )
 
@@ -195,6 +205,7 @@ class TestCLI(BaseTestCase):
                             gateway_cli,
                             [
                                 "start",
+                                "my-installation",
                                 "--interactive",
                                 f"--config-file={config_path}",
                                 f"--output-dir={temporary_directory}",

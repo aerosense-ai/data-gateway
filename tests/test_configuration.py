@@ -7,7 +7,7 @@ from tests.base import BaseTestCase
 
 class TestConfiguration(BaseTestCase):
 
-    configuration_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")
+    configuration_path = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
     with open(configuration_path) as f:
         VALID_CONFIGURATION = json.load(f)
 
