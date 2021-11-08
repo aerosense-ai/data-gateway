@@ -150,7 +150,7 @@ class TestPacketReader(BaseTestCase):
         # Set first two bytes of payload to correct range for updating handles.
         payload = bytearray(RANDOM_BYTES[0])
         payload[0:1] = int(0).to_bytes(1, "little")
-        payload[2:3] = int(20).to_bytes(1, "little")
+        payload[2:3] = int(26).to_bytes(1, "little")
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
