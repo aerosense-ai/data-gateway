@@ -47,7 +47,7 @@ class Configuration:
         gyro_freq=100,
         gyro_range=2000,
         analog_freq=16384,
-        constat_period=45 * 2.5,  # TODO: Find out why constat packets arrive less often than they should
+        constat_period=45,  # period in ms
         serial_port="/dev/ttyACM0",
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
