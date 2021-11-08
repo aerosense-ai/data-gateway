@@ -94,9 +94,9 @@ def gateway_cli(logger_uri, log_level):
     help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
 )
 def start(config_file, interactive, output_dir, window_size, gcp_project_name, gcp_bucket_name, stop_when_no_more_data):
-    """Start the gateway service (daemonise this for a deployment).
-
-    Node commands are: [startBaros, startMics, startIMU ...]
+    """Start the gateway service (daemonise this for a deployment). In interactive mode, commands can be sent to the
+    nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
+    [startBaros, startMics, startIMU, stop]
     """
     import json
     import threading
@@ -117,7 +117,8 @@ def start(config_file, interactive, output_dir, window_size, gcp_project_name, g
 
     serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
 
-    if os.name == "nt":  # set_buffer_size is available only on windows
+    # `set_buffer_size` is only available on Windows.
+    if os.name == "nt":
         serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
 
     if not interactive:
