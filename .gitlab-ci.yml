@@ -12,20 +12,6 @@ linux_build_and_test:
   tags:
     - docker
 
-deploy_cloud_functions:
-  image: google/cloud-sdk:latest
-  only:
-    - feature/send-cleaned-data-to-bigquery
-  dependencies:
-    - linux_build_and_test
-  script:
-    # Authenticate using the service account stored here: https://gitlab.com/groups/{YOUR_GITLAB_PROJECT}/-/settings/ci_cd
-    - gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS --project aerosense-twined
-    - gcloud iam service-accounts add-iam-policy-binding create-gateway-installation@aerosense-twined.iam.gserviceaccount.com --member=$MEMBER --role=roles/iam.serviceAccountUser
-
-    # Deploy
-    - gcloud functions deploy create-installation --source cloud_function --entry-point create_installation --runtime python39 --trigger-http --security-level secure-always --region europe-west6 --set-env-vars DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
-
 pages:
   cache:
     paths:

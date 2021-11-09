@@ -1,0 +1,20 @@
+steps:
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  args:
+  - gcloud
+  - functions
+  - deploy
+  - create-installation
+  - --source
+  - cloud_function
+  - --entry-point
+  - create_installation
+  - --runtime
+  - python39
+  - --trigger-http
+  - --security-level
+  - secure-always
+  - --region
+  - europe-west6
+  - --set-env-vars
+  - DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
