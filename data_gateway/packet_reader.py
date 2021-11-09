@@ -375,9 +375,12 @@ class PacketReader:
                     voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
                     cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
                     state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
+
                     logger.info(
-                        f"Voltage : {voltage / 1000000} v \n Cycle count: {cycle / 100} \n State of charge: "
-                        f"{state_of_charge / 256}%"
+                        "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
+                        voltage / 1000000,
+                        cycle / 100,
+                        state_of_charge / 256,
                     )
 
     def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
