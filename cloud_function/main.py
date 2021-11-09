@@ -60,7 +60,10 @@ def create_installation(request):
             reference = form.reference.data.replace("_", "-").replace(" ", "-").lower()
 
             # TODO Should this be easting and northing?
-            location = shapely.geometry.Point(form.longitude.data, form.latitude.data)
+            if form.longitude.data and form.latitude.data:
+                location = shapely.wkt.dumps(shapely.geometry.Point(form.longitude.data, form.latitude.data))
+            else:
+                location = None
 
             dataset = BigQueryDataset(
                 project_name=os.environ["DESTINATION_PROJECT_NAME"],
@@ -70,7 +73,7 @@ def create_installation(request):
             dataset.add_installation(
                 reference=reference,
                 hardware_version=form.hardware_version.data,
-                location=shapely.wkt.dumps(location),
+                location=location,
             )
 
         except InstallationWithSameNameAlreadyExists:
@@ -78,7 +81,9 @@ def create_installation(request):
 
         except Exception:
             # Blanket exception because we don't want to show internal errors to customers.
-            logger.exception(f"An error occurred. Form data was: {form.data}")
+            error_message = f"An error occurred. Form data was: {form.data}"
+            logger.exception(error_message)
+            return error_message, 500
 
         return form.data, 200
 

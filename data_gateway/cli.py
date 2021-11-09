@@ -268,7 +268,15 @@ def create_installation(name, hardware_version, longitude, latitude):
     HARDWARE_VERSION is the hardware version of the collection of sensors.
     """
     url = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
-    parameters = {"reference": name, "hardware_version": hardware_version, "longitude": longitude, "latitude": latitude}
+
+    parameters = {"reference": name, "hardware_version": hardware_version}
+
+    if longitude:
+        parameters["longitude"] = longitude
+
+    if latitude:
+        parameters["latitude"] = latitude
+
     response = requests.post(url=url, json=parameters)
 
     if not response.status_code == 200:
