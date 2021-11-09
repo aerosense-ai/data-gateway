@@ -14,7 +14,7 @@ sensor_name_mapping = {
     "Acc": "accelerometer",
     "Gyro": "gyroscope",
     "Mag": "magnetometer",
-    "Analog Vbat": "analogue_battery_voltmeter",
+    "Analog Vbat": "battery_voltmeter",
     "Constat": "connection_statistics",
 }
 
