@@ -5,16 +5,24 @@ steps:
   - functions
   - deploy
   - create-installation
-  - --source
-  - cloud_function
-  - --entry-point
-  - create_installation
-  - --runtime
-  - python39
+  - --source=cloud_function
+  - --entry-point=create_installation
+  - --runtime=python39
   - --trigger-http
-  - --security-level
-  - secure-always
-  - --region
-  - europe-west6
-  - --set-env-vars
-  - DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
+  - --security-level=secure-always
+  - --region=europe-west6
+  - --set-env-vars=DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  args:
+  - gcloud
+  - functions
+  - deploy
+  - ingress-eu
+  - --source=cloud_function
+  - --entry-point=handle_upload
+  - --runtime=python38
+  - --trigger-resource=aerosense-ingress-eu
+  - --trigger-event=google.storage.object.finalize
+  - --memory=1GB
+  - --region=europe-west6
+  - --set-env-vars=SOURCE_PROJECT_NAME=aerosense-twined,DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
