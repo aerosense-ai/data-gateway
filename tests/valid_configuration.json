@@ -10,7 +10,6 @@
   "gyro_range": 2000,
   "analog_freq": 16384,
   "constat_period": 45,
-  "serial_port": "/dev/ttyACM0",
   "serial_buffer_rx_size": 100000,
   "serial_buffer_tx_size": 1280,
   "baudrate": 2300000,
