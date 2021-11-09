@@ -46,6 +46,13 @@ def gateway_cli(logger_uri, log_level):
 @gateway_cli.command()
 @click.argument("installation_reference", type=str)
 @click.option(
+    "--serial-port",
+    type=str,
+    default="/dev/ttyACM0",
+    show_default=True,
+    help="The serial port to read data from.",
+)
+@click.option(
     "--config-file",
     type=click.Path(dir_okay=False),
     default="config.json",
@@ -114,6 +121,7 @@ def gateway_cli(logger_uri, log_level):
 )
 def start(
     installation_reference,
+    serial_port,
     config_file,
     interactive,
     output_dir,
@@ -124,9 +132,9 @@ def start(
     stop_when_no_more_data,
     use_dummy_serial_port,
 ):
-    """Begin persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for a
-    deployment. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing them into
-    stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, stop]
+    """Begin reading and persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for
+    a deployment. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing them
+    into stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop]
 
     INSTALLATION_REFERENCE is the name associated with the geographical installation of sensors e.g. on a specific wind
     turbine or wind tunnel.
@@ -152,11 +160,11 @@ def start(
     config.user_data["label"] = label
 
     if not use_dummy_serial_port:
-        serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+        serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)
     else:
         from data_gateway.dummy_serial import DummySerial
 
-        serial_port = DummySerial(port=config.serial_port, baudrate=config.baudrate)
+        serial_port = DummySerial(port=serial_port, baudrate=config.baudrate)
 
     # `set_buffer_size` is only available on Windows.
     if os.name == "nt":

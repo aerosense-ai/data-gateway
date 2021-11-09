@@ -11,7 +11,6 @@ class Configuration:
     :param float gyro_range: TODO
     :param float analog_freq: analog sensors sampling frequency
     :param float constat_period: period of incoming connection statistic parameters in ms
-    :param str serial_port: name of the serial port
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
     :param float baudrate: serial port baud rate
@@ -47,8 +46,7 @@ class Configuration:
         gyro_freq=100,
         gyro_range=2000,
         analog_freq=16384,
-        constat_period=45 * 2.5,  # TODO: Find out why constat packets arrive less often than they should
-        serial_port="/dev/ttyACM0",
+        constat_period=45,  # period in ms
         serial_buffer_rx_size=100000,
         serial_buffer_tx_size=1280,
         baudrate=2300000,
@@ -59,11 +57,14 @@ class Configuration:
         type_handle_def=0xFF,
         mics_samples_per_packet=8,
         baros_samples_per_packet=1,
-        diff_baros_samples_per_packet=1,
+        diff_baros_samples_per_packet=24,
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         constat_samples_per_packet=24,
         default_handles=None,
+        decline_reason=None,
+        sleep_state=None,
+        info_type=None,
         samples_per_packet=None,
         n_meas_qty=None,
         period=None,
@@ -80,7 +81,6 @@ class Configuration:
         self.gyro_range = gyro_range
         self.analog_freq = analog_freq
         self.constat_period = constat_period
-        self.serial_port = serial_port
         self.serial_buffer_rx_size = serial_buffer_rx_size
         self.serial_buffer_tx_size = serial_buffer_tx_size
         self.baudrate = baudrate
@@ -107,11 +107,25 @@ class Configuration:
             48: "Analog1",
             50: "Analog2",
             52: "Constat",
+            54: "Cmd Decline",
+            56: "Sleep State",
+            58: "Info Message",
         }
+
+        self.decline_reason = decline_reason or {
+            0: "Bad block detection ongoing",
+            1: "Task already registered, cannot register again",
+            2: "Task is not registered, cannot de-register",
+            3: "Connection Parameter update unfinished",
+        }
+
+        self.sleep_state = sleep_state or {0: "Exiting sleep", 1: "Entering sleep"}
+
+        self.info_type = info_type or {0: "Battery info"}
 
         self.samples_per_packet = samples_per_packet or {
             "Mics": self.mics_samples_per_packet,
-            "Diff_Baros": self.baros_samples_per_packet,
+            "Diff_Baros": self.diff_baros_samples_per_packet,
             "Baros_P": self.baros_samples_per_packet,
             "Baros_T": self.baros_samples_per_packet,
             "Acc": self.imu_samples_per_packet,

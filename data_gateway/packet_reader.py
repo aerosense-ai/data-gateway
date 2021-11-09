@@ -130,7 +130,7 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.endian)
 
-        if end_handle - start_handle == 20:
+        if end_handle - start_handle == 26:
             self.handles = {
                 start_handle + 2: "Abs. baros",
                 start_handle + 4: "Diff. baros",
@@ -142,6 +142,9 @@ class PacketReader:
                 start_handle + 16: "Analog1",
                 start_handle + 18: "Analog2",
                 start_handle + 20: "Constat",
+                start_handle + 22: "Cmd Decline",
+                start_handle + 24: "Sleep State",
+                start_handle + 26: "Info message",
             }
 
             logger.info("Successfully updated handles.")
@@ -347,13 +350,38 @@ class PacketReader:
                 logger.error(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
                 raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
 
-        elif len(payload) >= 1 and self.handles[sensor_type] == "Mic 1":  # if payload not 244 bytes long
-            if payload[0] == 1:
-                logger.info("Microphone data reading done")
-            elif payload[0] == 2:
-                logger.info("Microphone data erasing done")
-            elif payload[0] == 3:
-                logger.info("Microphones started ")
+        elif len(payload) >= 1:
+            if self.handles[sensor_type] == "Mic 1":
+                if payload[0] == 1:
+                    logger.info("Microphone data reading done")
+                elif payload[0] == 2:
+                    logger.info("Microphone data erasing done")
+                elif payload[0] == 3:
+                    logger.info("Microphones started ")
+
+            elif self.handles[sensor_type] == "Cmd Decline":
+                reason_index = int.from_bytes(payload, self.config.endian, signed=False)
+                logger.info("Command declined, " + self.config.decline_reason[reason_index])
+
+            elif self.handles[sensor_type] == "Sleep State":
+                state_index = int.from_bytes(payload, self.config.endian, signed=False)
+                logger.info("\n" + self.config.sleep_state[state_index] + "\n")
+
+            elif self.handles[sensor_type] == "Info Message":
+                info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
+                logger.info(info_index)
+
+                if self.config.info_type[info_index] == "Battery info":
+                    voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
+                    cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
+                    state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
+
+                    logger.info(
+                        "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
+                        voltage / 1000000,
+                        cycle / 100,
+                        state_of_charge / 256,
+                    )
 
     def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
         """
