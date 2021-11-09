@@ -43,6 +43,13 @@ def gateway_cli(logger_uri, log_level):
 
 @gateway_cli.command()
 @click.option(
+    "--serial-port",
+    type=str,
+    default="/dev/ttyACM0",
+    show_default=True,
+    help="The serial port to read data from.",
+)
+@click.option(
     "--config-file",
     type=click.Path(dir_okay=False),
     default="config.json",
@@ -103,6 +110,7 @@ def gateway_cli(logger_uri, log_level):
     "with no serial port).",
 )
 def start(
+    serial_port,
     config_file,
     interactive,
     output_dir,
@@ -134,11 +142,11 @@ def start(
         logger.info("Using default configuration.")
 
     if not use_dummy_serial_port:
-        serial_port = serial.Serial(port=config.serial_port, baudrate=config.baudrate)
+        serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)
     else:
         from data_gateway.dummy_serial import DummySerial
 
-        serial_port = DummySerial(port=config.serial_port, baudrate=config.baudrate)
+        serial_port = DummySerial(port=serial_port, baudrate=config.baudrate)
 
     # `set_buffer_size` is only available on Windows.
     if os.name == "nt":
