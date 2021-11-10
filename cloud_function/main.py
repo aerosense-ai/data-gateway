@@ -56,8 +56,6 @@ def create_installation(request):
 
     if form.validate_on_submit():
         try:
-            reference = form.reference.data.replace("_", "-").replace(" ", "-").lower()
-
             if form.latitude.data and form.longitude.data:
                 location = shapely.wkt.dumps(shapely.geometry.Point(form.latitude.data, form.longitude.data))
             else:
@@ -69,7 +67,7 @@ def create_installation(request):
             )
 
             dataset.add_installation(
-                reference=reference,
+                reference=form.reference.data,
                 hardware_version=form.hardware_version.data,
                 location=location,
             )

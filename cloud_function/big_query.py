@@ -103,7 +103,6 @@ class BigQueryDataset:
         :return None:
         """
         table_name = f"{self.dataset_id}.installation"
-        reference = reference.replace("_", "-").replace(" ", "-").lower()
 
         installation_already_exists = (
             len(

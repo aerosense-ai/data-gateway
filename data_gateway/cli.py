@@ -6,6 +6,7 @@ import click
 import pkg_resources
 import requests
 from requests import HTTPError
+from slugify import slugify
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -246,7 +247,7 @@ def start(
 
 
 @gateway_cli.command()
-@click.argument("name", type=str)
+@click.argument("reference", type=str)
 @click.argument("hardware_version", type=str)
 @click.option(
     "--longitude",
@@ -260,16 +261,15 @@ def start(
     default=None,
     help="The latitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
 )
-def create_installation(name, hardware_version, longitude, latitude):
+def create_installation(reference, hardware_version, longitude, latitude):
     """Create an installation representing a collection of sensors that data can be collected from.
 
-    NAME is the name associated with the collection of sensors e.g. a collection on a specific wind turbine or wind
-    tunnel.
+    REFERENCE is the name associated with the collection of sensors e.g. a collection on a specific wind turbine or
+    wind tunnel. It is slugified on input.
 
     HARDWARE_VERSION is the hardware version of the collection of sensors.
     """
-    name = name.replace("_", "-").replace(" ", "-").lower()
-    parameters = {"reference": name, "hardware_version": hardware_version}
+    parameters = {"reference": slugify(reference), "hardware_version": hardware_version}
 
     if longitude:
         parameters["longitude"] = longitude
