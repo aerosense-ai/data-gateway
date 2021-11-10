@@ -58,9 +58,8 @@ def create_installation(request):
         try:
             reference = form.reference.data.replace("_", "-").replace(" ", "-").lower()
 
-            # TODO Should this be easting and northing?
-            if form.longitude.data and form.latitude.data:
-                location = shapely.wkt.dumps(shapely.geometry.Point(form.longitude.data, form.latitude.data))
+            if form.latitude.data and form.longitude.data:
+                location = shapely.wkt.dumps(shapely.geometry.Point(form.latitude.data, form.longitude.data))
             else:
                 location = None
 
