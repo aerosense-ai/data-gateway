@@ -56,7 +56,6 @@ def create_installation(request):
 
     if form.validate_on_submit():
         try:
-            # TODO Put this into form validation
             reference = form.reference.data.replace("_", "-").replace(" ", "-").lower()
 
             # TODO Should this be easting and northing?

@@ -269,6 +269,7 @@ def create_installation(name, hardware_version, longitude, latitude):
     """
     url = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
 
+    name = name.replace("_", "-").replace(" ", "-").lower()
     parameters = {"reference": name, "hardware_version": hardware_version}
 
     if longitude:
