@@ -9,6 +9,7 @@ from requests import HTTPError
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
+CREATE_INSTALLATION_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
 
 logger = logging.getLogger(__name__)
 
@@ -267,8 +268,6 @@ def create_installation(name, hardware_version, longitude, latitude):
 
     HARDWARE_VERSION is the hardware version of the collection of sensors.
     """
-    url = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
-
     name = name.replace("_", "-").replace(" ", "-").lower()
     parameters = {"reference": name, "hardware_version": hardware_version}
 
@@ -278,7 +277,7 @@ def create_installation(name, hardware_version, longitude, latitude):
     if latitude:
         parameters["latitude"] = latitude
 
-    response = requests.post(url=url, json=parameters)
+    response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
 
     if not response.status_code == 200:
         raise HTTPError(f"{response.status_code}: {response.text}")

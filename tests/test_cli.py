@@ -3,9 +3,10 @@ import os
 import tempfile
 from unittest import mock
 
+import requests
 from click.testing import CliRunner
 
-from data_gateway.cli import gateway_cli
+from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
 from data_gateway.dummy_serial import DummySerial
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
@@ -44,6 +45,8 @@ class TestCLI(BaseTestCase):
         h_result = CliRunner().invoke(gateway_cli, ["-h"])
         assert "Usage" in h_result.output
 
+
+class TestStart(BaseTestCase):
     def test_start(self):
         """Ensure the gateway can be started via the CLI. The "stop-when-no-more-data" option is enabled so the test
         doesn't run forever.
@@ -216,3 +219,63 @@ class TestCLI(BaseTestCase):
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
             self.assertIn("Loaded configuration file", mock_local_logger_emit.call_args_list[0][0][0].msg)
+
+
+class TestCreateInstallation(BaseTestCase):
+    def test_create_installation_slugifies_and_lowercases_names(self):
+        """Test that names given to the create-installation command are lowercased and slugified."""
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
+                result = CliRunner().invoke(gateway_cli, ["create-installation", "My Installation_1", "1.7.19"])
+
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+        mock_post.assert_called_with(
+            url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
+            json={"reference": "my-installation-1", "hardware_version": "1.7.19"},
+        )
+
+    def test_create_installation_with_coordinates(self):
+        """Test creating an installation with coordinates."""
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    ["create-installation", "my-installation", "1.7.19", "--longitude=3.25604", "--latitude=178.24833"],
+                )
+
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+        mock_post.assert_called_with(
+            url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
+            json={
+                "reference": "my-installation",
+                "hardware_version": "1.7.19",
+                "longitude": "3.25604",
+                "latitude": "178.24833",
+            },
+        )
+
+    def test_create_installation_with_no_coordinates(self):
+        """Test creating an installation without coordinates."""
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
+                result = CliRunner().invoke(gateway_cli, ["create-installation", "my-installation", "1.7.19"])
+
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+        mock_post.assert_called_with(
+            url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
+            json={"reference": "my-installation", "hardware_version": "1.7.19"},
+        )
+
+    def test_create_installation_raises_error_if_status_code_is_not_200(self):
+        """Test that an HTTPError is raised if the status code of the response received by the create-installation
+        command is not 200.
+        """
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=403)):
+                result = CliRunner().invoke(gateway_cli, ["create-installation", "my-installation", "1.7.19"])
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIsInstance(result.exception, requests.HTTPError)
