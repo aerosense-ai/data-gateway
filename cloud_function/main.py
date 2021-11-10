@@ -75,21 +75,22 @@ def create_installation(request):
             )
 
         except InstallationWithSameNameAlreadyExists:
-            return f"An installation with the reference {form.reference.data!r} already exists.", 409
+            return {
+                "fieldErrors": {
+                    "reference": f"An installation with the reference {form.reference.data!r} already exists."
+                }
+            }, 409
 
-        except Exception:
-            # Blanket exception because we don't want to show internal errors to customers.
-            error_message = f"An error occurred. Form data was: {form.data}"
-            logger.exception(error_message)
-            return error_message, 500
+        except Exception as e:
+            logger.exception(e)
+            return {"nonFieldErrors": f"An error occurred. Form data was: {form.data}"}, 500
 
         return form.data, 200
 
-    else:
-        logger.info(json.dumps(form.errors))
+    logger.info(json.dumps(form.errors))
 
-        # Reduce lists of form field errors to single items.
-        for field, error_messages in form.errors.items():
-            form.errors[field] = error_messages[0] if len(error_messages) > 0 else "Unknown field error"
+    # Reduce lists of form field errors to single items.
+    for field, error_messages in form.errors.items():
+        form.errors[field] = error_messages[0] if len(error_messages) > 0 else "Unknown field error"
 
-        return form.errors
+    return {"fieldErrors": form.errors}, 400
