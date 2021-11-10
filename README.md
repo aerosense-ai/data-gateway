@@ -88,27 +88,23 @@ gateway --help
 ```
 Usage: gateway [OPTIONS] COMMAND [ARGS]...
 
-  AeroSense Gateway CLI.
-
-  Runs the on-nacelle gateway service to read data from the bluetooth
-  receivers and send it to AeroSense Cloud.
+  AeroSense Gateway CLI. Run the on-tower gateway service to read data from
+  the bluetooth receivers and send it to AeroSense Cloud.
 
 Options:
   --logger-uri TEXT               Stream logs to a websocket at the given URI
                                   (useful for monitoring what's happening
-                                  remotely)
+                                  remotely).
 
   --log-level [debug|info|warning|error]
-                                  Log level used for the analysis.  [default:
-                                  info]
-
+                                  Set the log level.  [default: info]
   --version                       Show the version and exit.
   -h, --help                      Show this message and exit.
 
 Commands:
-  start             Start the gateway service (daemonise this for a...
-  supervisord-conf  Print conf entry for use with supervisord Daemonising a...
-
+  create-installation  Create an installation representing a collection of...
+  start                Begin reading and persisting data from the serial...
+  supervisord-conf     Print conf entry for use with supervisord.
 ```
 
 ### Testing
