@@ -9,7 +9,7 @@ pluggy
 gcp-storage-emulator>=2021.6.2
 google-cloud-storage>=1.35.1
 tox>=3.23.1
--r cloud_function/requirements.txt
+-r cloud_functions/requirements.txt
 
 # Code quality
 # ------------------------------------------------------------------------------

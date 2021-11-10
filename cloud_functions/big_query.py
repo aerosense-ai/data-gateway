@@ -130,7 +130,7 @@ class BigQueryDataset:
         """Add a configuration to the BigQuery dataset.
 
         :param dict configuration:
-        :raise cloud_function.exceptions.ConfigurationAlreadyExists: if an identical configuration already exists in the dataset or the write operation fails; this error includes the UUID of the existing configuration as an argument
+        :raise cloud_functions.exceptions.ConfigurationAlreadyExists: if an identical configuration already exists in the dataset or the write operation fails; this error includes the UUID of the existing configuration as an argument
         :return str: UUID of the configuration
         """
         table_name = f"{self.dataset_id}.configuration"

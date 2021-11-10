@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from wtforms.validators import StopValidation
 
-from cloud_function.forms import SlugifiedValidator
+from cloud_functions.forms import SlugifiedValidator
 from tests.base import BaseTestCase
 
 

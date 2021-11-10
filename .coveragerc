@@ -1,6 +1,6 @@
 [paths]
 source =
-    cloud_function/
+    cloud_functions/
     data_gateway/
     dummy_serial/
 

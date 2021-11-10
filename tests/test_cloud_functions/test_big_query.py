@@ -4,13 +4,13 @@ from unittest.mock import Mock, patch
 
 import sys
 from tests.base import BaseTestCase
-from tests.test_cloud_function import REPOSITORY_ROOT
+from tests.test_cloud_functions import REPOSITORY_ROOT
 
 
-# Manually add the cloud_function package to the path (its imports have to be done in a certain way for Google Cloud
+# Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
 # Functions to accept them that doesn't work when running/testing the package locally).
-sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_function")))
-from cloud_function.big_query import (  # noqa
+sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_functions")))
+from cloud_functions.big_query import (  # noqa
     BigQueryDataset,
     ConfigurationAlreadyExists,
     InstallationWithSameNameAlreadyExists,

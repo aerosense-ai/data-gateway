@@ -6,7 +6,7 @@ steps:
   - functions
   - deploy
   - create-installation
-  - --source=cloud_function
+  - --source=cloud_functions
   - --entry-point=create_installation
   - --runtime=python39
   - --trigger-http
@@ -20,7 +20,7 @@ steps:
   - functions
   - deploy
   - ingress-eu
-  - --source=cloud_function
+  - --source=cloud_functions
   - --entry-point=handle_upload
   - --runtime=python38
   - --trigger-resource=aerosense-ingress-eu

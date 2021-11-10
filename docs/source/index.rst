@@ -41,7 +41,7 @@ outages.
    using_the_gateway
    output_data
    deployment
-   cloud_function
+   cloud_functions
    cloud_preprocessing
    hardware_and_firmware_versions
    api

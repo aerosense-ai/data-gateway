@@ -34,20 +34,7 @@ def handle_upload(event, context):
 
 def create_installation(request):
     """Create a new installation in the BigQuery dataset. This is the entrypoint for the `create-installation` cloud
-    function. To deploy it, run:
-
-    ```
-    gcloud functions deploy create-installation \
-        --source cloud_function \
-        --entry-point create_installation \
-        --runtime python39 \
-        --trigger-http \
-        --security-level secure-always \
-        --region europe-west6 \
-        --set-env-vars DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
-    ```
-
-    from the repository root.
+    function.
     """
     form = CreateInstallationForm(meta={"csrf": False})
 
