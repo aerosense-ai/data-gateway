@@ -1,17 +1,9 @@
-import os
 from unittest.mock import Mock
 
 from wtforms.validators import StopValidation
 
-import sys
 from cloud_function.forms import SlugifiedValidator
 from tests.base import BaseTestCase
-from tests.test_cloud_function import REPOSITORY_ROOT
-
-
-# Manually add the cloud_function package to the path (its imports have to be done in a certain way for Google Cloud
-# Functions to accept them that doesn't work when running/testing the package locally).
-sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_function")))
 
 
 class TestForms(BaseTestCase):

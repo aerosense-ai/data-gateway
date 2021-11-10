@@ -10,7 +10,7 @@ from slugify import slugify
 
 SENSOR_NAME_MAPPING = {
     "Mics": "microphone",
-    "Baros_P": "barometer_pressure_sensor",
+    "Baros_P": "barometer",
     "Baros_T": "barometer_thermometer",
     "Acc": "accelerometer",
     "Gyro": "gyroscope",
