@@ -6,11 +6,11 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
 import sys
+from tests.test_cloud_function import REPOSITORY_ROOT
 
 
 # Manually add the cloud_function package to the path (its imports have to be done in a certain way for Google Cloud
 # Functions to accept them that doesn't work when running/testing the package locally).
-REPOSITORY_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_function")))
 
 from cloud_function import main  # noqa
