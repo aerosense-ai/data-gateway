@@ -5,9 +5,10 @@ import uuid
 from blake3 import blake3
 from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 from google.cloud import bigquery
+from slugify import slugify
 
 
-sensor_name_mapping = {
+SENSOR_NAME_MAPPING = {
     "Mics": "microphone",
     "Baros_P": "barometer_pressure_sensor",
     "Baros_T": "barometer_thermometer",
@@ -45,7 +46,7 @@ class BigQueryDataset:
         table_name = f"{self.dataset_id}.sensor_data"
 
         for sensor_name, samples in data["sensor_data"].items():
-            sensor_type_reference = sensor_name_mapping[sensor_name]
+            sensor_type_reference = SENSOR_NAME_MAPPING[sensor_name]
 
             for sample in samples:
                 rows.append(
@@ -74,14 +75,13 @@ class BigQueryDataset:
         :raise ValueError: if the write operation fails
         :return None:
         """
-        reference = name.replace("_", "-").replace(" ", "-").lower()
         metadata = json.dumps(metadata or {})
 
         errors = self.client.insert_rows(
             table=self.client.get_table(f"{self.dataset_id}.sensor_type"),
             rows=[
                 {
-                    "reference": reference,
+                    "reference": slugify(name),
                     "name": name,
                     "description": description,
                     "unit": measuring_unit,
