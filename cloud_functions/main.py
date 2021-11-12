@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def clean_and_upload_window(event, context):
-    """Clean a data window received from the gateway and upload it to Google BigQuery for long-term storage.
+    """Clean a data window received from the gateway and upload it to Google BigQuery for long-term storage. This is
+    the entrypoint for the `ingress-eu` cloud function.
 
     :param dict event: Google Cloud event
     :param google.cloud.functions.Context context: metadata for the event
@@ -28,7 +29,7 @@ def clean_and_upload_window(event, context):
     )
 
     window, window_metadata = file_handler.get_window(window_cloud_path=event["name"])
-    cleaned_window = file_handler.clean_window(window, window_metadata, event)
+    cleaned_window = file_handler.clean_window(window, window_metadata)
     file_handler.persist_window(cleaned_window, window_metadata)
 
 

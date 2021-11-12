@@ -51,12 +51,11 @@ class FileHandler:
 
         return window, window_metadata
 
-    def clean_window(self, window, window_metadata, event):
+    def clean_window(self, window, window_metadata):
         """Clean and return the given window.
 
         :param dict window: the window of data to clean
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
-        :param dict event: Google Cloud event (currently unused)
         :return dict:
         """
         window = preprocess.run(window, window_metadata)

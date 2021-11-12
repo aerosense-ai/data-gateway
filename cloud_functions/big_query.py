@@ -98,7 +98,7 @@ class BigQueryDataset:
 
         :param str reference: the name to give to the installation
         :param str hardware_version: the version of the sensor hardware at this installation
-        :param str|None location: the geographical location of the installation in WKT format if relevant (it may not be if its a wind tunnel which could be set up anywhere)
+        :param str|None location: the geographical location of the installation in WKT format if relevant (it may not be if it's a wind tunnel which could be set up anywhere)
         :raise cloud_functions.exceptions.InstallationWithSameNameAlreadyExists: if an installation with the given name already exists
         :raise ValueError: if the addition fails
         :return None:
@@ -116,7 +116,7 @@ class BigQueryDataset:
 
         if installation_already_exists:
             raise InstallationWithSameNameAlreadyExists(
-                f"An installation with the reference {reference} already exists."
+                f"An installation with the reference {reference!r} already exists."
             )
 
         errors = self.client.insert_rows(
