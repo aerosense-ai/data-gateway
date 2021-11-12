@@ -223,20 +223,21 @@ class TestStart(BaseTestCase):
 
 class TestCreateInstallation(BaseTestCase):
     def test_create_installation_slugifies_and_lowercases_names(self):
-        """Test that names given to the create-installation command are lowercased and slugified."""
+        """Test that names given to the create-installation command are lower-cased and slugified."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
                 result = CliRunner().invoke(gateway_cli, ["create-installation", "My Installation_1", "1.7.19"])
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
+
         mock_post.assert_called_with(
             url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
             json={"reference": "my-installation-1", "hardware_version": "1.7.19"},
         )
 
     def test_create_installation_with_coordinates(self):
-        """Test creating an installation with coordinates."""
+        """Test creating an installation with coordinates works."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
                 result = CliRunner().invoke(
@@ -246,6 +247,7 @@ class TestCreateInstallation(BaseTestCase):
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
+
         mock_post.assert_called_with(
             url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
             json={
@@ -257,20 +259,21 @@ class TestCreateInstallation(BaseTestCase):
         )
 
     def test_create_installation_with_no_coordinates(self):
-        """Test creating an installation without coordinates."""
+        """Test creating an installation without coordinates works."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
                 result = CliRunner().invoke(gateway_cli, ["create-installation", "my-installation", "1.7.19"])
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
+
         mock_post.assert_called_with(
             url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
             json={"reference": "my-installation", "hardware_version": "1.7.19"},
         )
 
     def test_create_installation_raises_error_if_status_code_is_not_200(self):
-        """Test that an HTTPError is raised if the status code of the response received by the create-installation
+        """Test that an `HTTPError` is raised if the status code of the response received by the create-installation
         command is not 200.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):

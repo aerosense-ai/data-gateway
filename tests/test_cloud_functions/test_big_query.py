@@ -1,8 +1,8 @@
 import datetime
 import os
+import sys
 from unittest.mock import Mock, patch
 
-import sys
 from tests.base import BaseTestCase
 from tests.test_cloud_functions import REPOSITORY_ROOT
 
@@ -182,13 +182,16 @@ class TestBigQueryDataset(BaseTestCase):
         )
 
     def test_add_configuration_raises_error_if_installation_already_exists(self):
-        """Test that an error is raised if attempting to add a configuration that already exists."""
+        """Test that an error is raised if attempting to add a configuration that already exists and that the ID of the
+        existing configuration is returned.
+        """
+        existing_configuration_id = "0846401a-89fb-424e-89e6-039063e0ee6d"
         dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
 
         with patch(
             "big_query.bigquery.Client.query",
-            return_value=Mock(result=lambda: [Mock(id="0846401a-89fb-424e-89e6-039063e0ee6d")]),
+            return_value=Mock(result=lambda: [Mock(id=existing_configuration_id)]),
         ):
             with self.assertRaises(ConfigurationAlreadyExists):
                 configuration_id = dataset.add_configuration(configuration={"blah": "blah"})
-                self.assertEqual(configuration_id, "0846401a-89fb-424e-89e6-039063e0ee6d")
+                self.assertEqual(configuration_id, existing_configuration_id)

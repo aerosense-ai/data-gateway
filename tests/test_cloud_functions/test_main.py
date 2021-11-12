@@ -26,10 +26,17 @@ class TestCleanAndUploadWindow(BaseTestCase):
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(10, 10)
 
+    MOCK_EVENT = {
+        "bucket": SOURCE_BUCKET_NAME,
+        "name": "window-0.json",
+        "metageneration": "some-metageneration",
+        "timeCreated": "0",
+        "updated": "0",
+    }
+
     def test_clean_and_upload_window(self):
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
-        storage trigger. The same source and destination bucket are used in this test although different ones will most
-        likely be used in production.
+        storage trigger.
         """
         GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
             string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
@@ -37,14 +44,6 @@ class TestCleanAndUploadWindow(BaseTestCase):
             path_in_bucket="window-0.json",
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
         )
-
-        event = {
-            "bucket": self.SOURCE_BUCKET_NAME,
-            "name": "window-0.json",
-            "metageneration": "some-metageneration",
-            "timeCreated": "0",
-            "updated": "0",
-        }
 
         with patch.dict(
             os.environ,
@@ -55,7 +54,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
             },
         ):
             with patch("file_handler.BigQueryDataset") as mock_dataset:
-                main.clean_and_upload_window(event=event, context=self._make_mock_context())
+                main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         expected_configuration = self.VALID_CONFIGURATION.copy()
@@ -78,14 +77,6 @@ class TestCleanAndUploadWindow(BaseTestCase):
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
         )
 
-        event = {
-            "bucket": self.SOURCE_BUCKET_NAME,
-            "name": "window-0.json",
-            "metageneration": "some-metageneration",
-            "timeCreated": "0",
-            "updated": "0",
-        }
-
         with patch.dict(
             os.environ,
             {
@@ -99,7 +90,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
                 with patch("file_handler.BigQueryDataset.insert_sensor_data", return_value=None):
-                    main.clean_and_upload_window(event=event, context=self._make_mock_context())
+                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
@@ -127,13 +118,14 @@ class TestCreateInstallation(BaseTestCase):
             return create_installation(request)
 
     def test_error_raised_if_non_post_method_used(self):
+        """Test that a 405 error is raised if a method other than `POST` is used on the endpoint."""
         with self.app.test_client() as client:
             response = client.get("/")
 
         self.assertEqual(response.status_code, 405)
 
     def test_create_installation_with_invalid_data(self):
-        """Test that invalid data sent to the installation creation endpoint return a 400 status code and a relevant
+        """Test that invalid data sent to the installation creation endpoint results in a 400 status code and a relevant
         error.
         """
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
@@ -159,6 +151,9 @@ class TestCreateInstallation(BaseTestCase):
                         self.assertIn(expected_error_field, response.json["fieldErrors"])
 
     def test_error_raised_if_installation_reference_already_exists(self):
+        """Test that a 409 error is returned if the installation reference sent to the endpoint already exists in the
+        BigQuery dataset.
+        """
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
             with patch(
                 "cloud_functions.main.BigQueryDataset.add_installation",
@@ -170,6 +165,7 @@ class TestCreateInstallation(BaseTestCase):
         self.assertEqual(response.status_code, 409)
 
     def test_error_raised_if_internal_server_error_occurs(self):
+        """Test that a 500 error is returned if an unspecified error occurs in the endpoint."""
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
             with patch("cloud_functions.main.BigQueryDataset.add_installation", side_effect=Exception()):
                 with self.app.test_client() as client:
