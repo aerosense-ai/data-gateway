@@ -15,7 +15,7 @@ There is no need to read further about this if you are only working on data coll
 =============================
 Developing the cloud function
 =============================
-The entrypoint for the cloud function is ``cloud_functions.main.handle_upload`` and it must accept ``event`` and
+The entrypoint for the cloud function is ``cloud_functions.main.clean_and_upload_window`` and it must accept ``event`` and
 ``context`` arguments in that order. Apart from that, it can do anything upon receiving an event (the event is an upload
 of a file to the ingress bucket). It currently uses the ``file_handler`` module and ``preprocessing`` subpackage.
 

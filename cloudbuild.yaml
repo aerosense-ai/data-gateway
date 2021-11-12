@@ -21,7 +21,7 @@ steps:
   - deploy
   - ingress-eu
   - --source=cloud_functions
-  - --entry-point=handle_upload
+  - --entry-point=clean_and_upload_window
   - --runtime=python38
   - --trigger-resource=aerosense-ingress-eu
   - --trigger-event=google.storage.object.finalize

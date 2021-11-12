@@ -55,7 +55,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
             },
         ):
             with patch("file_handler.BigQueryDataset") as mock_dataset:
-                main.handle_upload(event=event, context=self._make_mock_context())
+                main.clean_and_upload_window(event=event, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         del self.VALID_CONFIGURATION["user_data"]

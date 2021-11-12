@@ -13,7 +13,7 @@ from forms import CreateInstallationForm
 logger = logging.getLogger(__name__)
 
 
-def handle_upload(event, context):
+def clean_and_upload_window(event, context):
     """Clean a data window received from the gateway and upload it to Google BigQuery for long-term storage.
 
     :param dict event: Google Cloud event
