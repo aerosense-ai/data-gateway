@@ -4,9 +4,13 @@ import time
 
 import click
 import pkg_resources
+import requests
+from requests import HTTPError
+from slugify import slugify
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
+CREATE_INSTALLATION_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,7 @@ def gateway_cli(logger_uri, log_level):
 
 
 @gateway_cli.command()
+@click.argument("installation_reference", type=str)
 @click.option(
     "--serial-port",
     type=str,
@@ -97,6 +102,13 @@ def gateway_cli(logger_uri, log_level):
     help="The name of the Google Cloud Platform (GCP) storage bucket to use.",
 )
 @click.option(
+    "--label",
+    type=str,
+    default=None,
+    show_default=True,
+    help="An optional label to associate with data persisted in this run of the gateway.",
+)
+@click.option(
     "--stop-when-no-more-data",
     is_flag=True,
     default=False,
@@ -110,6 +122,7 @@ def gateway_cli(logger_uri, log_level):
     "with no serial port).",
 )
 def start(
+    installation_reference,
     serial_port,
     config_file,
     interactive,
@@ -117,19 +130,23 @@ def start(
     window_size,
     gcp_project_name,
     gcp_bucket_name,
+    label,
     stop_when_no_more_data,
     use_dummy_serial_port,
 ):
-    """Start the gateway service (daemonise this for a deployment). In interactive mode, commands can be sent to the
-    nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
-    [startBaros, startMics, startIMU, getBattery, stop]
+    """Begin reading and persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for
+    a deployment. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing them
+    into stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop]
+
+    INSTALLATION_REFERENCE is the name associated with the geographical installation of sensors e.g. on a specific wind
+    turbine or wind tunnel.
     """
     import json
+    import sys
     import threading
 
     import serial
 
-    import sys
     from data_gateway.configuration import Configuration
     from data_gateway.packet_reader import PacketReader
 
@@ -140,6 +157,9 @@ def start(
     else:
         config = Configuration()
         logger.info("Using default configuration.")
+
+    config.user_data["installation_reference"] = installation_reference
+    config.user_data["label"] = label
 
     if not use_dummy_serial_port:
         serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)
@@ -224,6 +244,45 @@ def start(
 
     logger.info("Stopping gateway.")
     packet_reader.writer.force_persist()
+
+
+@gateway_cli.command()
+@click.argument("reference", type=str)
+@click.argument("hardware_version", type=str)
+@click.option(
+    "--longitude",
+    type=str,
+    default=None,
+    help="The longitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
+)
+@click.option(
+    "--latitude",
+    type=str,
+    default=None,
+    help="The latitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
+)
+def create_installation(reference, hardware_version, longitude, latitude):
+    """Create an installation representing a collection of sensors that data can be collected from.
+
+    REFERENCE is the name associated with the collection of sensors e.g. a collection on a specific wind turbine or
+    wind tunnel. It is slugified on input.
+
+    HARDWARE_VERSION is the hardware version of the collection of sensors.
+    """
+    parameters = {"reference": slugify(reference), "hardware_version": hardware_version}
+
+    if longitude:
+        parameters["longitude"] = longitude
+
+    if latitude:
+        parameters["latitude"] = latitude
+
+    response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
+
+    if not response.status_code == 200:
+        raise HTTPError(f"{response.status_code}: {response.text}")
+
+    logger.info("Installation created: %r", parameters)
 
 
 @gateway_cli.command()

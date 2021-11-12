@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from cloud_function.preprocessing import preprocess
+from cloud_functions.preprocessing import preprocess
 from tests.base import BaseTestCase
 
 

@@ -1,9 +1,4 @@
 linux_build_and_test:
-  cache:
-    paths:
-      - requirements-dev.txt
-    when: 'on_success'
-    key: 'build_and_test'
   script:
     - pip install tox
     - tox
@@ -12,12 +7,15 @@ linux_build_and_test:
   tags:
     - docker
 
+tag:
+  only:
+    - main
+  script:
+    - git tag -a $(python setup.py --version)
+    - git push origin --tags
+  image: python:3.8.8
+
 pages:
-  cache:
-    paths:
-      - docs/requirements.txt
-    when: 'on_success'
-    key: 'pages'
   script:
     - pip install -r docs/requirements.txt
     - sphinx-build -b html docs/source public

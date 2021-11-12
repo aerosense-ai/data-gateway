@@ -1,3 +1,4 @@
+import abc
 import copy
 import json
 import logging
@@ -7,8 +8,6 @@ import time
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_directory
-
-import abc
 
 
 logger = logging.getLogger(__name__)
