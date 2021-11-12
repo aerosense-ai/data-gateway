@@ -17,22 +17,22 @@ from tests.test_cloud_functions import REPOSITORY_ROOT
 sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_functions")))
 
 from cloud_functions import main  # noqa
+from cloud_functions.file_handler import ConfigurationAlreadyExists  # noqa
 from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_installation  # noqa
 
 
 class TestCleanAndUploadWindow(BaseTestCase):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
+    WINDOW = BaseTestCase().random_window(10, 10)
 
     def test_clean_and_upload_window(self):
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger. The same source and destination bucket are used in this test although different ones will most
         likely be used in production.
         """
-        window = self.random_window(10, 10)
-
         GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
-            string=json.dumps(window, cls=OctueJSONEncoder),
+            string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
             bucket_name=self.SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
@@ -58,15 +58,48 @@ class TestCleanAndUploadWindow(BaseTestCase):
                 main.clean_and_upload_window(event=event, context=self._make_mock_context())
 
         # Check configuration without user data was added.
-        del self.VALID_CONFIGURATION["user_data"]
+        expected_configuration = self.VALID_CONFIGURATION.copy()
+        del expected_configuration["user_data"]
         self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
-        self.assertEqual(mock_dataset.mock_calls[1].args[0], self.VALID_CONFIGURATION)
+        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
 
         # Check data was persisted.
         self.assertIn("insert_sensor_data", mock_dataset.mock_calls[2][0])
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Mics", "cleaned"})
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Mics"})
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my_test_1")
+
+    def test_clean_and_upload_window_for_existing_configuration(self):
+        """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
+        GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
+            string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
+            bucket_name=self.SOURCE_BUCKET_NAME,
+            path_in_bucket="window-0.json",
+            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+        )
+
+        event = {
+            "bucket": self.SOURCE_BUCKET_NAME,
+            "name": "window-0.json",
+            "metageneration": "some-metageneration",
+            "timeCreated": "0",
+            "updated": "0",
+        }
+
+        with patch.dict(
+            os.environ,
+            {
+                "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
+                "DESTINATION_PROJECT_NAME": "destination-project",
+                "BIG_QUERY_DATASET_NAME": "blah",
+            },
+        ):
+            with patch(
+                "file_handler.BigQueryDataset.add_configuration",
+                side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
+            ):
+                with patch("file_handler.BigQueryDataset.insert_sensor_data", return_value=None):
+                    main.clean_and_upload_window(event=event, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
@@ -127,9 +160,10 @@ class TestCreateInstallation(BaseTestCase):
 
     def test_error_raised_if_installation_reference_already_exists(self):
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset") as mock_big_query_dataset:
-                mock_big_query_dataset.side_effect = InstallationWithSameNameAlreadyExists()
-
+            with patch(
+                "cloud_functions.main.BigQueryDataset.add_installation",
+                side_effect=InstallationWithSameNameAlreadyExists(),
+            ):
                 with self.app.test_client() as client:
                     response = client.post(json={"reference": "hello", "hardware_version": "0.0.1"})
 
@@ -137,9 +171,7 @@ class TestCreateInstallation(BaseTestCase):
 
     def test_error_raised_if_internal_server_error_occurs(self):
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset") as mock_big_query_dataset:
-                mock_big_query_dataset.side_effect = Exception()
-
+            with patch("cloud_functions.main.BigQueryDataset.add_installation", side_effect=Exception()):
                 with self.app.test_client() as client:
                     response = client.post(json={"reference": "hello", "hardware_version": "0.0.1"})
 
