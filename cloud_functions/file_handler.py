@@ -60,7 +60,6 @@ class FileHandler:
         :return dict:
         """
         window = preprocess.run(window, window_metadata)
-        window["cleaned"] = True
         logger.info("Cleaned window.")
         return window
 
