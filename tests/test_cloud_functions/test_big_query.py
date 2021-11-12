@@ -21,17 +21,14 @@ class TestBigQueryDataset(BaseTestCase):
     def test_insert_sensor_data(self):
         """Test that sensor data can be sent to BigQuery for insertion."""
         data = {
-            "sensor_time_offset": 1636559720.639327,
-            "sensor_data": {
-                "Mics": [[0, 1, 2, 3, 4]],
-                "Baros_P": [[0, 6, 7, 8, 9]],
-                "Baros_T": [[0, 11, 12, 13, 14]],
-                "Acc": [[0, 16, 17, 18, 19]],
-                "Gyro": [[0, 21, 22, 23, 24]],
-                "Mag": [[0, 26, 27, 28, 29]],
-                "Analog Vbat": [[0, 31, 32, 33, 34]],
-                "Constat": [[0, 36, 37, 38, 39]],
-            },
+            "Mics": [[1636559720.639327, 1, 2, 3, 4]],
+            "Baros_P": [[1636559720.639327, 6, 7, 8, 9]],
+            "Baros_T": [[1636559720.639327, 11, 12, 13, 14]],
+            "Acc": [[1636559720.639327, 16, 17, 18, 19]],
+            "Gyro": [[1636559720.639327, 21, 22, 23, 24]],
+            "Mag": [[1636559720.639327, 26, 27, 28, 29]],
+            "Analog Vbat": [[1636559720.639327, 31, 32, 33, 34]],
+            "Constat": [[1636559720.639327, 36, 37, 38, 39]],
         }
 
         with patch("big_query.bigquery.Client.get_table"):

@@ -45,13 +45,13 @@ class BigQueryDataset:
         rows = []
         table_name = f"{self.dataset_id}.sensor_data"
 
-        for sensor_name, samples in data["sensor_data"].items():
+        for sensor_name, samples in data.items():
             sensor_type_reference = SENSOR_NAME_MAPPING[sensor_name]
 
             for sample in samples:
                 rows.append(
                     {
-                        "datetime": datetime.datetime.fromtimestamp(data["sensor_time_offset"] + sample[0]),
+                        "datetime": datetime.datetime.fromtimestamp(sample[0]),
                         "sensor_type_reference": sensor_type_reference,
                         "sensor_value": sample[1:],
                         "configuration_id": configuration_id,
