@@ -6,7 +6,7 @@ from cloud_functions.forms import SlugifiedValidator
 from tests.base import BaseTestCase
 
 
-class TestForms(BaseTestCase):
+class TestSlugifiedValidator(BaseTestCase):
     def test_slugified_validator_raises_error_if_input_not_slugified(self):
         """Test that the slugified validator raises a `StopValidation` error if the input is not slugified."""
         validator = SlugifiedValidator()
