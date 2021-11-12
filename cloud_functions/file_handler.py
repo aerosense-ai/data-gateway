@@ -14,10 +14,10 @@ class FileHandler:
     """A handler for data windows that gets them from a source bucket, cleans them, and inserts them into a Google
     BigQuery dataset.
 
-    :param str source_project:
-    :param str source_bucket:
-    :param str destination_project:
-    :param str destination_biq_query_dataset:
+    :param str source_project: name of the project the source bucket belongs to
+    :param str source_bucket: name of the bucket the files to be cleaned are stored in
+    :param str destination_project: name of the project the BigQuery dataset belongs to
+    :param str destination_biq_query_dataset: name of the BigQuery dataset to store the cleaned data in
     :return None:
     """
 
@@ -32,7 +32,7 @@ class FileHandler:
     def get_window(self, window_cloud_path):
         """Get the window from Google Cloud storage.
 
-        :param str window_cloud_path:
+        :param str window_cloud_path: the Google Cloud Storage path to the window file
         :return (dict, dict):
         """
         window = json.loads(
@@ -54,8 +54,8 @@ class FileHandler:
     def clean_window(self, window, window_metadata, event):
         """Clean and return the given window.
 
-        :param dict window:
-        :param dict window_metadata:
+        :param dict window: the window of data to clean
+        :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :param dict event: Google Cloud event (currently unused)
         :return dict:
         """
@@ -66,8 +66,8 @@ class FileHandler:
     def persist_window(self, window, window_metadata):
         """Persist the window to the Google BigQuery dataset.
 
-        :param dict window:
-        :param dict window_metadata:
+        :param dict window: the window of data to persist to the BigQuery dataset
+        :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
         dataset = BigQueryDataset(
