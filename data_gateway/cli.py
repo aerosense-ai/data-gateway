@@ -142,11 +142,11 @@ def start(
     turbine or wind tunnel.
     """
     import json
+    import sys
     import threading
 
     import serial
 
-    import sys
     from data_gateway.configuration import Configuration
     from data_gateway.packet_reader import PacketReader
 

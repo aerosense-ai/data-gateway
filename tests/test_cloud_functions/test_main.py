@@ -1,12 +1,12 @@
 import json
 import os
+import sys
 from unittest.mock import MagicMock, patch
 
 from flask import Flask, request
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
-import sys
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
