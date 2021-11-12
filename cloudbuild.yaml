@@ -1,6 +1,6 @@
 steps:
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  id: Deploy ingress-eu cloud function
+  id: Deploy create-installation cloud function
   args:
   - gcloud
   - functions
@@ -14,7 +14,7 @@ steps:
   - --region=europe-west6
   - --set-env-vars=DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  id: Deploy create-installation cloud function
+  id: Deploy ingress-eu cloud function
   args:
   - gcloud
   - functions
