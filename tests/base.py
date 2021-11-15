@@ -16,20 +16,28 @@ class DatasetMixin:
     with open(configuration_path) as f:
         VALID_CONFIGURATION = json.load(f)
 
-    def random_dataset(self, rows, cols):
+    def random_dataset(self, rows, cols, window_duration):
         data = np.random.rand(rows, cols)
-        time = np.linspace(0, 10, rows)
+        time = np.linspace(0, window_duration, rows)
         random_data = np.append(np.transpose([time]), data, axis=1)
         return random_data
 
-    def random_window(self, rows=None, cols=None):
-        sensors = {"Mics"}
+    def random_window(self, sensors=None, window_duration=None):
+        """
+        Generates a window with random data
+        :param sensors: List with sensor names
+        :param window_duration: Unit: s
+        """
+        sensors = sensors or ["Constat"]
+        window_duration = window_duration or 1
         window = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
 
         for sensor in sensors:
-            rows = rows or int(10 / self.VALID_CONFIGURATION["period"][sensor])  # 10 seconds long
-            cols = cols or self.VALID_CONFIGURATION["n_meas_qty"][sensor]
-            window["sensor_data"][sensor] = self.random_dataset(rows, cols)
+            rows = int(window_duration // self.VALID_CONFIGURATION["period"][sensor]) + 1
+            cols = self.VALID_CONFIGURATION["n_meas_qty"][sensor]
+            # Update window duration to stop at last sample
+            window_duration = (rows - 1) * self.VALID_CONFIGURATION["period"][sensor]
+            window["sensor_data"][sensor] = self.random_dataset(rows, cols, window_duration)
 
         return window
 
