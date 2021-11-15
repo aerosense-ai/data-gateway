@@ -54,7 +54,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         destination_path = f"gs://{DESTINATION_BUCKET_NAME}/window-0.json"
 
         try:
-            window = self.random_window(10, 10)
+            window = self.random_window(sensors=["Constat"], window_duration=1)
 
             self.storage_client.upload_from_string(
                 string=json.dumps(window, cls=OctueJSONEncoder),
@@ -64,7 +64,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
 
             cleaned_window = self._poll_for_uploaded_file(destination_path, timeout=30)
             self.assertEqual(cleaned_window["cleaned"], True)
-            self.assertIn("Mics", cleaned_window)
+            self.assertIn("Constat", cleaned_window)
 
         finally:
             self.storage_client.delete(cloud_path=upload_path)

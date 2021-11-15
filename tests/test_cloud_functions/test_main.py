@@ -24,7 +24,7 @@ from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_i
 class TestCleanAndUploadWindow(BaseTestCase):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
-    WINDOW = BaseTestCase().random_window(10, 10)
+    WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
 
     MOCK_EVENT = {
         "bucket": SOURCE_BUCKET_NAME,
@@ -64,7 +64,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
 
         # Check data was persisted.
         self.assertIn("insert_sensor_data", mock_dataset.mock_calls[2][0])
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Mics"})
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my_test_1")
 
