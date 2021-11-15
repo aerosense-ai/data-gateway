@@ -25,17 +25,22 @@ class TestPreprocess(BaseTestCase):
         return sample_data
 
     def test_missing_data(self):
-        test_window = self.random_window()
+        sensor = "Constat"
+        test_window = self.random_window(
+            sensors=[sensor], window_duration=self.VALID_CONFIGURATION["period"][sensor] * 20
+        )
         test_metadata = self.VALID_CONFIGURATION
         # add some noise to timestamps
-        test_window["sensor_data"]["Mics"][:, 0] += np.random.rand(test_window["sensor_data"]["Mics"][:, 0].size) / 1e8
+        test_window["sensor_data"]["Constat"][:, 0] += np.random.rand(test_window["sensor_data"][sensor][:, 0].size) / (
+            100 / self.VALID_CONFIGURATION["period"][sensor]
+        )
         # remove some rows
-        test_window["sensor_data"]["Mics"] = np.delete(test_window["sensor_data"]["Mics"], slice(40, 61), 0)
+        test_window["sensor_data"][sensor] = np.delete(test_window["sensor_data"][sensor], slice(4, 8), 0)
 
         processed_window = preprocess.run(test_window, test_metadata)
 
         # Check if the data got padded with NaN
-        self.assertTrue(np.isnan(processed_window["Mics"][50][1]) and not np.isnan(processed_window["Mics"][1][1]))
+        self.assertTrue(np.isnan(processed_window["Constat"][6][1]) and not np.isnan(processed_window["Constat"][1][1]))
 
     """
     def test_sample_dataset(self):
