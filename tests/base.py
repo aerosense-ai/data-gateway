@@ -16,17 +16,28 @@ class DatasetMixin:
     with open(configuration_path) as f:
         VALID_CONFIGURATION = json.load(f)
 
-    def random_dataset(self, rows, cols, window_duration):
+    def random_sensor_data(self, rows, cols, first_sample_time, last_sample_time):
+        """Generates a numpy array with time column from first_sample_time to last_sample_time
+        and rows x cols random data
+
+        :param int rows: Number of sensor samples
+        :param int cols: Number of sensors of the type
+        :param float first_sample_time: First timestamp in seconds
+        :param float last_sample_time: Last timestamp in seconds
+        :return array random_data:
+        """
         data = np.random.rand(rows, cols)
-        time = np.linspace(0, window_duration, rows)
+        time = np.linspace(first_sample_time, last_sample_time, rows)
         random_data = np.append(np.transpose([time]), data, axis=1)
         return random_data
 
     def random_window(self, sensors=None, window_duration=None):
-        """
-        Generates a window with random data
-        :param sensors: List with sensor names
-        :param window_duration: Unit: s
+        """Generates a window dict. with random data for given sensors and duration of window_duration [sec.]
+
+        :param list sensors: List with sensor names
+        :param float window_duration: Unit: s
+
+        :return dict window:
         """
         sensors = sensors or ["Constat"]
         window_duration = window_duration or 1
@@ -35,9 +46,9 @@ class DatasetMixin:
         for sensor in sensors:
             rows = int(window_duration // self.VALID_CONFIGURATION["period"][sensor]) + 1
             cols = self.VALID_CONFIGURATION["n_meas_qty"][sensor]
-            # Update window duration to stop at last sample
-            window_duration = (rows - 1) * self.VALID_CONFIGURATION["period"][sensor]
-            window["sensor_data"][sensor] = self.random_dataset(rows, cols, window_duration)
+            # Compute last sample time within the window duration
+            last_sample_time = (rows - 1) * self.VALID_CONFIGURATION["period"][sensor]
+            window["sensor_data"][sensor] = self.random_sensor_data(rows, cols, 0, last_sample_time)
 
         return window
 
