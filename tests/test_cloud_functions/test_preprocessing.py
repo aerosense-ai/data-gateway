@@ -25,16 +25,22 @@ class TestPreprocess(BaseTestCase):
         return sample_data
 
     def test_missing_data(self):
+        """Test if the preprocessor:
+        - Generates timestamps at constant time-step, TODO add this check
+        - Finds a window of missing data, pads it with NaN
+        - Interpolates data to new timestamps (except for when data was missing) TODO add this check
+        """
+
         sensor = "Constat"
-        test_window = self.random_window(
-            sensors=[sensor], window_duration=self.VALID_CONFIGURATION["period"][sensor] * 20
-        )
+
         test_metadata = self.VALID_CONFIGURATION
-        # add some noise to timestamps
+        test_window = self.random_window(sensors=[sensor], window_duration=test_metadata["period"][sensor] * 20)
+
+        # Add some noise to timestamps
         test_window["sensor_data"]["Constat"][:, 0] += np.random.rand(test_window["sensor_data"][sensor][:, 0].size) / (
-            100 / self.VALID_CONFIGURATION["period"][sensor]
+            100 / test_metadata["period"][sensor]
         )
-        # remove some rows
+        # Emulate some missing data
         test_window["sensor_data"][sensor] = np.delete(test_window["sensor_data"][sensor], slice(4, 8), 0)
 
         processed_window = preprocess.run(test_window, test_metadata)
