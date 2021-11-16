@@ -6,7 +6,7 @@ import struct
 
 from octue.cloud import storage
 
-from data_gateway import exceptions
+from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
 
@@ -43,7 +43,17 @@ class PacketReader:
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.stop = False
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
+        self.sensor_names = (
+            MICROPHONE_SENSOR_NAME,
+            "Baros_P",
+            "Baros_T",
+            "Diff_Baros",
+            "Acc",
+            "Gyro",
+            "Mag",
+            "Analog Vbat",
+            "Constat",
+        )
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
@@ -236,25 +246,25 @@ class PacketReader:
                 bytes_per_sample = 3
 
                 for i in range(self.config.mics_samples_per_packet // 2):
-                    for j in range(self.config.n_meas_qty["Mics"] // 2):
-                        data["Mics"][j][2 * i] = int.from_bytes(
+                    for j in range(self.config.n_meas_qty[MICROPHONE_SENSOR_NAME] // 2):
+                        data[MICROPHONE_SENSOR_NAME][j][2 * i] = int.from_bytes(
                             payload[(bytes_per_sample * (j + 20 * i)) : (bytes_per_sample * (j + 20 * i) + 3)],
                             "big",  # Unlike the other sensors, the microphone data come in big-endian
                             signed=True,
                         )
-                        data["Mics"][j][2 * i + 1] = int.from_bytes(
+                        data[MICROPHONE_SENSOR_NAME][j][2 * i + 1] = int.from_bytes(
                             payload[(bytes_per_sample * (j + 20 * i + 5)) : (bytes_per_sample * (j + 20 * i + 5) + 3)],
                             "big",  # Unlike the other sensors, the microphone data come in big-endian
                             signed=True,
                         )
-                        data["Mics"][j + 5][2 * i] = int.from_bytes(
+                        data[MICROPHONE_SENSOR_NAME][j + 5][2 * i] = int.from_bytes(
                             payload[
                                 (bytes_per_sample * (j + 20 * i + 10)) : (bytes_per_sample * (j + 20 * i + 10) + 3)
                             ],
                             "big",  # Unlike the other sensors, the microphone data come in big-endian
                             signed=True,
                         )
-                        data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                        data[MICROPHONE_SENSOR_NAME][j + 5][2 * i + 1] = int.from_bytes(
                             payload[
                                 (bytes_per_sample * (j + 20 * i + 15)) : (bytes_per_sample * (j + 20 * i + 15) + 3)
                             ],
@@ -262,7 +272,7 @@ class PacketReader:
                             signed=True,
                         )
 
-                self._check_and_write_packet("Mics", timestamp, data, previous_timestamp)
+                self._check_and_write_packet(MICROPHONE_SENSOR_NAME, timestamp, data, previous_timestamp)
 
             elif self.handles[sensor_type].startswith("IMU Accel"):
                 # Write the received payload to the data field

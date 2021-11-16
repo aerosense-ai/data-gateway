@@ -1,3 +1,6 @@
+from data_gateway import MICROPHONE_SENSOR_NAME
+
+
 class Configuration:
     """A data class containing the configuration values for the firmware and hardware used by the data gateway.
 
@@ -124,7 +127,7 @@ class Configuration:
         self.info_type = info_type or {0: "Battery info"}
 
         self.samples_per_packet = samples_per_packet or {
-            "Mics": self.mics_samples_per_packet,
+            MICROPHONE_SENSOR_NAME: self.mics_samples_per_packet,
             "Diff_Baros": self.diff_baros_samples_per_packet,
             "Baros_P": self.baros_samples_per_packet,
             "Baros_T": self.baros_samples_per_packet,
@@ -136,7 +139,7 @@ class Configuration:
         }
 
         self.n_meas_qty = n_meas_qty or {
-            "Mics": 10,
+            MICROPHONE_SENSOR_NAME: 10,
             "Baros_P": 40,
             "Baros_T": 40,
             "Diff_Baros": 5,
@@ -148,7 +151,7 @@ class Configuration:
         }
 
         self.period = period or {
-            "Mics": 1 / self.mics_freq,
+            MICROPHONE_SENSOR_NAME: 1 / self.mics_freq,
             "Baros_P": 1 / self.baros_freq,
             "Baros_T": 1 / self.baros_freq,
             "Diff_Baros": 1 / self.diff_baros_freq,
