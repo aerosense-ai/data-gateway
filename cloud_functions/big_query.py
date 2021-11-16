@@ -1,11 +1,15 @@
 import datetime
 import json
+import logging
 import uuid
 
 from blake3 import blake3
 from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 from google.cloud import bigquery
 from slugify import slugify
+
+
+logger = logging.getLogger()
 
 
 SENSOR_NAME_MAPPING = {
@@ -65,6 +69,8 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
+        logger.info(f"Uploaded {len(rows)} samples of sensor data to BigQuery dataset {self.dataset_id!r}.")
+
     def add_new_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset. The sensor name is slugified on receipt.
 
@@ -75,13 +81,14 @@ class BigQueryDataset:
         :raise ValueError: if the addition fails
         :return None:
         """
+        reference = slugify(name)
         metadata = json.dumps(metadata or {})
 
         errors = self.client.insert_rows(
             table=self.client.get_table(f"{self.dataset_id}.sensor_type"),
             rows=[
                 {
-                    "reference": slugify(name),
+                    "reference": reference,
                     "name": name,
                     "description": description,
                     "unit": measuring_unit,
@@ -92,6 +99,8 @@ class BigQueryDataset:
 
         if errors:
             raise ValueError(errors)
+
+        logger.info(f"Added new sensor {reference!r} to BigQuery dataset {self.dataset_id!r}.")
 
     def add_installation(self, reference, hardware_version, location=None):
         """Add a new installation to the BigQuery dataset.
@@ -127,6 +136,8 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
+        logger.info(f"Added new installation {reference!r} to BigQuery dataset {self.dataset_id!r}.")
+
     def add_configuration(self, configuration):
         """Add a configuration to the BigQuery dataset.
 
@@ -160,4 +171,5 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
+        logger.info(f"Added configuration {configuration_id!r} to BigQuery dataset {self.dataset_id!r}.")
         return configuration_id
