@@ -4,9 +4,10 @@ import logging
 import uuid
 
 from blake3 import blake3
-from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 from google.cloud import bigquery
 from slugify import slugify
+
+from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 
 
 logger = logging.getLogger(__name__)

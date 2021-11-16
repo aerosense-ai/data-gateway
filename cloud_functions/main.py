@@ -4,11 +4,12 @@ import os
 
 import shapely.geometry
 import shapely.wkt
+from octue.log_handlers import apply_log_handler
+
 from big_query import BigQueryDataset
 from exceptions import InstallationWithSameNameAlreadyExists
 from file_handler import FileHandler
 from forms import CreateInstallationForm
-from octue.log_handlers import apply_log_handler
 
 
 apply_log_handler()
