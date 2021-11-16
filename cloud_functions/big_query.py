@@ -69,7 +69,7 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
-        logger.info(f"Uploaded {len(rows)} samples of sensor data to BigQuery dataset {self.dataset_id!r}.")
+        logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
 
     def add_new_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset. The sensor name is slugified on receipt.
@@ -100,7 +100,7 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
-        logger.info(f"Added new sensor {reference!r} to BigQuery dataset {self.dataset_id!r}.")
+        logger.info("Added new sensor %r to BigQuery dataset %r.", reference, self.dataset_id)
 
     def add_installation(self, reference, hardware_version, location=None):
         """Add a new installation to the BigQuery dataset.
@@ -136,7 +136,7 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
-        logger.info(f"Added new installation {reference!r} to BigQuery dataset {self.dataset_id!r}.")
+        logger.info("Added new installation %r to BigQuery dataset %r.", reference, self.dataset_id)
 
     def add_configuration(self, configuration):
         """Add a configuration to the BigQuery dataset.
@@ -171,5 +171,5 @@ class BigQueryDataset:
         if errors:
             raise ValueError(errors)
 
-        logger.info(f"Added configuration {configuration_id!r} to BigQuery dataset {self.dataset_id!r}.")
+        logger.info("Added configuration %r to BigQuery dataset %r.", configuration_id, self.dataset_id)
         return configuration_id
