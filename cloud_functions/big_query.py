@@ -9,7 +9,7 @@ from google.cloud import bigquery
 from slugify import slugify
 
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 SENSOR_NAME_MAPPING = {
