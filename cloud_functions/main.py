@@ -27,13 +27,15 @@ def clean_and_upload_window(event, context):
     :return None:
     """
     file_handler = FileHandler(
+        window_cloud_path=event["name"],
         source_project=os.environ["SOURCE_PROJECT_NAME"],
         source_bucket=event["bucket"],
         destination_project=os.environ["DESTINATION_PROJECT_NAME"],
+        destination_bucket=os.environ["DESTINATION_BUCKET_NAME"],
         destination_biq_query_dataset=os.environ["BIG_QUERY_DATASET_NAME"],
     )
 
-    window, window_metadata = file_handler.get_window(window_cloud_path=event["name"])
+    window, window_metadata = file_handler.get_window()
     cleaned_window = file_handler.clean_window(window, window_metadata)
     file_handler.persist_window(cleaned_window, window_metadata)
 
