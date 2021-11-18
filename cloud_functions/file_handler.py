@@ -130,4 +130,8 @@ class FileHandler:
         with datafile.open("w") as f:
             json.dump(data, f)
 
-        self.dataset.record_microphone_data_location_and_metadata(path=datafile.cloud_path, metadata=metadata)
+        self.dataset.record_microphone_data_location_and_metadata(
+            path=datafile.cloud_path,
+            project_name=self.destination_project,
+            metadata=metadata,
+        )
