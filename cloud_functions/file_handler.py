@@ -47,6 +47,11 @@ class FileHandler:
         self.destination_bucket = destination_bucket
         self.destination_big_query_dataset = destination_biq_query_dataset
 
+        self.dataset = BigQueryDataset(
+            project_name=self.destination_project,
+            dataset_name=self.destination_big_query_dataset,
+        )
+
     def get_window(self):
         """Get the window from Google Cloud storage.
 
@@ -86,15 +91,10 @@ class FileHandler:
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
-        dataset = BigQueryDataset(
-            project_name=self.destination_project,
-            dataset_name=self.destination_big_query_dataset,
-        )
-
         user_data = window_metadata.pop("user_data")
 
         try:
-            configuration_id = dataset.add_configuration(window_metadata)
+            configuration_id = self.dataset.add_configuration(window_metadata)
         except ConfigurationAlreadyExists as e:
             configuration_id = e.args[1]
 
@@ -102,7 +102,7 @@ class FileHandler:
             microphone_data = window.pop(MICROPHONE_SENSOR_NAME)
             self._store_microphone_data(microphone_data, metadata=window_metadata)
 
-        dataset.add_sensor_data(
+        self.dataset.add_sensor_data(
             data=window,
             configuration_id=configuration_id,
             installation_reference=user_data["installation_reference"],
@@ -112,7 +112,8 @@ class FileHandler:
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
     def _store_microphone_data(self, data, metadata):
-        """Store microphone data in the destination cloud storage bucket and record its metadata in a BigQuery table.
+        """Store microphone data in the destination cloud storage bucket and record its location and metadata in a
+        BigQuery table.
 
         :param list(list) data:
         :param dict metadata:
@@ -128,3 +129,5 @@ class FileHandler:
 
         with datafile.open("w") as f:
             json.dump(data, f)
+
+        self.dataset.record_microphone_data_location_and_metadata(path=datafile.cloud_path, metadata=metadata)

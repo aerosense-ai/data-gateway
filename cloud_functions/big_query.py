@@ -72,6 +72,28 @@ class BigQueryDataset:
 
         logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
 
+    def record_microphone_data_location_and_metadata(self, path, metadata):
+        """Record the file location and metadata for a window of microphone data.
+
+        :param str path:
+        :param dict metadata:
+        :raise ValueError: if the addition fails
+        :return None:
+        """
+        errors = self.client.insert_rows(
+            table=self.client.get_table(f"{self.dataset_id}.microphone_data"),
+            rows=[
+                {
+                    "path": path,
+                }
+            ],
+        )
+
+        if errors:
+            raise ValueError(errors)
+
+        logger.info("Added microphone data location and metadata to BigQuery dataset %r.", self.dataset_id)
+
     def add_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset. The sensor name is slugified on receipt.
 
