@@ -34,7 +34,7 @@ class TestBigQueryDataset(BaseTestCase):
         with patch("big_query.bigquery.Client.get_table"):
             with patch("big_query.bigquery.Client.insert_rows", return_value=None) as mock_insert_rows:
 
-                BigQueryDataset(project_name="my-project", dataset_name="my-dataset").insert_sensor_data(
+                BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_data(
                     data=data,
                     configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
                     installation_reference="turbine-1",
@@ -118,7 +118,7 @@ class TestBigQueryDataset(BaseTestCase):
         with patch("big_query.bigquery.Client.get_table"):
             with patch("big_query.bigquery.Client.insert_rows", return_value=None) as mock_insert_rows:
 
-                BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_new_sensor_type(
+                BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(
                     name="My sensor_Name"
                 )
 

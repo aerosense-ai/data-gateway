@@ -37,7 +37,7 @@ class BigQueryDataset:
         self.client = bigquery.Client()
         self.dataset_id = f"{project_name}.{dataset_name}"
 
-    def insert_sensor_data(self, data, configuration_id, installation_reference, label=None):
+    def add_sensor_data(self, data, configuration_id, installation_reference, label=None):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data: data from the sensors - the keys are the sensor names and the values are samples in the form of lists of lists
@@ -72,7 +72,7 @@ class BigQueryDataset:
 
         logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
 
-    def add_new_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
+    def add_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset. The sensor name is slugified on receipt.
 
         :param str name: the name of the new sensor

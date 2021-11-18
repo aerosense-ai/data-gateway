@@ -102,7 +102,7 @@ class FileHandler:
             microphone_data = window.pop(MICROPHONE_SENSOR_NAME)
             self._store_microphone_data(microphone_data, metadata=window_metadata)
 
-        dataset.insert_sensor_data(
+        dataset.add_sensor_data(
             data=window,
             configuration_id=configuration_id,
             installation_reference=user_data["installation_reference"],
