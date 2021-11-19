@@ -144,7 +144,7 @@ class BatchingFileWriter(TimeBatcher):
         sensor_names,
         window_size,
         session_subdirectory,
-        save_csv_files,
+        save_csv_files=None,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         storage_limit=1024 ** 3,
     ):
