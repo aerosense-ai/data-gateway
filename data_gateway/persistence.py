@@ -40,12 +40,20 @@ class TimeBatcher:
     :return None:
     """
 
-    def __init__(self, sensor_names, window_size, session_subdirectory, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+    def __init__(
+        self,
+        sensor_names,
+        window_size,
+        session_subdirectory,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
+        save_csv_files=None,
+    ):
         self.current_window = {"sensor_time_offset": None, "sensor_data": {name: [] for name in sensor_names}}
         self.window_size = window_size
         self.output_directory = output_directory
         self.ready_window = {"sensor_time_offset": None, "sensor_data": {}}
         self._session_subdirectory = session_subdirectory
+        self._save_csv_files = save_csv_files
         self._start_time = time.perf_counter()
         self._window_number = 0
         self._file_prefix = "window"
@@ -135,11 +143,12 @@ class BatchingFileWriter(TimeBatcher):
         sensor_names,
         window_size,
         session_subdirectory,
+        save_csv_files,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         storage_limit=1024 ** 3,
     ):
         self.storage_limit = storage_limit
-        super().__init__(sensor_names, window_size, session_subdirectory, output_directory)
+        super().__init__(sensor_names, window_size, session_subdirectory, output_directory, save_csv_files)
         os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
 
     def _persist_window(self, window=None):
