@@ -171,7 +171,7 @@ class BatchingFileWriter(TimeBatcher):
             for sensor in window or self.ready_window["sensor_data"]:
                 csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
                 logger.info(f"Saving {sensor} data to csv file.")
-                with open(csv_path, "w") as f:
+                with open(csv_path, "w", newline="") as f:
                     writer = csv.writer(f, delimiter=",")
                     for row in self.ready_window["sensor_data"][sensor]:
                         writer.writerow(row)
