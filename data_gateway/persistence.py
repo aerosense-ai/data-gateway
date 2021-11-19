@@ -1,5 +1,6 @@
 import abc
 import copy
+import csv
 import json
 import logging
 import os
@@ -165,6 +166,15 @@ class BatchingFileWriter(TimeBatcher):
             json.dump(window or self.ready_window, f)
 
         logger.info(f"{self._file_prefix.capitalize()} {self._window_number} written to disk.")
+
+        if self._save_csv_files:
+            for sensor in window or self.ready_window["sensor_data"]:
+                csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
+                logger.info(f"Saving {sensor} data to csv file.")
+                with open(csv_path, "w") as f:
+                    writer = csv.writer(f, delimiter=",")
+                    for row in self.ready_window["sensor_data"][sensor]:
+                        writer.writerow(row)
 
     def _manage_storage(self):
         """Check if the output directory has reached its storage limit and, if it has, delete the oldest window.
