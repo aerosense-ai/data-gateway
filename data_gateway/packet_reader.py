@@ -196,8 +196,8 @@ class PacketReader:
                 self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
                 self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
 
-        elif len(payload) >= 1:
-            self._parse_info_packet(self.handles[packet_type])
+        elif len(payload) >= 1 and self.handles[packet_type] in ["Mic 1", "Cmd Decline", "Sleep State", "Info Message"]:
+            self._parse_info_packet(self.handles[packet_type], payload)
 
     def _parse_sensor_packet_data(self, sensor_type, payload, data):
         """Parses sensor data type payloads.
