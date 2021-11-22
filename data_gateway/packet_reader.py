@@ -42,6 +42,7 @@ class PacketReader:
         self.output_directory = output_directory
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
+        self.sleep = False
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
@@ -366,6 +367,7 @@ class PacketReader:
             elif self.handles[sensor_type] == "Sleep State":
                 state_index = int.from_bytes(payload, self.config.endian, signed=False)
                 logger.info("\n" + self.config.sleep_state[state_index] + "\n")
+                self.sleep = bool(state_index)
 
             elif self.handles[sensor_type] == "Info Message":
                 info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
@@ -398,6 +400,8 @@ class PacketReader:
 
         if previous_timestamp[sensor_type] == -1:
             logger.info("Received first %s packet" % sensor_type)
+        elif self.sleep:
+            pass
         else:
             interpolated_current_timestamp = (
                 previous_timestamp[sensor_type]
