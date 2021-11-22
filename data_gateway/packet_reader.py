@@ -173,7 +173,7 @@ class PacketReader:
             )
 
     def _parse_payload(self, packet_type, payload, data, previous_timestamp):
-        """Parse a packet received from a serial port.
+        """Check and eventually parse a payload from a serial port.
 
         :param int packet_type:
         :param iter payload:
@@ -185,7 +185,7 @@ class PacketReader:
             logger.error("Received packet with unknown type: {}".format(packet_type))
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(packet_type))
 
-        if len(payload) == 244:
+        if len(payload) == 244:  # If the full data payload is received, proceed parsing it
             timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
             data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
@@ -272,7 +272,7 @@ class PacketReader:
             sensor_names = ["Mics"]
 
         elif sensor_type.startswith("IMU"):
-            # Write the received payload to the data field
+
             if sensor_type == "IMU Accel":
                 imu_sensor = "Acc"
             elif sensor_type == "IMU Gyro":
@@ -283,6 +283,7 @@ class PacketReader:
                 logger.error(f"There is no IMU sensor {sensor_type}")
                 raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
 
+            # Write the received payload to the data field
             for i in range(self.config.imu_samples_per_packet):
                 data[imu_sensor][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
                 data[imu_sensor][1][i] = int.from_bytes(
