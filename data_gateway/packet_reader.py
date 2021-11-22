@@ -83,14 +83,10 @@ class PacketReader:
         """
         self._persist_configuration()
 
-        current_timestamp = {}
-        previous_ideal_timestamp = {}
         previous_timestamp = {}
         data = {}
 
         for sensor_name in self.sensor_names:
-            current_timestamp[sensor_name] = 0
-            previous_ideal_timestamp[sensor_name] = 0
             previous_timestamp[sensor_name] = -1
             data[sensor_name] = [
                 ([0] * self.config.samples_per_packet[sensor_name]) for _ in range(self.config.n_meas_qty[sensor_name])
