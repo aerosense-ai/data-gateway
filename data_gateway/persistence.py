@@ -159,17 +159,19 @@ class BatchingFileWriter(TimeBatcher):
         :return None:
         """
         self._manage_storage()
+        window = window or self.ready_window
         window_path = os.path.abspath(os.path.join(".", self._generate_window_path()))
 
         with open(window_path, "w") as f:
-            json.dump(window or self.ready_window, f)
+            json.dump(window, f)
 
         logger.info(f"{self._file_prefix.capitalize()} {self._window_number} written to disk.")
 
         if self._save_csv_files:
-            for sensor in window or self.ready_window["sensor_data"]:
+            for sensor in window["sensor_data"]:
                 csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
                 logger.info(f"Saving {sensor} data to csv file.")
+
                 with open(csv_path, "w", newline="") as f:
                     writer = csv.writer(f, delimiter=",")
                     for row in self.ready_window["sensor_data"][sensor]:
