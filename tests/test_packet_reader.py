@@ -374,3 +374,32 @@ class TestPacketReader(BaseTestCase):
         self._check_windows_are_uploaded_to_cloud(
             packet_reader, sensor_names=sensor_names, number_of_windows_to_check=1
         )
+
+    def test_packet_reader_with_info_packets(self):
+        """Test that the packet reader works with info packets."""
+        serial_port = DummySerial(port="test")
+
+        packet_types = [bytes([40]), bytes([54]), bytes([56]), bytes([58])]
+        payloads = [
+            [bytes([1]), bytes([2]), bytes([3])],
+            [bytes([0]), bytes([1]), bytes([2]), bytes([3])],
+            [bytes([0]), bytes([1])],
+            [bytes([0])],
+        ]
+        for index, packet_type in enumerate(packet_types):
+            for payload in payloads[index]:
+                serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([1]), payload)))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=False,
+                output_directory=temporary_directory,
+                window_size=self.WINDOW_SIZE,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+
+            with patch("data_gateway.packet_reader.logger") as mock_logger:
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+                self.assertEqual(11, len(mock_logger.method_calls))
