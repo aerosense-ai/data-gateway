@@ -37,7 +37,7 @@ class PacketReader:
         project_name=None,
         bucket_name=None,
         configuration=None,
-        save_csv_files=None,
+        save_csv_files=False,
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
@@ -47,7 +47,6 @@ class PacketReader:
         self.stop = False
         self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
-        self.save_csv_files = save_csv_files or False
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
