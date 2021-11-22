@@ -348,6 +348,33 @@ class TestPacketReader(BaseTestCase):
 
         self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Constat"], number_of_windows_to_check=1)
 
+    def test_packet_reader_with_connections_statistics_in_sleep_mode(self):
+        """Test that the packet reader works with the connection statistics "sensor" in sleep state.
+        Check that packet loss is not checked in sleep mode"""
+        serial_port = DummySerial(port="test")
+        # Enter sleep state
+        serial_port.write(data=b"".join((PACKET_KEY, bytes([56]), bytes([1]), bytes([1]))))
+
+        packet_type = bytes([52])
+
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            packet_reader = PacketReader(
+                save_locally=True,
+                upload_to_cloud=False,
+                output_directory=temporary_directory,
+                window_size=self.WINDOW_SIZE,
+                project_name=TEST_PROJECT_NAME,
+                bucket_name=TEST_BUCKET_NAME,
+            )
+            with patch("data_gateway.packet_reader.logger") as mock_logger:
+                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+
+            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Constat"])
+            self.assertEqual(0, mock_logger.warning.call_count)
+
     def test_all_sensors_together(self):
         """Test that the packet reader works with all sensors together."""
         serial_port = DummySerial(port="test")
