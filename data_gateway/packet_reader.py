@@ -360,7 +360,7 @@ class PacketReader:
 
         elif information_type == "Info Message":
             info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
-            logger.info(info_index)
+            logger.info(self.config.info_type[info_index])
 
             if self.config.info_type[info_index] == "Battery info":
                 voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
