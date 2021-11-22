@@ -118,8 +118,8 @@ class PacketReader:
                         self.update_handles(payload)
                         continue
 
-                    self._parse_sensor_packet(
-                        sensor_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
+                    self._parse_payload(
+                        packet_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
                     )
 
     def update_handles(self, payload):
@@ -176,224 +176,215 @@ class PacketReader:
                 ),
             )
 
-    def _parse_sensor_packet(self, sensor_type, payload, data, previous_timestamp):
-        """Parse a packet from a sensor.
+    def _parse_payload(self, packet_type, payload, data, previous_timestamp):
+        """Parse a packet received from a serial port.
 
-        :param int sensor_type:
+        :param int packet_type:
         :param iter payload:
         :param dict data:
-        :param dict current_timestamp:
-        :param dict previous_ideal_timestamp:
-        :return None:
+        :param dict previous_timestamp:
         """
-        if sensor_type not in self.handles:
-            logger.error("Received packet with unknown type: {}".format(sensor_type))
-            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
+
+        if packet_type not in self.handles:
+            logger.error("Received packet with unknown type: {}".format(packet_type))
+            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(packet_type))
 
         if len(payload) == 244:
             timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
-            if self.handles[sensor_type] == "Abs. baros":
-                # Write the received payload to the data field
-                # TODO bytes_per_sample should probably be in the configuration
-                bytes_per_sample = 6
-                for i in range(self.config.baros_samples_per_packet):
-                    for j in range(self.config.n_meas_qty["Baros_P"]):
+            data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
 
-                        data["Baros_P"][j][i] = int.from_bytes(
-                            payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
-                            self.config.endian,
-                            signed=False,
-                        )
+            for sensor_name in sensor_names:
+                if sensor_name == "Constat":
+                    logger.debug("Constat packet: %d" % timestamp)
+                self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
+                self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
 
-                        data["Baros_T"][j][i] = int.from_bytes(
-                            payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
-                            self.config.endian,
-                            signed=True,
-                        )
+        elif len(payload) >= 1:
+            self._parse_info_packet(self.handles[packet_type])
 
-                self._check_and_write_packet("Baros_P", timestamp, data, previous_timestamp)
-                self._check_and_write_packet("Baros_T", timestamp, data, previous_timestamp)
+    def _parse_sensor_packet_data(self, sensor_type, payload, data):
+        """Parses sensor data type payloads.
 
-            elif self.handles[sensor_type] == "Diff. baros":
-                # TODO bytes_per_sample should probably be in the configuration
-                bytes_per_sample = 2
-                for i in range(self.config.diff_baros_samples_per_packet):
-                    for j in range(self.config.n_meas_qty["Diff_Baros"]):
-                        data["Diff_Baros"][j][i] = int.from_bytes(
-                            payload[
-                                (bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j)) : (
-                                    bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j + 1)
-                                )
-                            ],
-                            self.config.endian,
-                            signed=False,
-                        )
-                self._check_and_write_packet("Diff_Baros", timestamp, data, previous_timestamp)
+        :param str sensor_type: Type of the sensor
+        :param iter payload: Raw payload to be parsed
+        :param dict data: Initialised data dict to be completed with parsed data
 
-            elif self.handles[sensor_type] == "Mic 0":
-                # Write the received payload to the data field
-                # TODO bytes_per_sample should probably be in the configuration
-                bytes_per_sample = 3
+        :return dict data:
+        """
 
-                for i in range(self.config.mics_samples_per_packet // 2):
-                    for j in range(self.config.n_meas_qty["Mics"] // 2):
-                        data["Mics"][j][2 * i] = int.from_bytes(
-                            payload[(bytes_per_sample * (j + 20 * i)) : (bytes_per_sample * (j + 20 * i) + 3)],
-                            "big",  # Unlike the other sensors, the microphone data come in big-endian
-                            signed=True,
-                        )
-                        data["Mics"][j][2 * i + 1] = int.from_bytes(
-                            payload[(bytes_per_sample * (j + 20 * i + 5)) : (bytes_per_sample * (j + 20 * i + 5) + 3)],
-                            "big",  # Unlike the other sensors, the microphone data come in big-endian
-                            signed=True,
-                        )
-                        data["Mics"][j + 5][2 * i] = int.from_bytes(
-                            payload[
-                                (bytes_per_sample * (j + 20 * i + 10)) : (bytes_per_sample * (j + 20 * i + 10) + 3)
-                            ],
-                            "big",  # Unlike the other sensors, the microphone data come in big-endian
-                            signed=True,
-                        )
-                        data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
-                            payload[
-                                (bytes_per_sample * (j + 20 * i + 15)) : (bytes_per_sample * (j + 20 * i + 15) + 3)
-                            ],
-                            "big",  # Unlike the other sensors, the microphone data come in big-endian
-                            signed=True,
-                        )
-
-                self._check_and_write_packet("Mics", timestamp, data, previous_timestamp)
-
-            elif self.handles[sensor_type].startswith("IMU Accel"):
-                # Write the received payload to the data field
-                for i in range(self.config.imu_samples_per_packet):
-                    data["Acc"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
-                    data["Acc"][1][i] = int.from_bytes(
-                        payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
-                    )
-                    data["Acc"][2][i] = int.from_bytes(
-                        payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
-                    )
-
-                self._check_and_write_packet("Acc", timestamp, data, previous_timestamp)
-
-            elif self.handles[sensor_type] == "IMU Gyro":
-                # Write the received payload to the data field
-                for i in range(self.config.imu_samples_per_packet):
-                    data["Gyro"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
-                    data["Gyro"][1][i] = int.from_bytes(
-                        payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
-                    )
-                    data["Gyro"][2][i] = int.from_bytes(
-                        payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
-                    )
-
-                self._check_and_write_packet("Gyro", timestamp, data, previous_timestamp)
-
-            elif self.handles[sensor_type] == "IMU Magnetometer":
-                # Write the received payload to the data field
-                for i in range(self.config.imu_samples_per_packet):
-                    data["Mag"][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
-                    data["Mag"][1][i] = int.from_bytes(
-                        payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
-                    )
-                    data["Mag"][2][i] = int.from_bytes(
-                        payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
-                    )
-
-                self._check_and_write_packet("Mag", timestamp, data, previous_timestamp)
-
-            # TODO Analog sensor definitions
-            elif self.handles[sensor_type] in {"Analog Kinetron", "Analog1", "Analog2"}:
-                logger.error("Received Analog packet. Not supported atm")
-
-            elif self.handles[sensor_type] == "Analog Vbat":
-
-                def val_to_v(val):
-                    return val / 1e6
-
-                for i in range(self.config.analog_samples_per_packet):
-                    data["Analog Vbat"][0][i] = val_to_v(
-                        int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
-                    )
-
-                self._check_and_write_packet("Analog Vbat", timestamp, data, previous_timestamp)
-
-            elif self.handles[sensor_type] == "Constat":
-                logger.debug("Constat packet: %d" % timestamp)
-
-                bytes_per_sample = 10
-                for i in range(self.config.constat_samples_per_packet):
-                    data["Constat"][0][i] = struct.unpack(
-                        "<f" if self.config.endian == "little" else ">f",
-                        payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
-                    )[0]
-                    data["Constat"][1][i] = int.from_bytes(
-                        payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)],
-                        self.config.endian,
-                        signed=True,
-                    )
-                    data["Constat"][2][i] = int.from_bytes(
-                        payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)],
-                        self.config.endian,
-                        signed=True,
-                    )
-                    data["Constat"][3][i] = int.from_bytes(
-                        payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)],
+        if sensor_type == "Abs. baros":
+            # Write the received payload to the data field
+            # TODO bytes_per_sample should probably be in the configuration
+            bytes_per_sample = 6
+            for i in range(self.config.baros_samples_per_packet):
+                for j in range(self.config.n_meas_qty["Baros_P"]):
+                    data["Baros_P"][j][i] = int.from_bytes(
+                        payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.endian,
                         signed=False,
                     )
 
-                self._check_and_write_packet("Constat", timestamp, data, previous_timestamp)
-
-            else:  # if sensor_type not in self.handles
-                logger.error(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
-                raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
-
-        elif len(payload) >= 1:
-            if self.handles[sensor_type] == "Mic 1":
-                if payload[0] == 1:
-                    logger.info("Microphone data reading done")
-                elif payload[0] == 2:
-                    logger.info("Microphone data erasing done")
-                elif payload[0] == 3:
-                    logger.info("Microphones started ")
-
-            elif self.handles[sensor_type] == "Cmd Decline":
-                reason_index = int.from_bytes(payload, self.config.endian, signed=False)
-                logger.info("Command declined, " + self.config.decline_reason[reason_index])
-
-            elif self.handles[sensor_type] == "Sleep State":
-                state_index = int.from_bytes(payload, self.config.endian, signed=False)
-                logger.info("\n" + self.config.sleep_state[state_index] + "\n")
-                self.sleep = bool(state_index)
-
-            elif self.handles[sensor_type] == "Info Message":
-                info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
-                logger.info(info_index)
-
-                if self.config.info_type[info_index] == "Battery info":
-                    voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
-                    cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
-                    state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
-
-                    logger.info(
-                        "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
-                        voltage / 1000000,
-                        cycle / 100,
-                        state_of_charge / 256,
+                    data["Baros_T"][j][i] = int.from_bytes(
+                        payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
+                        self.config.endian,
+                        signed=True,
                     )
+            sensor_names = ["Baros_P", "Baros_T"]
 
-    def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
+        elif sensor_type == "Diff. baros":
+            bytes_per_sample = 2
+            for i in range(self.config.diff_baros_samples_per_packet):
+                for j in range(self.config.n_meas_qty["Diff_Baros"]):
+                    data["Diff_Baros"][j][i] = int.from_bytes(
+                        payload[
+                            (bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j)) : (
+                                bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j + 1)
+                            )
+                        ],
+                        self.config.endian,
+                        signed=False,
+                    )
+            sensor_names = ["Diff_Baros"]
+
+        elif sensor_type == "Mic 0":
+            # Write the received payload to the data field
+            bytes_per_sample = 3
+
+            for i in range(self.config.mics_samples_per_packet // 2):
+                for j in range(self.config.n_meas_qty["Mics"] // 2):
+                    data["Mics"][j][2 * i] = int.from_bytes(
+                        payload[(bytes_per_sample * (j + 20 * i)) : (bytes_per_sample * (j + 20 * i) + 3)],
+                        "big",  # Unlike the other sensors, the microphone data come in big-endian
+                        signed=True,
+                    )
+                    data["Mics"][j][2 * i + 1] = int.from_bytes(
+                        payload[(bytes_per_sample * (j + 20 * i + 5)) : (bytes_per_sample * (j + 20 * i + 5) + 3)],
+                        "big",  # Unlike the other sensors, the microphone data come in big-endian
+                        signed=True,
+                    )
+                    data["Mics"][j + 5][2 * i] = int.from_bytes(
+                        payload[(bytes_per_sample * (j + 20 * i + 10)) : (bytes_per_sample * (j + 20 * i + 10) + 3)],
+                        "big",  # Unlike the other sensors, the microphone data come in big-endian
+                        signed=True,
+                    )
+                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                        payload[(bytes_per_sample * (j + 20 * i + 15)) : (bytes_per_sample * (j + 20 * i + 15) + 3)],
+                        "big",  # Unlike the other sensors, the microphone data come in big-endian
+                        signed=True,
+                    )
+            sensor_names = ["Mics"]
+
+        elif sensor_type.startswith("IMU"):
+            # Write the received payload to the data field
+            if sensor_type == "IMU Accel":
+                imu_sensor = "Acc"
+            elif sensor_type == "IMU Gyro":
+                imu_sensor = "Gyro"
+            elif sensor_type == "IMU Magnetometer":
+                imu_sensor = "Mag"
+            else:
+                logger.error(f"There is no IMU sensor {sensor_type}")
+                raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+
+            for i in range(self.config.imu_samples_per_packet):
+                data[imu_sensor][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
+                data[imu_sensor][1][i] = int.from_bytes(
+                    payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
+                )
+                data[imu_sensor][2][i] = int.from_bytes(
+                    payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
+                )
+            sensor_names = [imu_sensor]
+
+        # TODO Analog sensor definitions
+        elif sensor_type in {"Analog Kinetron", "Analog1", "Analog2"}:
+            logger.error("Received Analog packet. Not supported atm")
+            raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+
+        elif sensor_type == "Analog Vbat":
+
+            def val_to_v(val):
+                return val / 1e6
+
+            for i in range(self.config.analog_samples_per_packet):
+                data["Analog Vbat"][0][i] = val_to_v(
+                    int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
+                )
+            sensor_names = ["Analog Vbat"]
+
+        elif sensor_type == "Constat":
+            bytes_per_sample = 10
+            for i in range(self.config.constat_samples_per_packet):
+                data["Constat"][0][i] = struct.unpack(
+                    "<f" if self.config.endian == "little" else ">f",
+                    payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
+                )[0]
+                data["Constat"][1][i] = int.from_bytes(
+                    payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)],
+                    self.config.endian,
+                    signed=True,
+                )
+                data["Constat"][2][i] = int.from_bytes(
+                    payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)],
+                    self.config.endian,
+                    signed=True,
+                )
+                data["Constat"][3][i] = int.from_bytes(
+                    payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)],
+                    self.config.endian,
+                    signed=False,
+                )
+            sensor_names = ["Constat"]
+
+        else:  # if sensor_type not in self.handles
+            logger.error(f"Sensor of type {sensor_type!r} is unknown.")
+            raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+
+        return data, sensor_names
+
+    def _parse_info_packet(self, information_type, payload):
+        if information_type == "Mic 1":
+            if payload[0] == 1:
+                logger.info("Microphone data reading done")
+            elif payload[0] == 2:
+                logger.info("Microphone data erasing done")
+            elif payload[0] == 3:
+                logger.info("Microphones started ")
+
+        elif information_type == "Cmd Decline":
+            reason_index = int.from_bytes(payload, self.config.endian, signed=False)
+            logger.info("Command declined, " + self.config.decline_reason[reason_index])
+
+        elif information_type == "Sleep State":
+            state_index = int.from_bytes(payload, self.config.endian, signed=False)
+            logger.info("\n" + self.config.sleep_state[state_index] + "\n")
+            self.sleep = bool(state_index)
+
+        elif information_type == "Info Message":
+            info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
+            logger.info(info_index)
+
+            if self.config.info_type[info_index] == "Battery info":
+                voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
+                cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
+                state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
+
+                logger.info(
+                    "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
+                    voltage / 1000000,
+                    cycle / 100,
+                    state_of_charge / 256,
+                )
+
+    def _check_for_packet_loss(self, sensor_type, timestamp, previous_timestamp):
         """
         The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
         packet contains 40 samples from 4 barometers each.
-        For each sensor type (e.g. baro), this function checks if the packets from all sensors have arrived.
+        For each sensor type (e.g. baro), this function checks if there is
 
         :param str sensor_type:
         :param timestamp: Unit: s
-        :param dict data:
         :param dict previous_timestamp: Must be initialized with -1. Unit: s
         :return None:
         """
@@ -411,10 +402,6 @@ class PacketReader:
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
                 logger.warning("Lost %s packet(s): %s ms gap", sensor_type, timestamp_deviation * 1000)
-
-        # print("timestamp = %f, previous_timestamp = %f, period = %f, n=%d" % (timestamp, previous_timestamp[sensor_type], self.config.period[sensor_type], self.config.samples_per_packet[sensor_type]))
-
-        self._timestamp_and_persist_data(data, sensor_type, timestamp, self.config.period[sensor_type])
 
         previous_timestamp[sensor_type] = timestamp
 
