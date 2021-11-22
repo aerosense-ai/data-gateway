@@ -378,11 +378,13 @@ class PacketReader:
         """
         The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
         packet contains 40 samples from 4 barometers each.
-        For each sensor type (e.g. baro), this function checks if there is
+        Timestamp arrive once per packet. The difference between timestamps in two consecutive packets
+        is expected to be approximately equal to the number of samples in the packet times sampling period.
+
 
         :param str sensor_type:
-        :param timestamp: Unit: s
-        :param dict previous_timestamp: Must be initialized with -1. Unit: s
+        :param timestamp: Current timestamp for the first sample in the packet Unit: s
+        :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
 
@@ -391,11 +393,11 @@ class PacketReader:
         elif self.sleep:
             pass
         else:
-            interpolated_current_timestamp = (
+            expected_current_timestamp = (
                 previous_timestamp[sensor_type]
                 + self.config.samples_per_packet[sensor_type] * self.config.period[sensor_type]
             )
-            timestamp_deviation = interpolated_current_timestamp - timestamp
+            timestamp_deviation = expected_current_timestamp - timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
                 logger.warning("Lost %s packet(s): %s ms gap", sensor_type, timestamp_deviation * 1000)
