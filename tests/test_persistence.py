@@ -92,7 +92,7 @@ class TestBatchingWriter(BaseTestCase):
             )
 
     def test_that_csv_files_are_written(self):
-        """Test that data is written to disk as csv-files."""
+        """Test that data is written to disk as CSV-files if the `save_csv_files` option is `True`."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["sensor1", "sensor2"],

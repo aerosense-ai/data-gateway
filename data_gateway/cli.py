@@ -118,7 +118,7 @@ def gateway_cli(logger_uri, log_level):
     "--save-csv-files",
     is_flag=True,
     default=False,
-    help="In interactive mode, save sensor data also as csv files. Used for debugging",
+    help="In interactive mode, also save sensor data as CSV files. This is useful for debugging.",
 )
 @click.option(
     "--use-dummy-serial-port",
