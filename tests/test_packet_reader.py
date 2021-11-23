@@ -15,6 +15,10 @@ from tests.base import BaseTestCase
 
 
 class TestPacketReader(BaseTestCase):
+    """Test packet reader with different sensors. NOTE: The payloads are generated randomly. Consequently,
+    two consecutive packets are extremely unlikely to have consecutive timestamps. This will trigger lost packet
+    warning during tests."""
+
     @classmethod
     def setUpClass(cls):
         cls.WINDOW_SIZE = 10
@@ -349,8 +353,9 @@ class TestPacketReader(BaseTestCase):
         self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Constat"], number_of_windows_to_check=1)
 
     def test_packet_reader_with_connections_statistics_in_sleep_mode(self):
-        """Test that the packet reader works with the connection statistics "sensor" in sleep state. Check that
-        packet loss is not checked in sleep mode"""
+        """Test that the packet reader works with the connection statistics "sensor" in sleep state. Normally,
+        randomly generated payloads would trigger packet loss warning in logger. Check that this warning is suppressed
+        in sleep mode."""
         serial_port = DummySerial(port="test")
         # Enter sleep state
         serial_port.write(data=b"".join((PACKET_KEY, bytes([56]), bytes([1]), bytes([1]))))
@@ -408,6 +413,7 @@ class TestPacketReader(BaseTestCase):
         serial_port = DummySerial(port="test")
 
         packet_types = [bytes([40]), bytes([54]), bytes([56]), bytes([58])]
+
         payloads = [
             [bytes([1]), bytes([2]), bytes([3])],
             [bytes([0]), bytes([1]), bytes([2]), bytes([3])],
