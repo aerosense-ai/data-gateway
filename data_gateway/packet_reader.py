@@ -24,6 +24,7 @@ class PacketReader:
     :param str|None project_name: name of Google Cloud project to upload to
     :param str|None bucket_name: name of Google Cloud project to upload to
     :param data_gateway.configuration.Configuration|None configuration:
+    :param bool save_csv_files: save sensor data to .csv when in interactive mode
     :return None:
     """
 
@@ -36,6 +37,7 @@ class PacketReader:
         project_name=None,
         bucket_name=None,
         configuration=None,
+        save_csv_files=False,
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
@@ -78,6 +80,7 @@ class PacketReader:
                 window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
+                save_csv_files=save_csv_files,
             )
         else:
             self.writer = NoOperationContextManager()
@@ -450,7 +453,7 @@ class PacketReader:
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
         # UTC time now. Store it as the `start_timestamp` metadata in the windows.
-        if sensor_type == "Baros_P" and self.sensor_time_offset is None:
+        if sensor_type == "Constat" and self.sensor_time_offset is None:
             if time:
                 self._calculate_and_store_sensor_timestamp_offset(time)
 

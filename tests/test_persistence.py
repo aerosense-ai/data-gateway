@@ -1,3 +1,4 @@
+import csv
 import datetime
 import json
 import os
@@ -89,6 +90,31 @@ class TestBatchingWriter(BaseTestCase):
             self.assertTrue(
                 os.path.exists(os.path.join(temporary_directory, writer._session_subdirectory, "window-1.json"))
             )
+
+    def test_that_csv_files_are_written(self):
+        """Test that data is written to disk as CSV-files if the `save_csv_files` option is `True`."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            writer = BatchingFileWriter(
+                sensor_names=["sensor1", "sensor2"],
+                session_subdirectory="this-session",
+                output_directory=temporary_directory,
+                save_csv_files=True,
+                window_size=0.01,
+            )
+
+            with writer:
+                writer.add_to_current_window(sensor_name="sensor1", data=[1, 2, 3])
+                writer.add_to_current_window(sensor_name="sensor2", data=[1, 2, 3])
+                writer.add_to_current_window(sensor_name="sensor1", data=[4, 5, 6])
+                writer.add_to_current_window(sensor_name="sensor2", data=[4, 5, 6])
+
+            with open(os.path.join(temporary_directory, writer._session_subdirectory, "sensor1.csv")) as f:
+                reader = csv.reader(f)
+                self.assertEqual([row for row in reader], [["1", "2", "3"], ["4", "5", "6"]])
+
+            with open(os.path.join(temporary_directory, writer._session_subdirectory, "sensor2.csv")) as f:
+                reader = csv.reader(f)
+                self.assertEqual([row for row in reader], [["1", "2", "3"], ["4", "5", "6"]])
 
 
 class TestBatchingUploader(BaseTestCase):

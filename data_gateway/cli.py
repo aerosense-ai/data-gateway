@@ -115,6 +115,12 @@ def gateway_cli(logger_uri, log_level):
     help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
 )
 @click.option(
+    "--save-csv-files",
+    is_flag=True,
+    default=False,
+    help="In interactive mode, also save sensor data as CSV files. This is useful for debugging.",
+)
+@click.option(
     "--use-dummy-serial-port",
     is_flag=True,
     default=False,
@@ -131,6 +137,7 @@ def start(
     gcp_project_name,
     gcp_bucket_name,
     label,
+    save_csv_files,
     stop_when_no_more_data,
     use_dummy_serial_port,
 ):
@@ -204,6 +211,7 @@ def start(
         output_directory=output_dir,
         window_size=window_size,
         configuration=config,
+        save_csv_files=save_csv_files,
     )
 
     thread = threading.Thread(
