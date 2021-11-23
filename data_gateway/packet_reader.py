@@ -402,11 +402,11 @@ class PacketReader:
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
+        if self.sleep:
+            return
 
         if previous_timestamp[sensor_type] == -1:
             logger.info("Received first %s packet" % sensor_type)
-        elif self.sleep:
-            pass
         else:
             expected_current_timestamp = (
                 previous_timestamp[sensor_type]
