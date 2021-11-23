@@ -91,7 +91,8 @@ class FileHandler:
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
-        user_data = window_metadata.pop("user_data")
+        installation_data = window_metadata.pop("installation_data")
+        session_data = window_metadata.pop("session_data")
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)
@@ -105,8 +106,8 @@ class FileHandler:
         self.dataset.add_sensor_data(
             data=window,
             configuration_id=configuration_id,
-            installation_reference=user_data["installation_reference"],
-            label=user_data["label"],
+            installation_reference=installation_data["installation_reference"],
+            label=session_data["label"],
         )
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)

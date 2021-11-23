@@ -72,6 +72,7 @@ class Configuration:
         number_of_sensors=None,
         period=None,
         installation_data=None,
+        session_data=None,
     ):
         self.mics_freq = mics_freq
         self.mics_bm = mics_bm
@@ -175,12 +176,17 @@ class Configuration:
         }
 
         self.installation_data = installation_data or {
+            "installation_reference": None,
             "turbine_id": None,
             "blade_id": None,
             "sensor_coordinates": {
                 sensor_name: [(0, 0, 0)] * number_of_sensors
                 for sensor_name, number_of_sensors in self.number_of_sensors.items()
             },
+        }
+
+        self.session_data = session_data or {
+            "label": None,
         }
 
     @classmethod
