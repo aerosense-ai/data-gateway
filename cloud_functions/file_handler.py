@@ -100,8 +100,12 @@ class FileHandler:
             configuration_id = e.args[1]
 
         if MICROPHONE_SENSOR_NAME in window:
-            microphone_data = window.pop(MICROPHONE_SENSOR_NAME)
-            self._store_microphone_data(microphone_data, metadata=window_metadata)
+            self._store_microphone_data(
+                data=window.pop(MICROPHONE_SENSOR_NAME),
+                configuration_id=configuration_id,
+                installation_reference=installation_data["installation_reference"],
+                label=session_data["label"],
+            )
 
         self.dataset.add_sensor_data(
             data=window,
@@ -112,12 +116,14 @@ class FileHandler:
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
-    def _store_microphone_data(self, data, metadata):
+    def _store_microphone_data(self, data, configuration_id, installation_reference, label):
         """Store microphone data in the destination cloud storage bucket and record its location and metadata in a
         BigQuery table.
 
         :param list(list) data:
-        :param dict metadata:
+        :param str configuration_id:
+        :param str installation_reference:
+        :param str label:
         :return None:
         """
         _, upload_path = storage.path.split_bucket_name_from_gs_path(self.window_cloud_path)
@@ -125,7 +131,8 @@ class FileHandler:
         datafile = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
             project_name=self.destination_project,
-            tags=metadata,
+            tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
+            labels=[label],
         )
 
         with datafile.open("w") as f:
@@ -134,5 +141,7 @@ class FileHandler:
         self.dataset.record_microphone_data_location_and_metadata(
             path=datafile.cloud_path,
             project_name=self.destination_project,
-            metadata=metadata,
+            configuration_id=configuration_id,
+            installation_reference=installation_reference,
+            label=label,
         )

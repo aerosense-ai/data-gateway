@@ -72,12 +72,21 @@ class BigQueryDataset:
 
         logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
 
-    def record_microphone_data_location_and_metadata(self, path, project_name, metadata):
+    def record_microphone_data_location_and_metadata(
+        self,
+        path,
+        project_name,
+        configuration_id,
+        installation_reference,
+        label,
+    ):
         """Record the file location and metadata for a window of microphone data.
 
         :param str path:
         :param str project_name:
-        :param dict metadata:
+        :param str configuration_id:
+        :param str installation_reference:
+        :param str label:
         :raise ValueError: if the addition fails
         :return None:
         """
@@ -87,6 +96,9 @@ class BigQueryDataset:
                 {
                     "path": path,
                     "project_name": project_name,
+                    "configuration_id": configuration_id,
+                    "installation_reference": installation_reference,
+                    "label": label,
                 }
             ],
         )
