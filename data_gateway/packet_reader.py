@@ -173,7 +173,8 @@ class PacketReader:
             )
 
     def _parse_payload(self, packet_type, payload, data, previous_timestamp):
-        """Check and eventually parse a payload from a serial port.
+        """Check if a full payload has been received (correct length) with correct packet type handle, then parse the
+        payload from a serial port.
 
         :param int packet_type:
         :param iter payload:
@@ -182,7 +183,7 @@ class PacketReader:
         """
 
         if packet_type not in self.handles:
-            logger.error("Received packet with unknown type: {}".format(packet_type))
+            logger.error("Received packet with unknown type: %d", packet_type)
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(packet_type))
 
         if len(payload) == 244:  # If the full data payload is received, proceed parsing it
@@ -198,12 +199,11 @@ class PacketReader:
             self._parse_info_packet(self.handles[packet_type], payload)
 
     def _parse_sensor_packet_data(self, sensor_type, payload, data):
-        """Parses sensor data type payloads.
+        """Parse sensor data type payloads.
 
         :param str sensor_type: Type of the sensor
         :param iter payload: Raw payload to be parsed
         :param dict data: Initialised data dict to be completed with parsed data
-
         :return dict data:
         """
 
@@ -339,6 +339,13 @@ class PacketReader:
         return data, sensor_names
 
     def _parse_info_packet(self, information_type, payload):
+        """Parse information type packet and send the information to logger.
+
+        :param str information_type: From packet handles, defines what information is stored in payload.
+        :param iter payload:
+        :return None:
+        """
+
         if information_type == "Mic 1":
             if payload[0] == 1:
                 logger.info("Microphone data reading done")
@@ -373,15 +380,16 @@ class PacketReader:
                 )
 
     def _check_for_packet_loss(self, sensor_type, timestamp, previous_timestamp):
-        """
-        The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
-        packet contains 40 samples from 4 barometers each.
-        Timestamp arrive once per packet. The difference between timestamps in two consecutive packets
-        is expected to be approximately equal to the number of samples in the packet times sampling period.
+        """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for
+        the sensor_type.
 
+        The sensor data arrives in packets that contain n samples from some sensors of the same type, e.g. one barometer
+        packet contains 40 samples from 4 barometers each. Timestamp arrives once per packet. The difference between
+        timestamps in two consecutive packets is expected to be approximately equal to the number of samples in the
+        packet times sampling period.
 
         :param str sensor_type:
-        :param timestamp: Current timestamp for the first sample in the packet Unit: s
+        :param float timestamp: Current timestamp for the first sample in the packet Unit: s
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """

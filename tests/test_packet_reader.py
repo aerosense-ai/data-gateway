@@ -349,8 +349,8 @@ class TestPacketReader(BaseTestCase):
         self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Constat"], number_of_windows_to_check=1)
 
     def test_packet_reader_with_connections_statistics_in_sleep_mode(self):
-        """Test that the packet reader works with the connection statistics "sensor" in sleep state.
-        Check that packet loss is not checked in sleep mode"""
+        """Test that the packet reader works with the connection statistics "sensor" in sleep state. Check that
+        packet loss is not checked in sleep mode"""
         serial_port = DummySerial(port="test")
         # Enter sleep state
         serial_port.write(data=b"".join((PACKET_KEY, bytes([56]), bytes([1]), bytes([1]))))
@@ -369,6 +369,7 @@ class TestPacketReader(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
+
             with patch("data_gateway.packet_reader.logger") as mock_logger:
                 packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
 
@@ -413,6 +414,7 @@ class TestPacketReader(BaseTestCase):
             [bytes([0]), bytes([1])],
             [bytes([0])],
         ]
+
         for index, packet_type in enumerate(packet_types):
             for payload in payloads[index]:
                 serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([1]), payload)))
