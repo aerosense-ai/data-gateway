@@ -175,10 +175,12 @@ class Configuration:
         }
 
         self.installation_data = installation_data or {
+            "turbine_id": None,
+            "blade_id": None,
             "sensor_coordinates": {
                 sensor_name: [(0, 0, 0)] * number_of_sensors
                 for sensor_name, number_of_sensors in self.number_of_sensors.items()
-            }
+            },
         }
 
     @classmethod
