@@ -165,8 +165,8 @@ def start(
         config = Configuration()
         logger.info("Using default configuration.")
 
-    config.user_data["installation_reference"] = installation_reference
-    config.user_data["label"] = label
+    config.installation_data["installation_reference"] = installation_reference
+    config.installation_data["label"] = label
 
     if not use_dummy_serial_port:
         serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)

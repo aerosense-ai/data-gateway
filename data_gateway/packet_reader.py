@@ -105,7 +105,8 @@ class PacketReader:
             previous_ideal_timestamp[sensor_name] = 0
             previous_timestamp[sensor_name] = -1
             data[sensor_name] = [
-                ([0] * self.config.samples_per_packet[sensor_name]) for _ in range(self.config.n_meas_qty[sensor_name])
+                ([0] * self.config.samples_per_packet[sensor_name])
+                for _ in range(self.config.number_of_sensors[sensor_name])
             ]
 
         with self.uploader:
@@ -210,7 +211,7 @@ class PacketReader:
                 # TODO bytes_per_sample should probably be in the configuration
                 bytes_per_sample = 6
                 for i in range(self.config.baros_samples_per_packet):
-                    for j in range(self.config.n_meas_qty["Baros_P"]):
+                    for j in range(self.config.number_of_sensors["Baros_P"]):
 
                         data["Baros_P"][j][i] = int.from_bytes(
                             payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
@@ -231,11 +232,11 @@ class PacketReader:
                 # TODO bytes_per_sample should probably be in the configuration
                 bytes_per_sample = 2
                 for i in range(self.config.diff_baros_samples_per_packet):
-                    for j in range(self.config.n_meas_qty["Diff_Baros"]):
+                    for j in range(self.config.number_of_sensors["Diff_Baros"]):
                         data["Diff_Baros"][j][i] = int.from_bytes(
                             payload[
-                                (bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j)) : (
-                                    bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j + 1)
+                                (bytes_per_sample * (self.config.number_of_sensors["Diff_Baros"] * i + j)) : (
+                                    bytes_per_sample * (self.config.number_of_sensors["Diff_Baros"] * i + j + 1)
                                 )
                             ],
                             self.config.endian,
@@ -249,7 +250,7 @@ class PacketReader:
                 bytes_per_sample = 3
 
                 for i in range(self.config.mics_samples_per_packet // 2):
-                    for j in range(self.config.n_meas_qty[MICROPHONE_SENSOR_NAME] // 2):
+                    for j in range(self.config.number_of_sensors[MICROPHONE_SENSOR_NAME] // 2):
                         data[MICROPHONE_SENSOR_NAME][j][2 * i] = int.from_bytes(
                             payload[(bytes_per_sample * (j + 20 * i)) : (bytes_per_sample * (j + 20 * i) + 3)],
                             "big",  # Unlike the other sensors, the microphone data come in big-endian
