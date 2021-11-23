@@ -247,23 +247,26 @@ class PacketReader:
 
             for i in range(self.config.mics_samples_per_packet // 2):
                 for j in range(self.config.n_meas_qty["Mics"] // 2):
+
+                    index = j + 20 * i
+
                     data["Mics"][j][2 * i] = int.from_bytes(
-                        payload[(bytes_per_sample * (j + 20 * i)) : (bytes_per_sample * (j + 20 * i) + 3)],
+                        payload[(bytes_per_sample * index) : (bytes_per_sample * index + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
                     data["Mics"][j][2 * i + 1] = int.from_bytes(
-                        payload[(bytes_per_sample * (j + 20 * i + 5)) : (bytes_per_sample * (j + 20 * i + 5) + 3)],
+                        payload[(bytes_per_sample * (index + 5)) : (bytes_per_sample * (index + 5) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
                     data["Mics"][j + 5][2 * i] = int.from_bytes(
-                        payload[(bytes_per_sample * (j + 20 * i + 10)) : (bytes_per_sample * (j + 20 * i + 10) + 3)],
+                        payload[(bytes_per_sample * (index + 10)) : (bytes_per_sample * (index + 10) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
                     data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
-                        payload[(bytes_per_sample * (j + 20 * i + 15)) : (bytes_per_sample * (j + 20 * i + 15) + 3)],
+                        payload[(bytes_per_sample * (index + 15)) : (bytes_per_sample * (index + 15) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
@@ -284,12 +287,14 @@ class PacketReader:
 
             # Write the received payload to the data field
             for i in range(self.config.imu_samples_per_packet):
-                data[imu_sensor][0][i] = int.from_bytes(payload[(6 * i) : (6 * i + 2)], self.config.endian, signed=True)
+                index = 6 * i
+
+                data[imu_sensor][0][i] = int.from_bytes(payload[index : (index + 2)], self.config.endian, signed=True)
                 data[imu_sensor][1][i] = int.from_bytes(
-                    payload[(6 * i + 2) : (6 * i + 4)], self.config.endian, signed=True
+                    payload[(index + 2) : (index + 4)], self.config.endian, signed=True
                 )
                 data[imu_sensor][2][i] = int.from_bytes(
-                    payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
+                    payload[(index + 4) : (index + 6)], self.config.endian, signed=True
                 )
 
             return data, [imu_sensor]
@@ -305,8 +310,10 @@ class PacketReader:
                 return val / 1e6
 
             for i in range(self.config.analog_samples_per_packet):
+                index = 4 * i
+
                 data["Analog Vbat"][0][i] = val_to_v(
-                    int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
+                    int.from_bytes(payload[index : (index + 4)], self.config.endian, signed=False)
                 )
 
             return data, ["Analog Vbat"]
