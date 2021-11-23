@@ -191,8 +191,6 @@ class PacketReader:
             data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
 
             for sensor_name in sensor_names:
-                if sensor_name == "Constat":
-                    logger.debug("Constat packet: %d" % timestamp)
                 self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
                 self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
 
@@ -430,8 +428,9 @@ class PacketReader:
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
         # UTC time now. Store it as the `start_timestamp` metadata in the windows.
-        if sensor_type == "Baros_P" and self.sensor_time_offset is None:
-            if time:
+        if sensor_type == "Constat":
+            logger.debug("Constat packet: %d" % timestamp)
+            if time and self.sensor_time_offset is None:
                 self._calculate_and_store_sensor_timestamp_offset(time)
 
     def _calculate_and_store_sensor_timestamp_offset(self, timestamp):
