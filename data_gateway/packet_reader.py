@@ -275,15 +275,9 @@ class PacketReader:
 
         if sensor_type.startswith("IMU"):
 
-            if sensor_type == "IMU Accel":
-                imu_sensor = "Acc"
-            elif sensor_type == "IMU Gyro":
-                imu_sensor = "Gyro"
-            elif sensor_type == "IMU Magnetometer":
-                imu_sensor = "Mag"
-            else:
-                logger.error("There is no IMU sensor %s", sensor_type)
-                raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+            imu_sensor_names = {"IMU Accel": "Acc", "IMU Gyro": "Gyro", "IMU Magnetometer": "Mag"}
+
+            imu_sensor = imu_sensor_names[sensor_type]
 
             # Write the received payload to the data field
             for i in range(self.config.imu_samples_per_packet):
