@@ -1,5 +1,6 @@
 import abc
 import copy
+import csv
 import json
 import logging
 import os
@@ -40,7 +41,13 @@ class TimeBatcher:
     :return None:
     """
 
-    def __init__(self, sensor_names, window_size, session_subdirectory, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+    def __init__(
+        self,
+        sensor_names,
+        window_size,
+        session_subdirectory,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
+    ):
         self.current_window = {"sensor_time_offset": None, "sensor_data": {name: [] for name in sensor_names}}
         self.window_size = window_size
         self.output_directory = output_directory
@@ -135,9 +142,11 @@ class BatchingFileWriter(TimeBatcher):
         sensor_names,
         window_size,
         session_subdirectory,
+        save_csv_files=False,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         storage_limit=1024 ** 3,
     ):
+        self._save_csv_files = save_csv_files
         self.storage_limit = storage_limit
         super().__init__(sensor_names, window_size, session_subdirectory, output_directory)
         os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
@@ -150,12 +159,23 @@ class BatchingFileWriter(TimeBatcher):
         :return None:
         """
         self._manage_storage()
+        window = window or self.ready_window
         window_path = os.path.abspath(os.path.join(".", self._generate_window_path()))
 
         with open(window_path, "w") as f:
-            json.dump(window or self.ready_window, f)
+            json.dump(window, f)
 
         logger.info(f"{self._file_prefix.capitalize()} {self._window_number} written to disk.")
+
+        if self._save_csv_files:
+            for sensor in window["sensor_data"]:
+                csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
+                logger.info(f"Saving {sensor} data to csv file.")
+
+                with open(csv_path, "w", newline="") as f:
+                    writer = csv.writer(f, delimiter=",")
+                    for row in self.ready_window["sensor_data"][sensor]:
+                        writer.writerow(row)
 
     def _manage_storage(self):
         """Check if the output directory has reached its storage limit and, if it has, delete the oldest window.

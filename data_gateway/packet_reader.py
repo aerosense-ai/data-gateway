@@ -24,6 +24,7 @@ class PacketReader:
     :param str|None project_name: name of Google Cloud project to upload to
     :param str|None bucket_name: name of Google Cloud project to upload to
     :param data_gateway.configuration.Configuration|None configuration:
+    :param bool save_csv_files: save sensor data to .csv when in interactive mode
     :return None:
     """
 
@@ -36,6 +37,7 @@ class PacketReader:
         project_name=None,
         bucket_name=None,
         configuration=None,
+        save_csv_files=False,
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
@@ -69,6 +71,7 @@ class PacketReader:
                 window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
+                save_csv_files=save_csv_files,
             )
         else:
             self.writer = NoOperationContextManager()
