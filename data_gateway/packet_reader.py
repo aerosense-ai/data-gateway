@@ -205,7 +205,6 @@ class PacketReader:
         :param dict data: Initialised data dict to be completed with parsed data
         :return dict data:
         """
-
         if sensor_type == "Abs. baros":
             # Write the received payload to the data field
             # TODO bytes_per_sample should probably be in the configuration
@@ -223,9 +222,10 @@ class PacketReader:
                         self.config.endian,
                         signed=True,
                     )
-            sensor_names = ["Baros_P", "Baros_T"]
 
-        elif sensor_type == "Diff. baros":
+            return data, ["Baros_P", "Baros_T"]
+
+        if sensor_type == "Diff. baros":
             bytes_per_sample = 2
             for i in range(self.config.diff_baros_samples_per_packet):
                 for j in range(self.config.n_meas_qty["Diff_Baros"]):
@@ -238,9 +238,10 @@ class PacketReader:
                         self.config.endian,
                         signed=False,
                     )
-            sensor_names = ["Diff_Baros"]
 
-        elif sensor_type == "Mic 0":
+            return data, ["Diff_Baros"]
+
+        if sensor_type == "Mic 0":
             # Write the received payload to the data field
             bytes_per_sample = 3
 
@@ -266,9 +267,10 @@ class PacketReader:
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-            sensor_names = ["Mics"]
 
-        elif sensor_type.startswith("IMU"):
+            return data, ["Mics"]
+
+        if sensor_type.startswith("IMU"):
 
             if sensor_type == "IMU Accel":
                 imu_sensor = "Acc"
@@ -289,14 +291,15 @@ class PacketReader:
                 data[imu_sensor][2][i] = int.from_bytes(
                     payload[(6 * i + 4) : (6 * i + 6)], self.config.endian, signed=True
                 )
-            sensor_names = [imu_sensor]
+
+            return data, [imu_sensor]
 
         # TODO Analog sensor definitions
-        elif sensor_type in {"Analog Kinetron", "Analog1", "Analog2"}:
+        if sensor_type in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Analog packet. Not supported atm")
             raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
 
-        elif sensor_type == "Analog Vbat":
+        if sensor_type == "Analog Vbat":
 
             def val_to_v(val):
                 return val / 1e6
@@ -305,9 +308,10 @@ class PacketReader:
                 data["Analog Vbat"][0][i] = val_to_v(
                     int.from_bytes(payload[(4 * i) : (4 * i + 4)], self.config.endian, signed=False)
                 )
-            sensor_names = ["Analog Vbat"]
 
-        elif sensor_type == "Constat":
+            return data, ["Analog Vbat"]
+
+        if sensor_type == "Constat":
             bytes_per_sample = 10
             for i in range(self.config.constat_samples_per_packet):
                 data["Constat"][0][i] = struct.unpack(
@@ -329,13 +333,12 @@ class PacketReader:
                     self.config.endian,
                     signed=False,
                 )
-            sensor_names = ["Constat"]
+
+            return data, ["Constat"]
 
         else:  # if sensor_type not in self.handles
             logger.error("Sensor of type %r is unknown.", sensor_type)
             raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
-
-        return data, sensor_names
 
     def _parse_info_packet(self, information_type, payload):
         """Parse information type packet and send the information to logger.
