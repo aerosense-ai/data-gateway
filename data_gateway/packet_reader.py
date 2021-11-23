@@ -181,7 +181,6 @@ class PacketReader:
         :param dict data:
         :param dict previous_timestamp:
         """
-
         if packet_type not in self.handles:
             logger.error("Received packet with unknown type: %d", packet_type)
             raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(packet_type))
@@ -278,7 +277,7 @@ class PacketReader:
             elif sensor_type == "IMU Magnetometer":
                 imu_sensor = "Mag"
             else:
-                logger.error(f"There is no IMU sensor {sensor_type}")
+                logger.error("There is no IMU sensor %s", sensor_type)
                 raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
 
             # Write the received payload to the data field
@@ -333,7 +332,7 @@ class PacketReader:
             sensor_names = ["Constat"]
 
         else:  # if sensor_type not in self.handles
-            logger.error(f"Sensor of type {sensor_type!r} is unknown.")
+            logger.error("Sensor of type %r is unknown.", sensor_type)
             raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
 
         return data, sensor_names
@@ -356,11 +355,11 @@ class PacketReader:
 
         elif information_type == "Cmd Decline":
             reason_index = int.from_bytes(payload, self.config.endian, signed=False)
-            logger.info("Command declined, " + self.config.decline_reason[reason_index])
+            logger.info("Command declined, %s", self.config.decline_reason[reason_index])
 
         elif information_type == "Sleep State":
             state_index = int.from_bytes(payload, self.config.endian, signed=False)
-            logger.info("\n" + self.config.sleep_state[state_index] + "\n")
+            logger.info("\n%s\n", self.config.sleep_state[state_index])
             self.sleep = bool(state_index)
 
         elif information_type == "Info Message":
