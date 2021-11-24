@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -46,7 +47,6 @@ def gateway_cli(logger_uri, log_level):
 
 
 @gateway_cli.command()
-@click.argument("installation_reference", type=str)
 @click.option(
     "--serial-port",
     type=str,
@@ -128,7 +128,6 @@ def gateway_cli(logger_uri, log_level):
     "with no serial port).",
 )
 def start(
-    installation_reference,
     serial_port,
     config_file,
     interactive,
@@ -141,12 +140,10 @@ def start(
     stop_when_no_more_data,
     use_dummy_serial_port,
 ):
-    """Begin reading and persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for
-    a deployment. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing them
-    into stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop]
-
-    INSTALLATION_REFERENCE is the name associated with the geographical installation of sensors e.g. on a specific wind
-    turbine or wind tunnel.
+    """Begin reading and persisting data from the serial port for the sensors at the installation defined in
+    `configuration.json`. Daemonise this for a deployment. In interactive mode, commands can be sent to the
+    nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
+    [startBaros, startMics, startIMU, getBattery, stop].
     """
     import json
     import sys
@@ -165,7 +162,6 @@ def start(
         config = Configuration()
         logger.info("Using default configuration.")
 
-    config.installation_data["installation_reference"] = installation_reference
     config.session_data["label"] = label
 
     if not use_dummy_serial_port:
@@ -255,35 +251,28 @@ def start(
 
 
 @gateway_cli.command()
-@click.argument("reference", type=str)
-@click.argument("hardware_version", type=str)
-@click.option(
-    "--longitude",
-    type=str,
-    default=None,
-    help="The longitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
-)
-@click.option(
-    "--latitude",
-    type=str,
-    default=None,
-    help="The latitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
-)
-def create_installation(reference, hardware_version, longitude, latitude):
-    """Create an installation representing a collection of sensors that data can be collected from.
-
-    REFERENCE is the name associated with the collection of sensors e.g. a collection on a specific wind turbine or
-    wind tunnel. It is slugified on input.
-
-    HARDWARE_VERSION is the hardware version of the collection of sensors.
+def create_installation():
+    """Create an installation representing a collection of sensors that data can be collected from. The installation
+    information is read from the "installation_data" field of `configuration.json`.
     """
-    parameters = {"reference": slugify(reference), "hardware_version": hardware_version}
+    with open("configuration.json") as f:
+        installation_data = json.load(f)
 
-    if longitude:
-        parameters["longitude"] = longitude
+    # Required parameters:
+    parameters = {
+        "reference": slugify(installation_data["installation_reference"]),
+        "turbine_id": installation_data["turbine_id"],
+        "blade_id": installation_data["blade_id"],
+        "hardware_version": installation_data["hardware_version"],
+        "sensor_coordinates": json.dumps(installation_data["sensor_coordinates"]),
+    }
 
-    if latitude:
-        parameters["latitude"] = latitude
+    # Optional parameters:
+    if installation_data["longitude"]:
+        parameters["longitude"] = installation_data["longitude"]
+
+    if installation_data["latitude"]:
+        parameters["latitude"] = installation_data["latitude"]
 
     response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
 

@@ -139,11 +139,14 @@ class BigQueryDataset:
 
         logger.info("Added new sensor %r to BigQuery dataset %r.", reference, self.dataset_id)
 
-    def add_installation(self, reference, hardware_version, location=None):
+    def add_installation(self, reference, turbine_id, blade_id, hardware_version, sensor_coordinates, location=None):
         """Add a new installation to the BigQuery dataset.
 
         :param str reference: the name to give to the installation
+        :param str turbine_id:
+        :param str blade_id:
         :param str hardware_version: the version of the sensor hardware at this installation
+        :param str sensor_coordinates:
         :param str|None location: the geographical location of the installation in WKT format if relevant (it may not be if it's a wind tunnel which could be set up anywhere)
         :raise cloud_functions.exceptions.InstallationWithSameNameAlreadyExists: if an installation with the given name already exists
         :raise ValueError: if the addition fails
@@ -167,7 +170,16 @@ class BigQueryDataset:
 
         errors = self.client.insert_rows(
             table=self.client.get_table(table_name),
-            rows=[{"reference": reference, "hardware_version": hardware_version, "location": location}],
+            rows=[
+                {
+                    "reference": reference,
+                    "turbine_id": turbine_id,
+                    "blade_id": blade_id,
+                    "hardware_version": hardware_version,
+                    "sensor_coordinates": sensor_coordinates,
+                    "location": location,
+                }
+            ],
         )
 
         if errors:
