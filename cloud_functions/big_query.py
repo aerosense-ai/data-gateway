@@ -197,6 +197,9 @@ class BigQueryDataset:
         """
         table_name = f"{self.dataset_id}.configuration"
 
+        # Installation data is stored in a separate column, so pop it before the next step.
+        installation_data = configuration.pop("installation_data")
+
         configuration_json = json.dumps(configuration)
         configuration_hash = blake3(configuration_json.encode()).hexdigest()
 
@@ -211,10 +214,20 @@ class BigQueryDataset:
             )
 
         configuration_id = str(uuid.uuid4())
+        installation_data_json = json.dumps(installation_data)
+        installation_data_hash = blake3(installation_data_json.encode()).hexdigest()
 
         errors = self.client.insert_rows(
             table=self.client.get_table(table_name),
-            rows=[{"id": configuration_id, "configuration": configuration_json, "hash": configuration_hash}],
+            rows=[
+                {
+                    "id": configuration_id,
+                    "software_configuration": configuration_json,
+                    "software_configuration_hash": configuration_hash,
+                    "installation_data": installation_data_json,
+                    "installation_data_hash": installation_data_hash,
+                }
+            ],
         )
 
         if errors:

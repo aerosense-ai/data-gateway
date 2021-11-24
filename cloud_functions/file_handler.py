@@ -91,7 +91,6 @@ class FileHandler:
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
-        installation_data = window_metadata.pop("installation_data")
         session_data = window_metadata.pop("session_data")
 
         try:
@@ -103,14 +102,14 @@ class FileHandler:
             self._store_microphone_data(
                 data=window.pop(MICROPHONE_SENSOR_NAME),
                 configuration_id=configuration_id,
-                installation_reference=installation_data["installation_reference"],
+                installation_reference=window_metadata["installation_data"]["installation_reference"],
                 label=session_data["label"],
             )
 
         self.dataset.add_sensor_data(
             data=window,
             configuration_id=configuration_id,
-            installation_reference=installation_data["installation_reference"],
+            installation_reference=window_metadata["installation_data"]["installation_reference"],
             label=session_data["label"],
         )
 
