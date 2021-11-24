@@ -251,16 +251,37 @@ def start(
 
 
 @gateway_cli.command()
-def create_installation():
+@click.option(
+    "--configuration-file",
+    type=click.Path(),
+    default="configuration.json",
+    help="A path to a JSON configuration file.",
+)
+def create_installation(configuration_file):
     """Create an installation representing a collection of sensors that data can be collected from. The installation
     information is read from the "installation_data" field of `configuration.json`.
     """
-    with open("configuration.json") as f:
-        installation_data = json.load(f)
+    with open(configuration_file or "configuration.json") as f:
+        installation_data = json.load(f)["installation_data"]
+
+    slugified_reference = slugify(installation_data["installation_reference"])
+
+    user_confirmation = None
+
+    while user_confirmation is None:
+        user_confirmation = input(f"Create installation with reference {slugified_reference!r}? [Y/n]\n")
+
+        if user_confirmation.upper() == "N":
+            return
+
+        if user_confirmation.upper() not in {"Y", ""}:
+            user_confirmation = None
+
+    print("Creating...")
 
     # Required parameters:
     parameters = {
-        "reference": slugify(installation_data["installation_reference"]),
+        "reference": slugified_reference,
         "turbine_id": installation_data["turbine_id"],
         "blade_id": installation_data["blade_id"],
         "hardware_version": installation_data["hardware_version"],
@@ -268,10 +289,10 @@ def create_installation():
     }
 
     # Optional parameters:
-    if installation_data["longitude"]:
+    if installation_data.get("longitude"):
         parameters["longitude"] = installation_data["longitude"]
 
-    if installation_data["latitude"]:
+    if installation_data.get("latitude"):
         parameters["latitude"] = installation_data["latitude"]
 
     response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
