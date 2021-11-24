@@ -9,6 +9,8 @@ import requests
 from requests import HTTPError
 from slugify import slugify
 
+from data_gateway.exceptions import WrongNumberOfSensorCoordinates
+
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
 CREATE_INSTALLATION_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
@@ -262,22 +264,29 @@ def create_installation(configuration_file):
     information is read from the "installation_data" field of `configuration.json`.
     """
     with open(configuration_file or "configuration.json") as f:
-        installation_data = json.load(f)["installation_data"]
+        configuration = json.load(f)
 
+    installation_data = configuration["installation_data"]
     slugified_reference = slugify(installation_data["installation_reference"])
 
-    user_confirmation = None
-
-    while user_confirmation is None:
+    while True:
         user_confirmation = input(f"Create installation with reference {slugified_reference!r}? [Y/n]\n")
 
         if user_confirmation.upper() == "N":
             return
 
-        if user_confirmation.upper() not in {"Y", ""}:
-            user_confirmation = None
+        if user_confirmation.upper() in {"Y", ""}:
+            break
 
-    print("Creating...")
+    for sensor, coordinates in installation_data["sensor_coordinates"].items():
+        number_of_sensors = configuration["number_of_sensors"][sensor]
+
+        if len(coordinates) != number_of_sensors:
+            raise WrongNumberOfSensorCoordinates(
+                f"In the configuration file, the number of sensors for the {sensor!r} sensor type is "
+                f"{number_of_sensors} but coordinates were given for {len(coordinates)} sensors - these numbers must "
+                f"match."
+            )
 
     # Required parameters:
     parameters = {
@@ -294,6 +303,8 @@ def create_installation(configuration_file):
 
     if installation_data.get("latitude"):
         parameters["latitude"] = installation_data["latitude"]
+
+    print("Creating...")
 
     response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
 
