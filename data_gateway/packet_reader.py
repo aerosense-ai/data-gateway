@@ -385,7 +385,7 @@ class PacketReader:
                     state_of_charge / 256,
                 )
 
-    def _check_for_packet_loss(self, sensor_type, timestamp, previous_timestamp):
+    def _check_for_packet_loss(self, sensor_name, timestamp, previous_timestamp):
         """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for
         the sensor_type.
 
@@ -394,7 +394,7 @@ class PacketReader:
         timestamps in two consecutive packets is expected to be approximately equal to the number of samples in the
         packet times sampling period.
 
-        :param str sensor_type:
+        :param str sensor_name:
         :param float timestamp: Current timestamp for the first sample in the packet Unit: s
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
@@ -402,19 +402,26 @@ class PacketReader:
         if self.sleep:
             return
 
-        if previous_timestamp[sensor_type] == -1:
-            logger.info("Received first %s packet" % sensor_type)
+        if previous_timestamp[sensor_name] == -1:
+            logger.info("Received first %s packet" % sensor_name)
         else:
             expected_current_timestamp = (
-                previous_timestamp[sensor_type]
-                + self.config.samples_per_packet[sensor_type] * self.config.period[sensor_type]
+                previous_timestamp[sensor_name]
+                + self.config.samples_per_packet[sensor_name] * self.config.period[sensor_name]
             )
             timestamp_deviation = expected_current_timestamp - timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
-                logger.warning("Lost %s packet(s): %s ms gap", sensor_type, timestamp_deviation * 1000)
+                logger.warning("Lost %s packet(s): %s ms gap", sensor_name, timestamp_deviation * 1000)
 
-        previous_timestamp[sensor_type] = timestamp
+                if sensor_name in ["Acc", "Gyro", "Mag"]:
+                    # IMU sensors are not synchronised to CPU, so their actual periods might differ
+                    self.config.period[sensor_name] = (
+                        timestamp - previous_timestamp[sensor_name]
+                    ) / self.config.samples_per_packet[sensor_name]
+                    logger.warning("Updated %s period to %f ms.", sensor_name, self.config.period[sensor_name] * 1000)
+
+        previous_timestamp[sensor_name] = timestamp
 
     def _timestamp_and_persist_data(self, data, sensor_type, timestamp, period):
         """Persist data to the required storage media.

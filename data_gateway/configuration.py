@@ -45,6 +45,7 @@ class Configuration:
         acc_range=16,
         gyro_freq=100,
         gyro_range=2000,
+        mag_freq=12.5,
         analog_freq=16384,
         constat_period=45,  # period in ms
         serial_buffer_rx_size=100000,
@@ -78,6 +79,7 @@ class Configuration:
         self.acc_freq = acc_freq
         self.acc_range = acc_range
         self.gyro_freq = gyro_freq
+        self.mag_freq = mag_freq
         self.gyro_range = gyro_range
         self.analog_freq = analog_freq
         self.constat_period = constat_period
@@ -154,7 +156,7 @@ class Configuration:
             "Diff_Baros": 1 / self.diff_baros_freq,
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
-            "Mag": 1 / 12.5,
+            "Mag": 1 / self.mag_freq,
             "Analog Vbat": 1 / self.analog_freq,
             "Constat": self.constat_period / 1000,
         }
