@@ -122,7 +122,8 @@ class PacketReader:
                     )
 
     def update_handles(self, payload):
-        """Update the Bluetooth handles object.
+        """Update the Bluetooth handles object. Handle are updated every time a new Bluetooth connections is
+        established.
 
         :param iter payload:
         :return None:
