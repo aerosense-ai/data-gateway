@@ -400,6 +400,8 @@ class PacketReader:
         :return None:
         """
         if self.sleep:
+            for sensor_name in self.sensor_names:
+                previous_timestamp[sensor_name] = -1
             return
 
         if previous_timestamp[sensor_name] == -1:
