@@ -79,8 +79,8 @@ class Configuration:
         self.acc_freq = acc_freq
         self.acc_range = acc_range
         self.gyro_freq = gyro_freq
-        self.mag_freq = mag_freq
         self.gyro_range = gyro_range
+        self.mag_freq = mag_freq
         self.analog_freq = analog_freq
         self.constat_period = constat_period
         self.serial_buffer_rx_size = serial_buffer_rx_size

@@ -8,6 +8,7 @@
   "acc_range": 16,
   "gyro_freq": 100,
   "gyro_range": 2000,
+  "mag_freq": 12.5,
   "analog_freq": 16384,
   "constat_period": 45,
   "serial_buffer_rx_size": 100000,
