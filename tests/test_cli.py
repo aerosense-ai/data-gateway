@@ -12,6 +12,9 @@ from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJE
 from tests.base import BaseTestCase
 
 
+CONFIGURATION_PATH = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
+
+
 class EnvironmentVariableRemover:
     """Remove the given environment variables in the context, restoring them once outside it.
 
@@ -57,7 +60,6 @@ class TestStart(BaseTestCase):
                     gateway_cli,
                     [
                         "start",
-                        "my-installation",
                         f"--gcp-project-name={TEST_PROJECT_NAME}",
                         f"--gcp-bucket-name={TEST_BUCKET_NAME}",
                         f"--output-dir={temporary_directory}",
@@ -82,7 +84,6 @@ class TestStart(BaseTestCase):
                     gateway_cli,
                     [
                         "start",
-                        "my-installation",
                         f"--gcp-project-name={TEST_PROJECT_NAME}",
                         f"--gcp-bucket-name={TEST_BUCKET_NAME}",
                         "--stop-when-no-more-data",
@@ -104,7 +105,7 @@ class TestStart(BaseTestCase):
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "my-installation", "--interactive", f"--output-dir={temporary_directory}"],
+                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
                         input=commands,
                     )
 
@@ -124,7 +125,6 @@ class TestStart(BaseTestCase):
                         [
                             "--log-level=debug",
                             "start",
-                            "my-installation",
                             "--interactive",
                             f"--output-dir={temporary_directory}",
                         ],
@@ -153,7 +153,7 @@ class TestStart(BaseTestCase):
                     with mock.patch("serial.Serial", new=DummySerial):
                         result = CliRunner().invoke(
                             gateway_cli,
-                            ["start", "my-installation", "--interactive", f"--output-dir={temporary_directory}"],
+                            ["start", "--interactive", f"--output-dir={temporary_directory}"],
                             input="stop\n",
                         )
 
@@ -178,7 +178,7 @@ class TestStart(BaseTestCase):
                 with mock.patch("serial.Serial", return_value=serial_port):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "my-installation", "--interactive", f"--output-dir={temporary_directory}"],
+                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
                         input="sleep 2\nstop\n",
                     )
 
@@ -199,8 +199,6 @@ class TestStart(BaseTestCase):
         GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            config_path = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
-
             with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
                 with tempfile.TemporaryDirectory() as temporary_directory:
                     with mock.patch("serial.Serial", new=DummySerial):
@@ -208,9 +206,8 @@ class TestStart(BaseTestCase):
                             gateway_cli,
                             [
                                 "start",
-                                "my-installation",
                                 "--interactive",
-                                f"--config-file={config_path}",
+                                f"--config-file={CONFIGURATION_PATH}",
                                 f"--output-dir={temporary_directory}",
                             ],
                             input="stop\n",
@@ -225,24 +222,65 @@ class TestCreateInstallation(BaseTestCase):
     def test_create_installation_slugifies_and_lowercases_names(self):
         """Test that names given to the create-installation command are lower-cased and slugified."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
-                result = CliRunner().invoke(gateway_cli, ["create-installation", "My Installation_1", "1.7.19"])
+            with tempfile.NamedTemporaryFile(delete=False) as temporary_file:
+                with open(temporary_file.name, "w") as f:
+                    json.dump(
+                        {
+                            "installation_data": {
+                                "installation_reference": "My Installation_1",
+                                "turbine_id": 0,
+                                "blade_id": 0,
+                                "hardware_version": "1.7.19",
+                                "sensor_coordinates": {},
+                            }
+                        },
+                        f,
+                    )
+
+                with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
+                    result = CliRunner().invoke(
+                        gateway_cli,
+                        ["create-installation", f"--config-file={temporary_file.name}"],
+                        input="Y",
+                    )
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
 
         mock_post.assert_called_with(
             url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
-            json={"reference": "my-installation-1", "hardware_version": "1.7.19"},
+            json={
+                "reference": "my-installation-1",
+                "turbine_id": 0,
+                "blade_id": 0,
+                "hardware_version": "1.7.19",
+                "sensor_coordinates": "{}",
+            },
         )
 
-    def test_create_installation_with_coordinates(self):
-        """Test creating an installation with coordinates works."""
+    def test_create_installation_with_longitude_and_latitude(self):
+        """Test creating an installation with longitude and latitude works."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with tempfile.NamedTemporaryFile(delete=False) as temporary_file:
+                with open(temporary_file.name, "w") as f:
+                    json.dump(
+                        {
+                            "installation_data": {
+                                "installation_reference": "My Installation_1",
+                                "turbine_id": 0,
+                                "blade_id": 0,
+                                "hardware_version": "1.7.19",
+                                "sensor_coordinates": {},
+                                "longitude": 3.25604,
+                                "latitude": 178.24833,
+                            }
+                        },
+                        f,
+                    )
+
             with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
                 result = CliRunner().invoke(
-                    gateway_cli,
-                    ["create-installation", "my-installation", "1.7.19", "--longitude=3.25604", "--latitude=178.24833"],
+                    gateway_cli, ["create-installation", f"--config-file={temporary_file.name}"], input="Y"
                 )
 
         self.assertIsNone(result.exception)
@@ -251,25 +289,14 @@ class TestCreateInstallation(BaseTestCase):
         mock_post.assert_called_with(
             url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
             json={
-                "reference": "my-installation",
+                "reference": "my-installation-1",
+                "turbine_id": 0,
+                "blade_id": 0,
                 "hardware_version": "1.7.19",
-                "longitude": "3.25604",
-                "latitude": "178.24833",
+                "sensor_coordinates": "{}",
+                "longitude": 3.25604,
+                "latitude": 178.24833,
             },
-        )
-
-    def test_create_installation_with_no_coordinates(self):
-        """Test creating an installation without coordinates works."""
-        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
-                result = CliRunner().invoke(gateway_cli, ["create-installation", "my-installation", "1.7.19"])
-
-        self.assertIsNone(result.exception)
-        self.assertEqual(result.exit_code, 0)
-
-        mock_post.assert_called_with(
-            url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL,
-            json={"reference": "my-installation", "hardware_version": "1.7.19"},
         )
 
     def test_create_installation_raises_error_if_status_code_is_not_200(self):
@@ -277,8 +304,25 @@ class TestCreateInstallation(BaseTestCase):
         command is not 200.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with tempfile.NamedTemporaryFile(delete=False) as temporary_file:
+                with open(temporary_file.name, "w") as f:
+                    json.dump(
+                        {
+                            "installation_data": {
+                                "installation_reference": "My Installation_1",
+                                "turbine_id": 0,
+                                "blade_id": 0,
+                                "hardware_version": "1.7.19",
+                                "sensor_coordinates": {},
+                            }
+                        },
+                        f,
+                    )
+
             with mock.patch("requests.post", return_value=mock.Mock(status_code=403)):
-                result = CliRunner().invoke(gateway_cli, ["create-installation", "my-installation", "1.7.19"])
+                result = CliRunner().invoke(
+                    gateway_cli, ["create-installation", f"--config-file={temporary_file.name}"], input="Y"
+                )
 
         self.assertEqual(result.exit_code, 1)
         self.assertIsInstance(result.exception, requests.HTTPError)
