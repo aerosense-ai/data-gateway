@@ -42,7 +42,7 @@ class DummySerial(object):
         self.baudrate = kwargs.get("baudrate", constants.DEFAULT_BAUDRATE)
 
     def __repr__(self):
-        """String representation of the DummySerial instance"""
+        """Represent the DummySerial instance as a string."""
         return "{0}.{1}<id=0x{2:x}, open={3}>(port={4!r}, timeout={5!r}, " "waiting_data={6!r})".format(
             self.__module__,
             self.__class__.__name__,
@@ -54,6 +54,12 @@ class DummySerial(object):
         )
 
     def set_buffer_size(self, rx_size=4096, tx_size=None):
+        """Do nothing.
+
+        :param int rx_size:
+        :param int tx_size:
+        :return None:
+        """
         pass
 
     def open(self):
@@ -67,7 +73,7 @@ class DummySerial(object):
         self.port = self.initial_port_name
 
     def close(self):
-        """Close the dummy serial port"""
+        """Close the dummy serial port."""
         logger.debug("Closing port")
         if self._isOpen:
             self._isOpen = False
@@ -81,7 +87,6 @@ class DummySerial(object):
         :param data: data to write to the port
         :type data: Union[bytes, bytearray]
         """
-
         if not self._isOpen:
             raise PortNotOpenError
 

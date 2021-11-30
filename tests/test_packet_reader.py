@@ -17,6 +17,10 @@ from tests.base import BaseTestCase
 class TestPacketReader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
+        """Set up the class with a window size and a Google Cloud Storage client.
+
+        :return None:
+        """
         cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 

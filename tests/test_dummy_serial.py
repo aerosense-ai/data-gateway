@@ -9,11 +9,9 @@ from tests.base import BaseTestCase
 
 class DummySerialTest(BaseTestCase):
     def setUp(self):
-        """
-        Sets up test environment:
-
-        1) Creates a random serial port name.
-        2) Creates a random baud rate.
+        """Set up  the test environment:
+        1. Create a random serial port name.
+        2. Create a random baud rate.
         """
         self.random_serial_port = random_string()
         self.random_baudrate = random_string(5, constants.NUMBERS)

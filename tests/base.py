@@ -17,8 +17,8 @@ class DatasetMixin:
         VALID_CONFIGURATION = json.load(f)
 
     def random_sensor_data(self, rows, cols, first_sample_time, last_sample_time):
-        """Generates a numpy array with time column from first_sample_time to last_sample_time
-        and rows x cols random data
+        """Generate a numpy array with time column from first_sample_time to last_sample_time and rows x cols random
+        data.
 
         :param int rows: Number of sensor samples
         :param int cols: Number of sensors of the type
@@ -32,7 +32,7 @@ class DatasetMixin:
         return random_data
 
     def random_window(self, sensors=None, window_duration=None):
-        """Generates a window dict. with random data for given sensors and duration of window_duration [sec.]
+        """Generate a window dict. with random data for given sensors and duration of window_duration [sec.]
 
         :param list sensors: List with sensor names
         :param float window_duration: Unit: s
@@ -59,4 +59,9 @@ class BaseTestCase(unittest.TestCase, DatasetMixin):
     setattr(unittest.TestResult, "stopTestRun", test_result_modifier.stopTestRun)
 
     def setUp(self):
+        """Set up the test case to ignore extraneous `ResourceWarning`s from the Google Cloud Storage client to clean
+        up logs generated during tests.
+
+        :return None:
+        """
         warnings.simplefilter("ignore", category=ResourceWarning)

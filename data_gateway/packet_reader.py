@@ -398,10 +398,9 @@ class PacketReader:
                     )
 
     def _check_and_write_packet(self, sensor_type, timestamp, data, previous_timestamp):
-        """
-        The sensor data arrive packets that contain n samples from some sensors of the same type, e.g. one barometer
-        packet contains 40 samples from 4 barometers each.
-        For each sensor type (e.g. baro), this function checks if the packets from all sensors have arrived.
+        """Check the arriving sensor data packets that contain n samples from some sensors of the same type, e.g.
+        one barometer packet contains 40 samples from 4 barometers each. For each sensor type (e.g. baro), this
+        function checks if the packets from all sensors have arrived.
 
         :param str sensor_type:
         :param timestamp: Unit: s
@@ -409,7 +408,6 @@ class PacketReader:
         :param dict previous_timestamp: Must be initialized with -1. Unit: s
         :return None:
         """
-
         if previous_timestamp[sensor_type] == -1:
             logger.info("Received first %s packet" % sensor_type)
         else:
