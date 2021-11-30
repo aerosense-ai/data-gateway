@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 MICROPHONE_SENSOR_NAME = "Mics"
 
 
-class FileHandler:
+class WindowHandler:
     """A handler for data windows that gets them from a source bucket, cleans them, sends any microphone data to a
     cloud storage bucket, and sends all other data into a Google BigQuery dataset. Metadata about the microphone data,
     including its location in cloud storage, is also added to the BigQuery dataset.

@@ -17,8 +17,8 @@ from tests.test_cloud_functions import REPOSITORY_ROOT
 sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_functions")))
 
 from cloud_functions import main  # noqa
-from cloud_functions.file_handler import ConfigurationAlreadyExists  # noqa
 from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_installation  # noqa
+from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
 class TestCleanAndUploadWindow(BaseTestCase):
@@ -54,7 +54,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
                 "BIG_QUERY_DATASET_NAME": "blah",
             },
         ):
-            with patch("file_handler.BigQueryDataset") as mock_dataset:
+            with patch("window_handler.BigQueryDataset") as mock_dataset:
                 main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
@@ -88,10 +88,10 @@ class TestCleanAndUploadWindow(BaseTestCase):
             },
         ):
             with patch(
-                "file_handler.BigQueryDataset.add_configuration",
+                "window_handler.BigQueryDataset.add_configuration",
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
-                with patch("file_handler.BigQueryDataset.add_sensor_data", return_value=None):
+                with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
                     main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod

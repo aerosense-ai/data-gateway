@@ -8,8 +8,8 @@ from octue.log_handlers import apply_log_handler
 
 from big_query import BigQueryDataset
 from exceptions import InstallationWithSameNameAlreadyExists
-from file_handler import FileHandler
 from forms import CreateInstallationForm
+from window_handler import WindowHandler
 
 
 apply_log_handler()
@@ -26,7 +26,7 @@ def clean_and_upload_window(event, context):
     :param google.cloud.functions.Context context: metadata for the event
     :return None:
     """
-    file_handler = FileHandler(
+    window_handler = WindowHandler(
         window_cloud_path=event["name"],
         source_project=os.environ["SOURCE_PROJECT_NAME"],
         source_bucket=event["bucket"],
@@ -35,9 +35,9 @@ def clean_and_upload_window(event, context):
         destination_biq_query_dataset=os.environ["BIG_QUERY_DATASET_NAME"],
     )
 
-    window, window_metadata = file_handler.get_window()
-    cleaned_window = file_handler.clean_window(window, window_metadata)
-    file_handler.persist_window(cleaned_window, window_metadata)
+    window, window_metadata = window_handler.get_window()
+    cleaned_window = window_handler.clean_window(window, window_metadata)
+    window_handler.persist_window(cleaned_window, window_metadata)
 
 
 def create_installation(request):
