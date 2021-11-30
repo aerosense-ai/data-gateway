@@ -9,7 +9,7 @@ import requests
 from requests import HTTPError
 from slugify import slugify
 
-from data_gateway.exceptions import WrongNumberOfSensorCoordinates
+from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -282,7 +282,7 @@ def create_installation(config_file):
         number_of_sensors = configuration["number_of_sensors"][sensor]
 
         if len(coordinates) != number_of_sensors:
-            raise WrongNumberOfSensorCoordinates(
+            raise WrongNumberOfSensorCoordinatesError(
                 f"In the configuration file, the number of sensors for the {sensor!r} sensor type is "
                 f"{number_of_sensors} but coordinates were given for {len(coordinates)} sensors - these numbers must "
                 f"match."

@@ -72,7 +72,7 @@ class TestPacketReader(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            with self.assertRaises(exceptions.UnknownPacketTypeException):
+            with self.assertRaises(exceptions.UnknownPacketTypeError):
                 packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
 
     def test_configuration_file_is_persisted(self):

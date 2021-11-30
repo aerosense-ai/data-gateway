@@ -201,7 +201,7 @@ class PacketReader:
         """
         if sensor_type not in self.handles:
             logger.error("Received packet with unknown type: {}".format(sensor_type))
-            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(sensor_type))
+            raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(sensor_type))
 
         if len(payload) == 244:
             timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
@@ -362,7 +362,7 @@ class PacketReader:
 
             else:  # if sensor_type not in self.handles
                 logger.error(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
-                raise exceptions.UnknownSensorTypeException(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
+                raise exceptions.UnknownSensorTypeError(f"Sensor of type {self.handles[sensor_type]!r} is unknown.")
 
         elif len(payload) >= 1:
             if self.handles[sensor_type] == "Mic 1":
