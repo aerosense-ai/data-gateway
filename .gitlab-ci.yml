@@ -7,14 +7,6 @@ linux_build_and_test:
   tags:
     - docker
 
-tag:
-  only:
-    - main
-  script:
-    - git tag -a $(python setup.py --version)
-    - git push origin --tags
-  image: python:3.8.8
-
 pages:
   script:
     - pip install -r docs/requirements.txt
