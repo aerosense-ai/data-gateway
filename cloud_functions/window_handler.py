@@ -105,21 +105,21 @@ class WindowHandler:
                 data=window.pop(MICROPHONE_SENSOR_NAME),
                 configuration_id=configuration_id,
                 installation_reference=window_metadata["installation_data"]["installation_reference"],
-                label=session_data["label"],
+                label=session_data.get("label"),
             )
 
         self.dataset.add_sensor_data(
             data=window,
             configuration_id=configuration_id,
             installation_reference=window_metadata["installation_data"]["installation_reference"],
-            label=session_data["label"],
+            label=session_data.get("label"),
         )
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
     def _store_microphone_data(self, data, configuration_id, installation_reference, label):
-        """Store microphone data in the destination cloud storage bucket and record its location and metadata in a
-        BigQuery table.
+        """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
+        metadata in a BigQuery table.
 
         :param list(list) data:
         :param str configuration_id:
@@ -130,11 +130,16 @@ class WindowHandler:
         _, upload_path = storage.path.split_bucket_name_from_gs_path(self.window_cloud_path)
         upload_path = os.path.splitext(upload_path)[0] + ".hdf5"
 
+        if label:
+            labels = [label]
+        else:
+            labels = None
+
         datafile = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
             project_name=self.destination_project,
             tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
-            labels=[label],
+            labels=labels,
         )
 
         with datafile.open("w") as f:
