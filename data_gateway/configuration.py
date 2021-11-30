@@ -70,6 +70,7 @@ class Configuration:
         info_type=None,
         samples_per_packet=None,
         number_of_sensors=None,
+        sensor_conversion_constants=None,
         period=None,
         installation_data=None,
         session_data=None,
@@ -151,7 +152,7 @@ class Configuration:
             "Constat": 4,
         }
 
-        self.sensor_conversion_constants = {
+        self.sensor_conversion_constants = sensor_conversion_constants or {
             MICROPHONE_SENSOR_NAME: [1] * self.number_of_sensors[MICROPHONE_SENSOR_NAME],
             "Diff_Baros": [1] * self.number_of_sensors["Diff_Baros"],
             "Baros_P": [40.96] * self.number_of_sensors["Baros_P"],
