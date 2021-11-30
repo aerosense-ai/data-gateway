@@ -254,16 +254,16 @@ def start(
 
 @gateway_cli.command()
 @click.option(
-    "--configuration-file",
+    "--config-file",
     type=click.Path(),
     default="configuration.json",
     help="A path to a JSON configuration file.",
 )
-def create_installation(configuration_file):
+def create_installation(config_file):
     """Create an installation representing a collection of sensors that data can be collected from. The installation
     information is read from the "installation_data" field of `configuration.json`.
     """
-    with open(configuration_file or "configuration.json") as f:
+    with open(config_file or "configuration.json") as f:
         configuration = json.load(f)
 
     installation_data = configuration["installation_data"]
