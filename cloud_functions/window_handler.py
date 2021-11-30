@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
@@ -127,6 +128,7 @@ class WindowHandler:
         :return None:
         """
         _, upload_path = storage.path.split_bucket_name_from_gs_path(self.window_cloud_path)
+        upload_path = os.path.splitext(upload_path)[0] + ".hdf5"
 
         datafile = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
