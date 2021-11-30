@@ -17,8 +17,9 @@ MICROPHONE_SENSOR_NAME = "Mics"
 
 
 class FileHandler:
-    """A handler for data windows that gets them from a source bucket, cleans them, and inserts them into a Google
-    BigQuery dataset.
+    """A handler for data windows that gets them from a source bucket, cleans them, sends any microphone data to a
+    cloud storage bucket, and sends all other data into a Google BigQuery dataset. Metadata about the microphone data,
+    including its location in cloud storage, is also added to the BigQuery dataset.
 
     :param str window_cloud_path: the Google Cloud Storage path to the window file
     :param str source_project: name of the project the source bucket belongs to
