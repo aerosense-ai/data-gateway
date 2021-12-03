@@ -78,15 +78,15 @@ class BigQueryDataset:
         project_name,
         configuration_id,
         installation_reference,
-        label,
+        label=None,
     ):
         """Record the file location and metadata for a window of microphone data.
 
-        :param str path:
-        :param str project_name:
-        :param str configuration_id:
-        :param str installation_reference:
-        :param str label:
+        :param str path: the Google Cloud Storage path to the microphone data
+        :param str project_name: the name of the project the storage bucket belongs to
+        :param str configuration_id: the UUID of the configuration used to produce the data
+        :param str installation_reference: the reference for the installation that produced the data
+        :param str|None label: the label applied to the gateway session that produced the data
         :raise ValueError: if the addition fails
         :return None:
         """
@@ -146,7 +146,7 @@ class BigQueryDataset:
         :param str turbine_id:
         :param str blade_id:
         :param str hardware_version: the version of the sensor hardware at this installation
-        :param str sensor_coordinates:
+        :param dict sensor_coordinates: sensor name mapped to an array of (x, y, r) coordinates for each individual sensor
         :param str|None location: the geographical location of the installation in WKT format if relevant (it may not be if it's a wind tunnel which could be set up anywhere)
         :raise cloud_functions.exceptions.InstallationWithSameNameAlreadyExists: if an installation with the given name already exists
         :raise ValueError: if the addition fails
@@ -176,7 +176,7 @@ class BigQueryDataset:
                     "turbine_id": turbine_id,
                     "blade_id": blade_id,
                     "hardware_version": hardware_version,
-                    "sensor_coordinates": sensor_coordinates,
+                    "sensor_coordinates": json.dumps(sensor_coordinates),
                     "location": location,
                 }
             ],
