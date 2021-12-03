@@ -63,7 +63,7 @@
     "Analog Vbat": 60,
     "Constat": 24
   },
-  "n_meas_qty": {
+  "number_of_sensors": {
     "Mics": 10,
     "Baros_P": 40,
     "Baros_T": 40,
@@ -73,6 +73,17 @@
     "Mag": 3,
     "Analog Vbat": 1,
     "Constat": 4
+  },
+  "sensor_conversion_constants":{
+    "Mics": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "Diff_Baros": [1, 1, 1, 1, 1],
+    "Baros_P": [40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96],
+    "Baros_T": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+    "Acc": [1, 1, 1],
+    "Gyro": [1, 1, 1],
+    "Mag": [1, 1, 1],
+    "Analog Vbat": [1],
+    "Constat": [1, 1, 1, 1]
   },
   "period": {
     "Mics": 6.4e-05,
@@ -85,8 +96,17 @@
     "Analog Vbat": 6.103515625e-05,
     "Constat": 0.045
   },
-  "user_data": {
-    "label": "my_test_1",
-    "installation_reference": "aventa_turbine"
+  "installation_data": {
+    "installation_reference": "aventa_turbine",
+    "turbine_id": "0",
+    "blade_id": "0",
+    "hardware_version": "1.2.3",
+    "sensor_coordinates": {
+      "Mics": [[0, 0, 0], [0, 0, 1]],
+      "Baros_p": [[1, 0, 0], [1, 0, 1], [1, 2, 0]]
+    }
+  },
+  "session_data": {
+    "label": "my_test_1"
   }
 }

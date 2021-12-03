@@ -17,10 +17,15 @@ from tests.base import BaseTestCase
 class TestPacketReader(BaseTestCase):
     """Test packet reader with different sensors. NOTE: The payloads are generated randomly. Consequently,
     two consecutive packets are extremely unlikely to have consecutive timestamps. This will trigger lost packet
-    warning during tests."""
+    warning during tests.
+    """
 
     @classmethod
     def setUpClass(cls):
+        """Set up the class with a window size and a Google Cloud Storage client.
+
+        :return None:
+        """
         cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
@@ -76,7 +81,7 @@ class TestPacketReader(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            with self.assertRaises(exceptions.UnknownPacketTypeException):
+            with self.assertRaises(exceptions.UnknownPacketTypeError):
                 packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
 
     def test_configuration_file_is_persisted(self):
@@ -355,7 +360,8 @@ class TestPacketReader(BaseTestCase):
     def test_packet_reader_with_connections_statistics_in_sleep_mode(self):
         """Test that the packet reader works with the connection statistics "sensor" in sleep state. Normally,
         randomly generated payloads would trigger packet loss warning in logger. Check that this warning is suppressed
-        in sleep mode."""
+        in sleep mode.
+        """
         serial_port = DummySerial(port="test")
         # Enter sleep state
         serial_port.write(data=b"".join((PACKET_KEY, bytes([56]), bytes([1]), bytes([1]))))

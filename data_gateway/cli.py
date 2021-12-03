@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -7,6 +8,8 @@ import pkg_resources
 import requests
 from requests import HTTPError
 from slugify import slugify
+
+from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -32,8 +35,8 @@ logger = logging.getLogger(__name__)
 )
 @click.version_option(version=pkg_resources.get_distribution("data_gateway").version)
 def gateway_cli(logger_uri, log_level):
-    """AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and send it
-    to AeroSense Cloud.
+    """Enter the AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and
+    send it to AeroSense Cloud.
     """
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
@@ -46,7 +49,6 @@ def gateway_cli(logger_uri, log_level):
 
 
 @gateway_cli.command()
-@click.argument("installation_reference", type=str)
 @click.option(
     "--serial-port",
     type=str,
@@ -128,7 +130,6 @@ def gateway_cli(logger_uri, log_level):
     "with no serial port).",
 )
 def start(
-    installation_reference,
     serial_port,
     config_file,
     interactive,
@@ -141,12 +142,10 @@ def start(
     stop_when_no_more_data,
     use_dummy_serial_port,
 ):
-    """Begin reading and persisting data from the serial port for sensors at INSTALLATION_REFERENCE. Daemonise this for
-    a deployment. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing them
-    into stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop]
-
-    INSTALLATION_REFERENCE is the name associated with the geographical installation of sensors e.g. on a specific wind
-    turbine or wind tunnel.
+    """Begin reading and persisting data from the serial port for the sensors at the installation defined in
+    `configuration.json`. Daemonise this for a deployment. In interactive mode, commands can be sent to the
+    nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
+    [startBaros, startMics, startIMU, getBattery, stop].
     """
     import json
     import sys
@@ -165,8 +164,7 @@ def start(
         config = Configuration()
         logger.info("Using default configuration.")
 
-    config.user_data["installation_reference"] = installation_reference
-    config.user_data["label"] = label
+    config.session_data["label"] = label
 
     if not use_dummy_serial_port:
         serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)
@@ -255,35 +253,58 @@ def start(
 
 
 @gateway_cli.command()
-@click.argument("reference", type=str)
-@click.argument("hardware_version", type=str)
 @click.option(
-    "--longitude",
-    type=str,
-    default=None,
-    help="The longitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
+    "--config-file",
+    type=click.Path(),
+    default="configuration.json",
+    help="A path to a JSON configuration file.",
 )
-@click.option(
-    "--latitude",
-    type=str,
-    default=None,
-    help="The latitude of the installation if it's relevant (it may not be if it's e.g. a wind tunnel).",
-)
-def create_installation(reference, hardware_version, longitude, latitude):
-    """Create an installation representing a collection of sensors that data can be collected from.
-
-    REFERENCE is the name associated with the collection of sensors e.g. a collection on a specific wind turbine or
-    wind tunnel. It is slugified on input.
-
-    HARDWARE_VERSION is the hardware version of the collection of sensors.
+def create_installation(config_file):
+    """Create an installation representing a collection of sensors that data can be collected from. The installation
+    information is read from the "installation_data" field of `configuration.json`.
     """
-    parameters = {"reference": slugify(reference), "hardware_version": hardware_version}
+    with open(config_file or "configuration.json") as f:
+        configuration = json.load(f)
 
-    if longitude:
-        parameters["longitude"] = longitude
+    installation_data = configuration["installation_data"]
+    slugified_reference = slugify(installation_data["installation_reference"])
 
-    if latitude:
-        parameters["latitude"] = latitude
+    while True:
+        user_confirmation = input(f"Create installation with reference {slugified_reference!r}? [Y/n]\n")
+
+        if user_confirmation.upper() == "N":
+            return
+
+        if user_confirmation.upper() in {"Y", ""}:
+            break
+
+    for sensor, coordinates in installation_data["sensor_coordinates"].items():
+        number_of_sensors = configuration["number_of_sensors"][sensor]
+
+        if len(coordinates) != number_of_sensors:
+            raise WrongNumberOfSensorCoordinatesError(
+                f"In the configuration file, the number of sensors for the {sensor!r} sensor type is "
+                f"{number_of_sensors} but coordinates were given for {len(coordinates)} sensors - these numbers must "
+                f"match."
+            )
+
+    # Required parameters:
+    parameters = {
+        "reference": slugified_reference,
+        "turbine_id": installation_data["turbine_id"],
+        "blade_id": installation_data["blade_id"],
+        "hardware_version": installation_data["hardware_version"],
+        "sensor_coordinates": json.dumps(installation_data["sensor_coordinates"]),
+    }
+
+    # Optional parameters:
+    if installation_data.get("longitude"):
+        parameters["longitude"] = installation_data["longitude"]
+
+    if installation_data.get("latitude"):
+        parameters["latitude"] = installation_data["latitude"]
+
+    print("Creating...")
 
     response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
 

@@ -4,9 +4,10 @@ import logging
 import uuid
 
 from blake3 import blake3
-from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 from google.cloud import bigquery
 from slugify import slugify
+
+from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class BigQueryDataset:
         self.client = bigquery.Client()
         self.dataset_id = f"{project_name}.{dataset_name}"
 
-    def insert_sensor_data(self, data, configuration_id, installation_reference, label=None):
+    def add_sensor_data(self, data, configuration_id, installation_reference, label=None):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data: data from the sensors - the keys are the sensor names and the values are samples in the form of lists of lists
@@ -71,7 +72,43 @@ class BigQueryDataset:
 
         logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
 
-    def add_new_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
+    def record_microphone_data_location_and_metadata(
+        self,
+        path,
+        project_name,
+        configuration_id,
+        installation_reference,
+        label,
+    ):
+        """Record the file location and metadata for a window of microphone data.
+
+        :param str path:
+        :param str project_name:
+        :param str configuration_id:
+        :param str installation_reference:
+        :param str label:
+        :raise ValueError: if the addition fails
+        :return None:
+        """
+        errors = self.client.insert_rows(
+            table=self.client.get_table(f"{self.dataset_id}.microphone_data"),
+            rows=[
+                {
+                    "path": path,
+                    "project_name": project_name,
+                    "configuration_id": configuration_id,
+                    "installation_reference": installation_reference,
+                    "label": label,
+                }
+            ],
+        )
+
+        if errors:
+            raise ValueError(errors)
+
+        logger.info("Added microphone data location and metadata to BigQuery dataset %r.", self.dataset_id)
+
+    def add_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset. The sensor name is slugified on receipt.
 
         :param str name: the name of the new sensor
@@ -102,11 +139,14 @@ class BigQueryDataset:
 
         logger.info("Added new sensor %r to BigQuery dataset %r.", reference, self.dataset_id)
 
-    def add_installation(self, reference, hardware_version, location=None):
+    def add_installation(self, reference, turbine_id, blade_id, hardware_version, sensor_coordinates, location=None):
         """Add a new installation to the BigQuery dataset.
 
         :param str reference: the name to give to the installation
+        :param str turbine_id:
+        :param str blade_id:
         :param str hardware_version: the version of the sensor hardware at this installation
+        :param str sensor_coordinates:
         :param str|None location: the geographical location of the installation in WKT format if relevant (it may not be if it's a wind tunnel which could be set up anywhere)
         :raise cloud_functions.exceptions.InstallationWithSameNameAlreadyExists: if an installation with the given name already exists
         :raise ValueError: if the addition fails
@@ -130,7 +170,16 @@ class BigQueryDataset:
 
         errors = self.client.insert_rows(
             table=self.client.get_table(table_name),
-            rows=[{"reference": reference, "hardware_version": hardware_version, "location": location}],
+            rows=[
+                {
+                    "reference": reference,
+                    "turbine_id": turbine_id,
+                    "blade_id": blade_id,
+                    "hardware_version": hardware_version,
+                    "sensor_coordinates": sensor_coordinates,
+                    "location": location,
+                }
+            ],
         )
 
         if errors:
@@ -148,6 +197,9 @@ class BigQueryDataset:
         """
         table_name = f"{self.dataset_id}.configuration"
 
+        # Installation data is stored in a separate column, so pop it before the next step.
+        installation_data = configuration.pop("installation_data")
+
         configuration_json = json.dumps(configuration)
         configuration_hash = blake3(configuration_json.encode()).hexdigest()
 
@@ -162,10 +214,20 @@ class BigQueryDataset:
             )
 
         configuration_id = str(uuid.uuid4())
+        installation_data_json = json.dumps(installation_data)
+        installation_data_hash = blake3(installation_data_json.encode()).hexdigest()
 
         errors = self.client.insert_rows(
             table=self.client.get_table(table_name),
-            rows=[{"id": configuration_id, "configuration": configuration_json, "hash": configuration_hash}],
+            rows=[
+                {
+                    "id": configuration_id,
+                    "software_configuration": configuration_json,
+                    "software_configuration_hash": configuration_hash,
+                    "installation_data": installation_data_json,
+                    "installation_data_hash": installation_data_hash,
+                }
+            ],
         )
 
         if errors:

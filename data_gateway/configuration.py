@@ -1,3 +1,6 @@
+from data_gateway import MICROPHONE_SENSOR_NAME
+
+
 class Configuration:
     """A data class containing the configuration values for the firmware and hardware used by the data gateway.
 
@@ -28,9 +31,9 @@ class Configuration:
     :param int constat_samples_per_packet: number of samples per packet from connection statistics
     :param dict|None default_handles: TODO
     :param dict|None samples_per_packet: TODO
-    :param dict|None n_meas_qty: TODO
+    :param dict|None number_of_sensors: TODO
     :param dict|None period: TODO
-    :param dict|None user_data: metadata about the current session of the gateway provided by the user
+    :param dict|None installation_data: metadata about the current session of the gateway provided by the user
     :return None:
     """
 
@@ -66,9 +69,11 @@ class Configuration:
         sleep_state=None,
         info_type=None,
         samples_per_packet=None,
-        n_meas_qty=None,
+        number_of_sensors=None,
+        sensor_conversion_constants=None,
         period=None,
-        user_data=None,
+        installation_data=None,
+        session_data=None,
     ):
         self.mics_freq = mics_freq
         self.mics_bm = mics_bm
@@ -124,7 +129,7 @@ class Configuration:
         self.info_type = info_type or {0: "Battery info"}
 
         self.samples_per_packet = samples_per_packet or {
-            "Mics": self.mics_samples_per_packet,
+            MICROPHONE_SENSOR_NAME: self.mics_samples_per_packet,
             "Diff_Baros": self.diff_baros_samples_per_packet,
             "Baros_P": self.baros_samples_per_packet,
             "Baros_T": self.baros_samples_per_packet,
@@ -135,8 +140,8 @@ class Configuration:
             "Constat": self.constat_samples_per_packet,
         }
 
-        self.n_meas_qty = n_meas_qty or {
-            "Mics": 10,
+        self.number_of_sensors = number_of_sensors or {
+            MICROPHONE_SENSOR_NAME: 10,
             "Baros_P": 40,
             "Baros_T": 40,
             "Diff_Baros": 5,
@@ -147,8 +152,20 @@ class Configuration:
             "Constat": 4,
         }
 
+        self.sensor_conversion_constants = sensor_conversion_constants or {
+            MICROPHONE_SENSOR_NAME: [1] * self.number_of_sensors[MICROPHONE_SENSOR_NAME],
+            "Diff_Baros": [1] * self.number_of_sensors["Diff_Baros"],
+            "Baros_P": [40.96] * self.number_of_sensors["Baros_P"],
+            "Baros_T": [100] * self.number_of_sensors["Baros_T"],
+            "Acc": [1] * self.number_of_sensors["Acc"],
+            "Gyro": [1] * self.number_of_sensors["Gyro"],
+            "Mag": [1] * self.number_of_sensors["Mag"],
+            "Analog Vbat": [1] * self.number_of_sensors["Analog Vbat"],
+            "Constat": [1] * self.number_of_sensors["Constat"],
+        }
+
         self.period = period or {
-            "Mics": 1 / self.mics_freq,
+            MICROPHONE_SENSOR_NAME: 1 / self.mics_freq,
             "Baros_P": 1 / self.baros_freq,
             "Baros_T": 1 / self.baros_freq,
             "Diff_Baros": 1 / self.diff_baros_freq,
@@ -159,7 +176,22 @@ class Configuration:
             "Constat": self.constat_period / 1000,
         }
 
-        self.user_data = user_data or {}
+        self.installation_data = installation_data or {
+            "installation_reference": None,
+            "longitude": None,
+            "latitude": None,
+            "turbine_id": None,
+            "blade_id": None,
+            "hardware_version": None,
+            "sensor_coordinates": {
+                sensor_name: [(0, 0, 0)] * number_of_sensors
+                for sensor_name, number_of_sensors in self.number_of_sensors.items()
+            },
+        }
+
+        self.session_data = session_data or {
+            "label": None,
+        }
 
     @classmethod
     def from_dict(cls, dictionary):

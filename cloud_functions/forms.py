@@ -19,6 +19,9 @@ class SlugifiedValidator:
 
 class CreateInstallationForm(FlaskForm):
     reference = StringField("Reference", [validators.DataRequired(), SlugifiedValidator()])
+    turbine_id = StringField("Turbine ID", [validators.DataRequired()])
+    blade_id = StringField("Blade ID", [validators.DataRequired()])
     hardware_version = StringField("Hardware version", [validators.DataRequired()])
+    sensor_coordinates = StringField("Sensor coordinates", [validators.DataRequired()])
     longitude = FloatField("Longitude", [validators.Optional()])
     latitude = FloatField("Latitude", [validators.Optional()])

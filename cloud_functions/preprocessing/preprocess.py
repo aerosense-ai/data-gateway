@@ -15,7 +15,6 @@ def run(raw_window, window_metadata):
     :param dict window_metadata: dict with window configuration
     :return: cleaned data json
     """
-
     processed_window = {}
 
     for sensor in raw_window["sensor_data"].keys():

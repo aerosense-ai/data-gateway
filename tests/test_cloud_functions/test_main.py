@@ -17,8 +17,8 @@ from tests.test_cloud_functions import REPOSITORY_ROOT
 sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_functions")))
 
 from cloud_functions import main  # noqa
-from cloud_functions.file_handler import ConfigurationAlreadyExists  # noqa
 from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_installation  # noqa
+from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
 class TestCleanAndUploadWindow(BaseTestCase):
@@ -50,20 +50,21 @@ class TestCleanAndUploadWindow(BaseTestCase):
             {
                 "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
                 "DESTINATION_PROJECT_NAME": "destination-project",
+                "DESTINATION_BUCKET_NAME": "destination-bucket",
                 "BIG_QUERY_DATASET_NAME": "blah",
             },
         ):
-            with patch("file_handler.BigQueryDataset") as mock_dataset:
+            with patch("window_handler.BigQueryDataset") as mock_dataset:
                 main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         expected_configuration = self.VALID_CONFIGURATION.copy()
-        del expected_configuration["user_data"]
+        del expected_configuration["session_data"]
         self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
         self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
 
         # Check data was persisted.
-        self.assertIn("insert_sensor_data", mock_dataset.mock_calls[2][0])
+        self.assertIn("add_sensor_data", mock_dataset.mock_calls[2][0])
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my_test_1")
@@ -82,14 +83,15 @@ class TestCleanAndUploadWindow(BaseTestCase):
             {
                 "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
                 "DESTINATION_PROJECT_NAME": "destination-project",
+                "DESTINATION_BUCKET_NAME": "destination-bucket",
                 "BIG_QUERY_DATASET_NAME": "blah",
             },
         ):
             with patch(
-                "file_handler.BigQueryDataset.add_configuration",
+                "window_handler.BigQueryDataset.add_configuration",
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
-                with patch("file_handler.BigQueryDataset.insert_sensor_data", return_value=None):
+                with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
                     main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
@@ -160,7 +162,15 @@ class TestCreateInstallation(BaseTestCase):
                 side_effect=InstallationWithSameNameAlreadyExists(),
             ):
                 with self.app.test_client() as client:
-                    response = client.post(json={"reference": "hello", "hardware_version": "0.0.1"})
+                    response = client.post(
+                        json={
+                            "reference": "hello",
+                            "hardware_version": "0.0.1",
+                            "turbine_id": "0",
+                            "blade_id": "0",
+                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                        }
+                    )
 
         self.assertEqual(response.status_code, 409)
 
@@ -169,25 +179,39 @@ class TestCreateInstallation(BaseTestCase):
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
             with patch("cloud_functions.main.BigQueryDataset.add_installation", side_effect=Exception()):
                 with self.app.test_client() as client:
-                    response = client.post(json={"reference": "hello", "hardware_version": "0.0.1"})
+                    response = client.post(
+                        json={
+                            "reference": "hello",
+                            "hardware_version": "0.0.1",
+                            "turbine_id": "0",
+                            "blade_id": "0",
+                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                        }
+                    )
 
         self.assertEqual(response.status_code, 500)
 
-    def test_create_installation_with_valid_data(self):
+    def test_create_installation_with_valid_data_for_all_fields(self):
         """Test sending valid data for all fields to the installation creation endpoint works and returns a 200 status
         code.
         """
+        data = {
+            "reference": "hello",
+            "hardware_version": "0.0.1",
+            "turbine_id": "0",
+            "blade_id": "0",
+            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+            "latitude": 0,
+            "longitude": 1,
+        }
+
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
             with patch("cloud_functions.main.BigQueryDataset"):
                 with self.app.test_client() as client:
-                    response = client.post(
-                        json={"reference": "hello", "hardware_version": "0.0.1", "latitude": "0", "longitude": "1"}
-                    )
+                    response = client.post(json=data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json, {"reference": "hello", "hardware_version": "0.0.1", "latitude": 0, "longitude": 1}
-        )
+        self.assertEqual(response.json, data)
 
     def test_create_installation_with_only_required_inputs(self):
         """Test sending valid data for only required fields to the installation creation endpoint works and returns a
@@ -196,7 +220,15 @@ class TestCreateInstallation(BaseTestCase):
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
             with patch("cloud_functions.main.BigQueryDataset"):
                 with self.app.test_client() as client:
-                    response = client.post(json={"reference": "hello", "hardware_version": "0.0.1"})
+                    response = client.post(
+                        json={
+                            "reference": "hello",
+                            "hardware_version": "0.0.1",
+                            "turbine_id": "0",
+                            "blade_id": "0",
+                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                        }
+                    )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["latitude"], None)

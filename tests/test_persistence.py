@@ -120,6 +120,10 @@ class TestBatchingWriter(BaseTestCase):
 class TestBatchingUploader(BaseTestCase):
     @classmethod
     def setUpClass(cls):
+        """Add a Google Cloud Storage client to the class.
+
+        :return None:
+        """
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
     def test_data_is_batched(self):

@@ -6,7 +6,7 @@ import struct
 
 from octue.cloud import storage
 
-from data_gateway import exceptions
+from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
 
@@ -46,7 +46,17 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.sleep = False
         self.stop = False
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
+        self.sensor_names = (
+            MICROPHONE_SENSOR_NAME,
+            "Baros_P",
+            "Baros_T",
+            "Diff_Baros",
+            "Acc",
+            "Gyro",
+            "Mag",
+            "Analog Vbat",
+            "Constat",
+        )
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
@@ -92,7 +102,8 @@ class PacketReader:
         for sensor_name in self.sensor_names:
             previous_timestamp[sensor_name] = -1
             data[sensor_name] = [
-                ([0] * self.config.samples_per_packet[sensor_name]) for _ in range(self.config.n_meas_qty[sensor_name])
+                ([0] * self.config.samples_per_packet[sensor_name])
+                for _ in range(self.config.number_of_sensors[sensor_name])
             ]
 
         with self.uploader:
@@ -186,7 +197,7 @@ class PacketReader:
         """
         if packet_type not in self.handles:
             logger.error("Received packet with unknown type: %d", packet_type)
-            raise exceptions.UnknownPacketTypeException("Received packet with unknown type: {}".format(packet_type))
+            raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
 
         if len(payload) == 244:  # If the full data payload is received, proceed parsing it
             timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
@@ -213,7 +224,7 @@ class PacketReader:
             # TODO bytes_per_sample should probably be in the configuration
             bytes_per_sample = 6
             for i in range(self.config.baros_samples_per_packet):
-                for j in range(self.config.n_meas_qty["Baros_P"]):
+                for j in range(self.config.number_of_sensors["Baros_P"]):
                     data["Baros_P"][j][i] = int.from_bytes(
                         payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.endian,
@@ -231,11 +242,11 @@ class PacketReader:
         if sensor_type == "Diff. baros":
             bytes_per_sample = 2
             for i in range(self.config.diff_baros_samples_per_packet):
-                for j in range(self.config.n_meas_qty["Diff_Baros"]):
+                for j in range(self.config.number_of_sensors["Diff_Baros"]):
                     data["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
-                            (bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j)) : (
-                                bytes_per_sample * (self.config.n_meas_qty["Diff_Baros"] * i + j + 1)
+                            (bytes_per_sample * (self.config.number_of_sensors["Diff_Baros"] * i + j)) : (
+                                bytes_per_sample * (self.config.number_of_sensors["Diff_Baros"] * i + j + 1)
                             )
                         ],
                         self.config.endian,
@@ -249,32 +260,32 @@ class PacketReader:
             bytes_per_sample = 3
 
             for i in range(self.config.mics_samples_per_packet // 2):
-                for j in range(self.config.n_meas_qty["Mics"] // 2):
+                for j in range(self.config.number_of_sensors[MICROPHONE_SENSOR_NAME] // 2):
 
                     index = j + 20 * i
 
-                    data["Mics"][j][2 * i] = int.from_bytes(
+                    data[MICROPHONE_SENSOR_NAME][j][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * index) : (bytes_per_sample * index + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data["Mics"][j][2 * i + 1] = int.from_bytes(
+                    data[MICROPHONE_SENSOR_NAME][j][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 5)) : (bytes_per_sample * (index + 5) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data["Mics"][j + 5][2 * i] = int.from_bytes(
+                    data[MICROPHONE_SENSOR_NAME][j + 5][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 10)) : (bytes_per_sample * (index + 10) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                    data[MICROPHONE_SENSOR_NAME][j + 5][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 15)) : (bytes_per_sample * (index + 15) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
 
-            return data, ["Mics"]
+            return data, [MICROPHONE_SENSOR_NAME]
 
         if sensor_type.startswith("IMU"):
 
@@ -299,7 +310,7 @@ class PacketReader:
         # TODO Analog sensor definitions
         if sensor_type in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Analog packet. Not supported atm")
-            raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+            raise exceptions.UnknownSensorTypeError(f"Sensor of type {sensor_type!r} is unknown.")
 
         if sensor_type == "Analog Vbat":
 
@@ -342,7 +353,7 @@ class PacketReader:
 
         else:  # if sensor_type not in self.handles
             logger.error("Sensor of type %r is unknown.", sensor_type)
-            raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+            raise exceptions.UnknownSensorTypeError(f"Sensor of type {sensor_type!r} is unknown.")
 
     def _parse_info_packet(self, information_type, payload):
         """Parse information type packet and send the information to logger.
@@ -351,7 +362,6 @@ class PacketReader:
         :param iter payload:
         :return None:
         """
-
         if information_type == "Mic 1":
             if payload[0] == 1:
                 logger.info("Microphone data reading done")

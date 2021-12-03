@@ -5,7 +5,7 @@ from data_gateway.dummy_serial.constants import ALPHABET, NUMBERS
 
 
 def random_bytes(length=8, as_bytearray=False):
-    """Generates a random bytes object of a given length
+    """Generate a random bytes object of a given length.
 
     :param length: Length of bytes object to generate (default 8)
     :type length: int
@@ -21,8 +21,7 @@ def random_bytes(length=8, as_bytearray=False):
 
 
 def random_string(length=8, alphabet=None):
-    """
-    Generates a random string for test cases.
+    """Generate a random string for test cases.
 
     :param length: Length of string to generate.
     :type length: int
