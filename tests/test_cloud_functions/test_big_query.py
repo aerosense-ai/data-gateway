@@ -1,5 +1,4 @@
 import datetime
-import json
 import os
 import sys
 from unittest.mock import Mock, patch
@@ -145,7 +144,7 @@ class TestBigQueryDataset(BaseTestCase):
                         turbine_id="my-turbine",
                         blade_id="my-blade",
                         hardware_version="1.0.0",
-                        sensor_coordinates=json.dumps([[0, 1, 2], [3, 8, 7]]),
+                        sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
                     )
 
         self.assertEqual(
@@ -155,7 +154,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "turbine_id": "my-turbine",
                 "blade_id": "my-blade",
                 "hardware_version": "1.0.0",
-                "sensor_coordinates": "[[0, 1, 2], [3, 8, 7]]",
+                "sensor_coordinates": '{"my-sensor": [[0, 1, 2], [3, 8, 7]]}',
                 "location": None,
             },
         )
@@ -171,7 +170,7 @@ class TestBigQueryDataset(BaseTestCase):
                     turbine_id="my-turbine",
                     blade_id="my-blade",
                     hardware_version="1.0.0",
-                    sensor_coordinates=json.dumps([[0, 1, 2], [3, 8, 7]]),
+                    sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
                 )
 
     def test_add_configuration(self):
