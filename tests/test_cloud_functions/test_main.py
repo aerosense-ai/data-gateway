@@ -158,20 +158,21 @@ class TestCreateInstallation(BaseTestCase):
         BigQuery dataset.
         """
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch(
-                "cloud_functions.main.BigQueryDataset.add_installation",
-                side_effect=InstallationWithSameNameAlreadyExists(),
-            ):
-                with self.app.test_client() as client:
-                    response = client.post(
-                        json={
-                            "reference": "hello",
-                            "hardware_version": "0.0.1",
-                            "turbine_id": "0",
-                            "blade_id": "0",
-                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
-                        }
-                    )
+            with patch("cloud_functions.big_query.bigquery.Client"):
+                with patch(
+                    "cloud_functions.main.BigQueryDataset.add_installation",
+                    side_effect=InstallationWithSameNameAlreadyExists(),
+                ):
+                    with self.app.test_client() as client:
+                        response = client.post(
+                            json={
+                                "reference": "hello",
+                                "hardware_version": "0.0.1",
+                                "turbine_id": "0",
+                                "blade_id": "0",
+                                "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                            }
+                        )
 
         self.assertEqual(response.status_code, 409)
 
