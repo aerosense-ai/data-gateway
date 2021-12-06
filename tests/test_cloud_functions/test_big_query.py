@@ -1,14 +1,11 @@
 import datetime
-import json
 import os
 import sys
-import tempfile
 from unittest.mock import Mock, patch
-
-from octue.cloud.credentials import GCPCredentialsManager
 
 from tests.base import BaseTestCase
 from tests.test_cloud_functions import REPOSITORY_ROOT
+from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -21,38 +18,7 @@ from cloud_functions.big_query import (  # noqa
 )
 
 
-class TestBigQueryDataset(BaseTestCase):
-
-    credentials_file = None
-    current_google_application_credentials_variable_value = None
-
-    @classmethod
-    def setUpClass(cls):
-        """Temporarily write the credentials to a file so that the tests can run on GitHub where the credentials are
-        only provided as JSON in an environment variable. Set the credentials environment variable to point to this
-        file instead of the credentials JSON.
-
-        :return None:
-        """
-        cls.credentials_file = tempfile.NamedTemporaryFile()
-        cls.current_google_application_credentials_variable_value = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-
-        credentials = GCPCredentialsManager().get_credentials(as_dict=True)
-
-        with open(cls.credentials_file.name, "w") as f:
-            json.dump(credentials, f)
-
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.credentials_file.name
-
-    @classmethod
-    def tearDownClass(cls):
-        """Remove the temporary credentials file and restore the credentials environment variable to its original value.
-
-        :return None:
-        """
-        os.remove(cls.credentials_file.name)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.current_google_application_credentials_variable_value
-
+class TestBigQueryDataset(BaseTestCase, CredentialsEnvironmentVariableAsFile):
     def test_insert_sensor_data(self):
         """Test that sensor data can be sent to BigQuery for insertion."""
         data = {

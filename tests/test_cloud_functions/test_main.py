@@ -1,17 +1,16 @@
 import json
 import os
 import sys
-import tempfile
 from unittest.mock import MagicMock, patch
 
 from flask import Flask, request
-from octue.cloud.credentials import GCPCredentialsManager
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
+from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -23,7 +22,7 @@ from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_i
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
-class TestCleanAndUploadWindow(BaseTestCase):
+class TestCleanAndUploadWindow(BaseTestCase, CredentialsEnvironmentVariableAsFile):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
@@ -35,36 +34,6 @@ class TestCleanAndUploadWindow(BaseTestCase):
         "timeCreated": "0",
         "updated": "0",
     }
-
-    credentials_file = None
-    current_google_application_credentials_variable_value = None
-
-    @classmethod
-    def setUpClass(cls):
-        """Temporarily write the credentials to a file so that the tests can run on GitHub where the credentials are
-        only provided as JSON in an environment variable. Set the credentials environment variable to point to this
-        file instead of the credentials JSON.
-
-        :return None:
-        """
-        cls.credentials_file = tempfile.NamedTemporaryFile()
-        cls.current_google_application_credentials_variable_value = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-
-        credentials = GCPCredentialsManager().get_credentials(as_dict=True)
-
-        with open(cls.credentials_file.name, "w") as f:
-            json.dump(credentials, f)
-
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.credentials_file.name
-
-    @classmethod
-    def tearDownClass(cls):
-        """Remove the temporary credentials file and restore the credentials environment variable to its original value.
-
-        :return None:
-        """
-        os.remove(cls.credentials_file.name)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.current_google_application_credentials_variable_value
 
     def test_clean_and_upload_window(self):
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
