@@ -1,9 +1,11 @@
 import json
 import os
 import sys
+import tempfile
 from unittest.mock import MagicMock, patch
 
 from flask import Flask, request
+from octue.cloud.credentials import GCPCredentialsManager
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
@@ -34,6 +36,26 @@ class TestCleanAndUploadWindow(BaseTestCase):
         "updated": "0",
     }
 
+    credentials_file = None
+    current_google_application_credentials_variable_value = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.credentials_file = tempfile.NamedTemporaryFile()
+        cls.current_google_application_credentials_variable_value = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+
+        credentials = GCPCredentialsManager().get_credentials(as_dict=True)
+
+        with open(cls.credentials_file.name, "w") as f:
+            json.dump(credentials, f)
+
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.credentials_file.name
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove(cls.credentials_file.name)
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.current_google_application_credentials_variable_value
+
     def test_clean_and_upload_window(self):
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger.
@@ -55,14 +77,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
             },
         ):
             with patch("window_handler.BigQueryDataset") as mock_dataset:
-
-                # Provide the credentials that are automatically available on the Google Cloud Function runner but not
-                # in the test environment.
-                with patch(
-                    "window_handler.GoogleCloudStorageClient",
-                    return_value=GoogleCloudStorageClient(project_name=self.SOURCE_PROJECT_NAME),
-                ):
-                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         expected_configuration = self.VALID_CONFIGURATION.copy()
@@ -99,14 +114,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
                 with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
-
-                    # Provide the credentials that are automatically available on the Google Cloud Function runner but
-                    # not in the test environment.
-                    with patch(
-                        "window_handler.GoogleCloudStorageClient",
-                        return_value=GoogleCloudStorageClient(project_name=self.SOURCE_PROJECT_NAME),
-                    ):
-                        main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
