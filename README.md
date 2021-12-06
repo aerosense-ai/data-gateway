@@ -1,6 +1,5 @@
 
-[![pipeline status](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/badges/main/pipeline.svg)](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/-/commits/main)
-[![coverage report](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/badges/main/coverage.svg)](https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/-/commits/main)
+[![codecov](https://codecov.io/gh/aerosense-ai/data-gateway/branch/main/graph/badge.svg?token=GEQFQVL2TK)](https://codecov.io/gh/aerosense-ai/data-gateway)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![python-template](https://img.shields.io/badge/template-python--library-blue)](https://github.com/thclark/python-library-template)
