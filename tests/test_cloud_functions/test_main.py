@@ -41,6 +41,12 @@ class TestCleanAndUploadWindow(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Temporarily write the credentials to a file so that the tests can run on GitHub where the credentials are
+        only provided as JSON in an environment variable. Set the credentials environment variable to point to this
+        file instead of the credentials JSON.
+
+        :return None:
+        """
         cls.credentials_file = tempfile.NamedTemporaryFile()
         cls.current_google_application_credentials_variable_value = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
 
@@ -53,6 +59,10 @@ class TestCleanAndUploadWindow(BaseTestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """Remove the temporary credentials file and restore the credentials environment variable to its original value.
+
+        :return None:
+        """
         os.remove(cls.credentials_file.name)
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cls.current_google_application_credentials_variable_value
 
