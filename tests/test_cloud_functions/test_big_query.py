@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 from tests.base import BaseTestCase
 from tests.test_cloud_functions import REPOSITORY_ROOT
+from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -17,7 +18,7 @@ from cloud_functions.big_query import (  # noqa
 )
 
 
-class TestBigQueryDataset(BaseTestCase):
+class TestBigQueryDataset(CredentialsEnvironmentVariableAsFile, BaseTestCase):
     def test_insert_sensor_data(self):
         """Test that sensor data can be sent to BigQuery for insertion."""
         data = {

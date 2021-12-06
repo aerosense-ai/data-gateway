@@ -10,6 +10,7 @@ from octue.utils.encoders import OctueJSONEncoder
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
+from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -21,7 +22,7 @@ from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_i
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
-class TestCleanAndUploadWindow(BaseTestCase):
+class TestCleanAndUploadWindow(CredentialsEnvironmentVariableAsFile, BaseTestCase):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
@@ -157,20 +158,21 @@ class TestCreateInstallation(BaseTestCase):
         BigQuery dataset.
         """
         with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch(
-                "cloud_functions.main.BigQueryDataset.add_installation",
-                side_effect=InstallationWithSameNameAlreadyExists(),
-            ):
-                with self.app.test_client() as client:
-                    response = client.post(
-                        json={
-                            "reference": "hello",
-                            "hardware_version": "0.0.1",
-                            "turbine_id": "0",
-                            "blade_id": "0",
-                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
-                        }
-                    )
+            with patch("cloud_functions.big_query.bigquery.Client"):
+                with patch(
+                    "cloud_functions.main.BigQueryDataset.add_installation",
+                    side_effect=InstallationWithSameNameAlreadyExists(),
+                ):
+                    with self.app.test_client() as client:
+                        response = client.post(
+                            json={
+                                "reference": "hello",
+                                "hardware_version": "0.0.1",
+                                "turbine_id": "0",
+                                "blade_id": "0",
+                                "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                            }
+                        )
 
         self.assertEqual(response.status_code, 409)
 
