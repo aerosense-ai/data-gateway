@@ -55,7 +55,14 @@ class TestCleanAndUploadWindow(BaseTestCase):
             },
         ):
             with patch("window_handler.BigQueryDataset") as mock_dataset:
-                main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+
+                # Provide the credentials that are automatically available on the Google Cloud Function runner but not
+                # in the test environment.
+                with patch(
+                    "window_handler.GoogleCloudStorageClient",
+                    return_value=GoogleCloudStorageClient(project_name=self.SOURCE_PROJECT_NAME),
+                ):
+                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         expected_configuration = self.VALID_CONFIGURATION.copy()
@@ -92,7 +99,14 @@ class TestCleanAndUploadWindow(BaseTestCase):
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
                 with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
-                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+
+                    # Provide the credentials that are automatically available on the Google Cloud Function runner but
+                    # not in the test environment.
+                    with patch(
+                        "window_handler.GoogleCloudStorageClient",
+                        return_value=GoogleCloudStorageClient(project_name=self.SOURCE_PROJECT_NAME),
+                    ):
+                        main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
