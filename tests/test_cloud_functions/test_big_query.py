@@ -18,7 +18,7 @@ from cloud_functions.big_query import (  # noqa
 )
 
 
-class TestBigQueryDataset(BaseTestCase, CredentialsEnvironmentVariableAsFile):
+class TestBigQueryDataset(CredentialsEnvironmentVariableAsFile, BaseTestCase):
     def test_insert_sensor_data(self):
         """Test that sensor data can be sent to BigQuery for insertion."""
         data = {
