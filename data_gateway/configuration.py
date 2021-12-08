@@ -102,31 +102,31 @@ class Configuration:
         self.constat_samples_per_packet = constat_samples_per_packet
 
         self.default_handles = default_handles or {
-            34: "Abs. baros",
-            36: "Diff. baros",
-            38: "Mic 0",
-            40: "Mic 1",
-            42: "IMU Accel",
-            44: "IMU Gyro",
-            46: "IMU Magnetometer",
-            48: "Analog1",
-            50: "Analog2",
-            52: "Constat",
-            54: "Cmd Decline",
-            56: "Sleep State",
-            58: "Info Message",
+            "34": "Abs. baros",
+            "36": "Diff. baros",
+            "38": "Mic 0",
+            "40": "Mic 1",
+            "42": "IMU Accel",
+            "44": "IMU Gyro",
+            "46": "IMU Magnetometer",
+            "48": "Analog1",
+            "50": "Analog2",
+            "52": "Constat",
+            "54": "Cmd Decline",
+            "56": "Sleep State",
+            "58": "Info Message",
         }
 
         self.decline_reason = decline_reason or {
-            0: "Bad block detection ongoing",
-            1: "Task already registered, cannot register again",
-            2: "Task is not registered, cannot de-register",
-            3: "Connection Parameter update unfinished",
+            "0": "Bad block detection ongoing",
+            "1": "Task already registered, cannot register again",
+            "2": "Task is not registered, cannot de-register",
+            "3": "Connection Parameter update unfinished",
         }
 
-        self.sleep_state = sleep_state or {0: "Exiting sleep", 1: "Entering sleep"}
+        self.sleep_state = sleep_state or {"0": "Exiting sleep", "1": "Entering sleep"}
 
-        self.info_type = info_type or {0: "Battery info"}
+        self.info_type = info_type or {"0": "Battery info"}
 
         self.samples_per_packet = samples_per_packet or {
             MICROPHONE_SENSOR_NAME: self.mics_samples_per_packet,
