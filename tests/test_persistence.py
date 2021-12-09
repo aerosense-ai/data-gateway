@@ -194,7 +194,11 @@ class TestBatchingUploader(BaseTestCase):
         """Test that a window is written to disk if it fails to upload to the cloud."""
         with tempfile.TemporaryDirectory() as temporary_directory:
 
-            with mock.patch.object(Blob, "upload_from_string", Exception):
+            with mock.patch.object(
+                Blob,
+                "upload_from_string",
+                side_effect=Exception("This is deliberately raised in this test to simulate cloud upload failing."),
+            ):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
                     project_name=TEST_PROJECT_NAME,
@@ -228,7 +232,11 @@ class TestBatchingUploader(BaseTestCase):
         """Test that backup files from a failed upload are uploaded on the next upload attempt."""
         with tempfile.TemporaryDirectory() as temporary_directory:
 
-            with mock.patch.object(Blob, "upload_from_string", Exception):
+            with mock.patch.object(
+                Blob,
+                "upload_from_string",
+                side_effect=Exception("This is deliberately raised in this test to simulate cloud upload failing."),
+            ):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
                     project_name=TEST_PROJECT_NAME,

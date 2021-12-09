@@ -70,7 +70,7 @@ class PacketReader:
                 window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
-                metadata={"data_gateway__configuration": self.config},
+                metadata={"data_gateway__configuration": self.config.to_dict()},
             )
         else:
             self.uploader = NoOperationContextManager()
@@ -120,11 +120,11 @@ class PacketReader:
                     if serial_data[0] != self.config.packet_key:
                         continue
 
-                    packet_type = int.from_bytes(serial_port.read(), self.config.endian)
+                    packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
                     length = int.from_bytes(serial_port.read(), self.config.endian)
                     payload = serial_port.read(length)
 
-                    if packet_type == self.config.type_handle_def:
+                    if packet_type == str(self.config.type_handle_def):
                         self.update_handles(payload)
                         continue
 
@@ -143,19 +143,19 @@ class PacketReader:
 
         if end_handle - start_handle == 26:
             self.handles = {
-                start_handle + 2: "Abs. baros",
-                start_handle + 4: "Diff. baros",
-                start_handle + 6: "Mic 0",
-                start_handle + 8: "Mic 1",
-                start_handle + 10: "IMU Accel",
-                start_handle + 12: "IMU Gyro",
-                start_handle + 14: "IMU Magnetometer",
-                start_handle + 16: "Analog1",
-                start_handle + 18: "Analog2",
-                start_handle + 20: "Constat",
-                start_handle + 22: "Cmd Decline",
-                start_handle + 24: "Sleep State",
-                start_handle + 26: "Info message",
+                str(start_handle + 2): "Abs. baros",
+                str(start_handle + 4): "Diff. baros",
+                str(start_handle + 6): "Mic 0",
+                str(start_handle + 8): "Mic 1",
+                str(start_handle + 10): "IMU Accel",
+                str(start_handle + 12): "IMU Gyro",
+                str(start_handle + 14): "IMU Magnetometer",
+                str(start_handle + 16): "Analog1",
+                str(start_handle + 18): "Analog2",
+                str(start_handle + 20): "Constat",
+                str(start_handle + 22): "Cmd Decline",
+                str(start_handle + 24): "Sleep State",
+                str(start_handle + 26): "Info message",
             }
 
             logger.info("Successfully updated handles.")
@@ -190,13 +190,13 @@ class PacketReader:
         """Check if a full payload has been received (correct length) with correct packet type handle, then parse the
         payload from a serial port.
 
-        :param int packet_type:
+        :param str packet_type:
         :param iter payload:
         :param dict data:
         :param dict previous_timestamp:
         """
         if packet_type not in self.handles:
-            logger.error("Received packet with unknown type: %d", packet_type)
+            logger.error("Received packet with unknown type: %s", packet_type)
             raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
 
         if len(payload) == 244:  # If the full data payload is received, proceed parsing it
@@ -371,16 +371,16 @@ class PacketReader:
                 logger.info("Microphones started ")
 
         elif information_type == "Cmd Decline":
-            reason_index = int.from_bytes(payload, self.config.endian, signed=False)
+            reason_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("Command declined, %s", self.config.decline_reason[reason_index])
 
         elif information_type == "Sleep State":
-            state_index = int.from_bytes(payload, self.config.endian, signed=False)
+            state_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("\n%s\n", self.config.sleep_state[state_index])
             self.sleep = bool(state_index)
 
         elif information_type == "Info Message":
-            info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
+            info_index = str(int.from_bytes(payload[0:1], self.config.endian, signed=False))
             logger.info(self.config.info_type[info_index])
 
             if self.config.info_type[info_index] == "Battery info":
