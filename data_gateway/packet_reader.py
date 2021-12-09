@@ -196,7 +196,7 @@ class PacketReader:
         :param dict previous_timestamp:
         """
         if packet_type not in self.handles:
-            logger.error("Received packet with unknown type: %d", packet_type)
+            logger.error("Received packet with unknown type: %s", packet_type)
             raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
 
         if len(payload) == 244:  # If the full data payload is received, proceed parsing it
