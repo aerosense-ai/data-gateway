@@ -368,7 +368,7 @@ class PacketReader:
         elif information_type == "Sleep State":
             state_index = int.from_bytes(payload, self.config.endian, signed=False)
             logger.info("\n%s\n", self.config.sleep_state[state_index])
-            self.sleep = bool(state_index)
+            self.sleep = bool(int(state_index))
 
         elif information_type == "Info Message":
             info_index = int.from_bytes(payload[0:1], self.config.endian, signed=False)
