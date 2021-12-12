@@ -99,6 +99,12 @@ class PacketReader:
             with self.writer:
                 while not self.stop:
 
+                    if serial_port.in_waiting == 4095:
+                        logger.warning("Buffer is full: 4095 bytes waiting. Re-opening serial port, to avoid overflow")
+                        serial_port.close()
+                        serial_port.open()
+                        continue
+
                     serial_data = serial_port.read()
 
                     if len(serial_data) == 0:
