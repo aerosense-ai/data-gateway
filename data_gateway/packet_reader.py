@@ -412,7 +412,7 @@ class PacketReader:
                 previous_timestamp[sensor_name]
                 + self.config.samples_per_packet[sensor_name] * self.config.period[sensor_name]
             )
-            timestamp_deviation = expected_current_timestamp - timestamp
+            timestamp_deviation = timestamp - expected_current_timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
                 logger.warning("Lost %s packet(s): %s ms gap", sensor_name, timestamp_deviation * 1000)
