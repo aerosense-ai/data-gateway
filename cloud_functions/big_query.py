@@ -200,11 +200,14 @@ class BigQueryDataset:
         # Installation data is stored in a separate column, so pop it before the next step.
         installation_data = configuration.pop("installation_data")
 
-        configuration_json = json.dumps(configuration)
-        configuration_hash = blake3(configuration_json.encode()).hexdigest()
+        software_configuration_json = json.dumps(configuration)
+        software_configuration_hash = blake3(software_configuration_json.encode()).hexdigest()
 
         configurations = list(
-            self.client.query(f"SELECT id FROM `{table_name}` WHERE `hash`='{configuration_hash}' LIMIT 1").result()
+            self.client.query(
+                f"SELECT id FROM `{table_name}` WHERE `software_configuration_hash`='{software_configuration_hash}' "
+                f"LIMIT 1"
+            ).result()
         )
 
         if len(configurations) > 0:
@@ -222,8 +225,8 @@ class BigQueryDataset:
             rows=[
                 {
                     "id": configuration_id,
-                    "software_configuration": configuration_json,
-                    "software_configuration_hash": configuration_hash,
+                    "software_configuration": software_configuration_json,
+                    "software_configuration_hash": software_configuration_hash,
                     "installation_data": installation_data_json,
                     "installation_data_hash": installation_data_hash,
                 }
