@@ -46,7 +46,6 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.sleep = False
         self.stop = False
-        self.sensor_names = ("Mics", "Baros_P", "Baros_T", "Diff_Baros", "Acc", "Gyro", "Mag", "Analog Vbat", "Constat")
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
@@ -54,7 +53,7 @@ class PacketReader:
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
-                sensor_names=self.sensor_names,
+                sensor_names=self.config.sensor_names,
                 project_name=project_name,
                 bucket_name=bucket_name,
                 window_size=window_size,
@@ -67,7 +66,7 @@ class PacketReader:
 
         if save_locally:
             self.writer = BatchingFileWriter(
-                sensor_names=self.sensor_names,
+                sensor_names=self.config.sensor_names,
                 window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
@@ -89,7 +88,7 @@ class PacketReader:
         previous_timestamp = {}
         data = {}
 
-        for sensor_name in self.sensor_names:
+        for sensor_name in self.config.sensor_names:
             previous_timestamp[sensor_name] = -1
             data[sensor_name] = [
                 ([0] * self.config.samples_per_packet[sensor_name]) for _ in range(self.config.n_meas_qty[sensor_name])
@@ -413,7 +412,7 @@ class PacketReader:
         if self.sleep:
             # During sleep, there are no new packets coming in.
             # TODO Make previous_timestamp an attribute, move this to information packet parser and perform on wake-up
-            for sensor_name in self.sensor_names:
+            for sensor_name in self.config.sensor_names:
                 previous_timestamp[sensor_name] = -1
             return
 
