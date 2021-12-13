@@ -427,7 +427,7 @@ class PacketReader:
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
                 logger.warning(
-                    "Possible packet loss. %s sensor packet is timestamped %s ms later than an expected",
+                    "Possible packet loss. %s sensor packet is timestamped %s ms later than expected",
                     sensor_name,
                     timestamp_deviation * 1000,
                 )
