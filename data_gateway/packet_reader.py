@@ -117,8 +117,12 @@ class PacketReader:
                         self.update_handles(payload)
                         continue
 
-                    if serial_port.in_waiting == 4095:
-                        logger.warning("Buffer is full: 4095 bytes waiting. Re-opening serial port, to avoid overflow")
+                    # Check for bytes in serial input buffer. A full buffer results in overflow.
+                    if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                        logger.warning(
+                            "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
+                            serial_port.in_waiting,
+                        )
                         serial_port.close()
                         serial_port.open()
                         continue
@@ -128,7 +132,7 @@ class PacketReader:
                     )
 
     def update_handles(self, payload):
-        """Update the Bluetooth handles object. Handle are updated every time a new Bluetooth connections is
+        """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
         established.
 
         :param iter payload:
@@ -407,6 +411,8 @@ class PacketReader:
         :return None:
         """
         if self.sleep:
+            # During sleep, there are no new packets coming in.
+            # TODO Make previous_timestamp an attribute, move this to information packet parser and perform on wake-up
             for sensor_name in self.sensor_names:
                 previous_timestamp[sensor_name] = -1
             return
@@ -421,14 +427,18 @@ class PacketReader:
             timestamp_deviation = timestamp - expected_current_timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
-                logger.warning("Lost %s packet(s): %s ms gap", sensor_name, timestamp_deviation * 1000)
+                logger.warning(
+                    "Possible packet loss. %s sensor packet is timestamped %s ms later than an expected",
+                    sensor_name,
+                    timestamp_deviation * 1000,
+                )
 
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
                     # IMU sensors are not synchronised to CPU, so their actual periods might differ
                     self.config.period[sensor_name] = (
                         timestamp - previous_timestamp[sensor_name]
                     ) / self.config.samples_per_packet[sensor_name]
-                    logger.warning("Updated %s period to %f ms.", sensor_name, self.config.period[sensor_name] * 1000)
+                    logger.debug("Updated %s period to %f ms.", sensor_name, self.config.period[sensor_name] * 1000)
 
         previous_timestamp[sensor_name] = timestamp
 
