@@ -1,0 +1,59 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions.
+#
+# On successful test, the package will be published. For candidate releases, the package will be
+#  published to test.pypi.org server (to ensure the process works). For merges to master, the
+#  package will be published live.
+
+name: python-ci
+
+on: [push]
+
+jobs:
+
+  check-semantic-version:
+    if: "!contains(github.event.head_commit.message, 'skipci')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Set fetch-depth to 0 to fetch all tags (necessary for git-mkver to determine the correct semantic version).
+          fetch-depth: 0
+      - uses: actions/setup-python@v2
+      - name: Install git-mkver
+        run: |
+          curl -L https://github.com/idc101/git-mkver/releases/download/v1.2.1/git-mkver-linux-amd64-1.2.1.tar.gz \
+          | tar xvz \
+          && sudo mv git-mkver /usr/local/bin
+      - name: Install semantic version checker
+        run: pip install git+https://github.com/octue/conventional-commits
+      - name: Check version
+        run: check-semantic-version setup.py
+
+  run-tests:
+    if: "!contains(github.event.head_commit.message, 'skipci')"
+    runs-on: ${{ matrix.os }}
+    env:
+      USING_COVERAGE: '3.8'
+    strategy:
+      matrix:
+        python: [3.8]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install tox
+        run: pip install tox
+      - name: Run tests
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        run: tox
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: coverage.xml
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}

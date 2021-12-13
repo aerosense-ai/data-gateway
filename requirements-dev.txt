@@ -9,7 +9,15 @@ pluggy
 gcp-storage-emulator>=2021.6.2
 google-cloud-storage>=1.35.1
 tox>=3.23.1
--r cloud_functions/requirements.txt
+
+# Packages for cloud functions, excluding octue
+blake3==0.2.1
+flask_wtf
+google-cloud-bigquery==2.29.0
+pandas>=1.2.3
+scipy>=1.6.1
+shapely
+wtforms[email]
 
 # Code quality
 # ------------------------------------------------------------------------------

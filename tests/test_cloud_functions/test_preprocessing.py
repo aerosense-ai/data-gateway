@@ -20,6 +20,10 @@ class TestPreprocess(BaseTestCase):
     )
 
     def sample_dataset(self):
+        """Load and return a sample dataset.
+
+        :return dict:
+        """
         with open(self.path_to_sample_data, "r") as in_file:
             sample_data = json.load(in_file)
         return sample_data
@@ -30,7 +34,6 @@ class TestPreprocess(BaseTestCase):
         - Finds a window of missing data, pads it with NaN
         - Interpolates data to new timestamps (except for when data was missing) TODO add this check
         """
-
         sensor = "Constat"
 
         test_metadata = self.VALID_CONFIGURATION

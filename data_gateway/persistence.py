@@ -264,9 +264,11 @@ class BatchingUploader(TimeBatcher):
                 timeout=self.upload_timeout,
             )
 
-        except Exception:  # noqa
+        except Exception as e:
+            logger.exception(e)
+
             logger.warning(
-                "Upload of window failed - writing to disk at %r instead.",
+                "Upload of window may have failed - writing to disk at %r.",
                 self._backup_writer._generate_window_path(),
             )
 

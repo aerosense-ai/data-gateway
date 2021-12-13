@@ -9,20 +9,16 @@ class RawSignal:
         self.sensor = sensor
 
     def find_missing_data(self, threshold):
-        """
-        Check for missing data
-        """
+        """Check for missing data."""
         self.dataframe[self.dataframe[0].diff() > threshold] = np.NaN
 
     def to_constant_timestep(self, time_step):
-        """
-        Resample dataframe to the given time step. Linearly interpolates between samples.
+        """Resample dataframe to the given time step. Linearly interpolates between samples.
 
         :param dataframe: dataframe to resample
         :param float time_step: timestep in seconds
         :return: resampled and interpolated data
         """
-
         old_time_vector = self.dataframe[0] * 1e9
         new_time_vector = pd.date_range(
             start=self.dataframe.index[0], end=self.dataframe.index[-1], freq="{:.12f}S".format(time_step)
@@ -37,8 +33,7 @@ class RawSignal:
         self.dataframe = new_dataframe
 
     def remove_outliers(self, window, std_multiplier):
-        """
-        Removes outliers outside of the confidence interval using a rolling median and standard deviation.
+        """Remove outliers outside of the confidence interval using a rolling median and standard deviation.
 
         :param dataframe: dataframe to be cleaned
         :param int window: window for rolling average
@@ -54,9 +49,7 @@ class RawSignal:
         ]
 
     def fixed_point_to_measurement_variable(self):
-        """
-        Transform fixed point values to a physical variable.
-        """
+        """Transform fixed point values to a physical variable."""
         if self.sensor == "Baros_P":
             # Pascal
             self.dataframe.iloc[:, 1:] /= 40.96
