@@ -211,15 +211,15 @@ class PacketReader:
         elif len(payload) >= 1 and self.handles[packet_type] in ["Mic 1", "Cmd Decline", "Sleep State", "Info Message"]:
             self._parse_info_packet(self.handles[packet_type], payload)
 
-    def _parse_sensor_packet_data(self, sensor_type, payload, data):
+    def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
 
-        :param str sensor_type: Type of the sensor
+        :param str packet_type: Type of the packet
         :param iter payload: Raw payload to be parsed
         :param dict data: Initialised data dict to be completed with parsed data
         :return dict data:
         """
-        if sensor_type == "Abs. baros":
+        if packet_type == "Abs. baros":
             # Write the received payload to the data field
             # TODO bytes_per_sample should probably be in the configuration
             bytes_per_sample = 6
@@ -239,7 +239,7 @@ class PacketReader:
 
             return data, ["Baros_P", "Baros_T"]
 
-        if sensor_type == "Diff. baros":
+        if packet_type == "Diff. baros":
             bytes_per_sample = 2
             for i in range(self.config.diff_baros_samples_per_packet):
                 for j in range(self.config.n_meas_qty["Diff_Baros"]):
@@ -255,7 +255,7 @@ class PacketReader:
 
             return data, ["Diff_Baros"]
 
-        if sensor_type == "Mic 0":
+        if packet_type == "Mic 0":
             # Write the received payload to the data field
             bytes_per_sample = 3
 
@@ -287,11 +287,11 @@ class PacketReader:
 
             return data, ["Mics"]
 
-        if sensor_type.startswith("IMU"):
+        if packet_type.startswith("IMU"):
 
             imu_sensor_names = {"IMU Accel": "Acc", "IMU Gyro": "Gyro", "IMU Magnetometer": "Mag"}
 
-            imu_sensor = imu_sensor_names[sensor_type]
+            imu_sensor = imu_sensor_names[packet_type]
 
             # Write the received payload to the data field
             for i in range(self.config.imu_samples_per_packet):
@@ -308,11 +308,11 @@ class PacketReader:
             return data, [imu_sensor]
 
         # TODO Analog sensor definitions
-        if sensor_type in {"Analog Kinetron", "Analog1", "Analog2"}:
+        if packet_type in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Analog packet. Not supported atm")
-            raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+            raise exceptions.UnknownSensorTypeException(f"Sensor of type {packet_type!r} is unknown.")
 
-        if sensor_type == "Analog Vbat":
+        if packet_type == "Analog Vbat":
 
             def val_to_v(val):
                 return val / 1e6
@@ -326,7 +326,7 @@ class PacketReader:
 
             return data, ["Analog Vbat"]
 
-        if sensor_type == "Constat":
+        if packet_type == "Constat":
             bytes_per_sample = 10
             for i in range(self.config.constat_samples_per_packet):
                 data["Constat"][0][i] = struct.unpack(
@@ -351,9 +351,9 @@ class PacketReader:
 
             return data, ["Constat"]
 
-        else:  # if sensor_type not in self.handles
-            logger.error("Sensor of type %r is unknown.", sensor_type)
-            raise exceptions.UnknownSensorTypeException(f"Sensor of type {sensor_type!r} is unknown.")
+        else:  # if packet_type not in self.handles
+            logger.error("Sensor of type %r is unknown.", packet_type)
+            raise exceptions.UnknownSensorTypeException(f"Sensor of type {packet_type!r} is unknown.")
 
     def _parse_info_packet(self, information_type, payload):
         """Parse information type packet and send the information to logger.
@@ -398,7 +398,7 @@ class PacketReader:
 
     def _check_for_packet_loss(self, sensor_name, timestamp, previous_timestamp):
         """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for
-        the sensor_type.
+        the sensor_name.
 
         The sensor data arrives in packets that contain n samples from some sensors of the same type, e.g. one barometer
         packet contains 40 samples from 4 barometers each. Timestamp arrives once per packet. The difference between
@@ -442,18 +442,18 @@ class PacketReader:
 
         previous_timestamp[sensor_name] = timestamp
 
-    def _timestamp_and_persist_data(self, data, sensor_type, timestamp, period):
+    def _timestamp_and_persist_data(self, data, sensor_name, timestamp, period):
         """Persist data to the required storage media.
         Since timestamps only come at a packet level, this function assumes constant period for
          the within-packet-timestamps
 
         :param dict data: data to persist
-        :param str sensor_type: sensor type to persist data from
+        :param str sensor_name: sensor type to persist data from
         :param float timestamp: timestamp in s
         :param float period:
         :return None:
         """
-        number_of_samples = len(data[sensor_type][0])
+        number_of_samples = len(data[sensor_name][0])
         time = None
 
         # Iterate through all sample times.
@@ -461,14 +461,14 @@ class PacketReader:
             time = timestamp + i * period
             sample = [time]
 
-            for meas in data[sensor_type]:
+            for meas in data[sensor_name]:
                 sample.append(meas[i])
 
-            self._add_data_to_current_window(sensor_type, data=sample)
+            self._add_data_to_current_window(sensor_name, data=sample)
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
         # UTC time now. Store it as the `start_timestamp` metadata in the windows.
-        if sensor_type == "Constat":
+        if sensor_name == "Constat":
             logger.debug("Constat packet: %d" % timestamp)
             if time and self.sensor_time_offset is None:
                 self._calculate_and_store_sensor_timestamp_offset(time)
@@ -491,15 +491,15 @@ class PacketReader:
             self.uploader.current_window["sensor_time_offset"] = self.sensor_time_offset
             self.uploader.ready_window["sensor_time_offset"] = self.sensor_time_offset
 
-    def _add_data_to_current_window(self, sensor_type, data):
+    def _add_data_to_current_window(self, sensor_name, data):
         """Add data to the current window.
 
-        :param str sensor_type: sensor type to persist data from
+        :param str sensor_name: sensor type to persist data from
         :param iter data: data to persist
         :return None:
         """
         if self.save_locally:
-            self.writer.add_to_current_window(sensor_type, data)
+            self.writer.add_to_current_window(sensor_name, data)
 
         if self.upload_to_cloud:
-            self.uploader.add_to_current_window(sensor_type, data)
+            self.uploader.add_to_current_window(sensor_name, data)
