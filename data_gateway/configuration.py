@@ -18,7 +18,7 @@ class Configuration:
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
     :param float baudrate: serial port baud rate
-    :param str endian: one of "little" or "big"
+    :param Literal["little", "big"] endian: one of "little" or "big"
     :param float max_timestamp_slack: TODO   # 5ms
     :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
     :param int packet_key: TODO

@@ -310,7 +310,7 @@ class PacketReader:
         # TODO Analog sensor definitions
         if packet_type in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Analog packet. Not supported atm")
-            raise exceptions.UnknownSensorTypeError(f"Sensor of type {packet_type!r} is unknown.")
+            raise exceptions.UnknownPacketTypeError(f"Packet of type {packet_type!r} is unknown.")
 
         if packet_type == "Analog Vbat":
 
@@ -353,7 +353,7 @@ class PacketReader:
 
         else:  # if packet_type not in self.handles
             logger.error("Sensor of type %r is unknown.", packet_type)
-            raise exceptions.UnknownSensorTypeError(f"Sensor of type {packet_type!r} is unknown.")
+            raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
 
     def _parse_info_packet(self, information_type, payload):
         """Parse information type packet and send the information to logger.
