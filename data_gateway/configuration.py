@@ -104,20 +104,17 @@ class Configuration:
         self.diff_baros_samples_per_packet = diff_baros_samples_per_packet
         self.constat_samples_per_packet = constat_samples_per_packet
 
-        self.sensor_names = (
-            sensor_names
-            or [
-                MICROPHONE_SENSOR_NAME,
-                "Baros_P",
-                "Baros_T",
-                "Diff_Baros",
-                "Acc",
-                "Gyro",
-                "Mag",
-                "Analog Vbat",
-                "Constat",
-            ],
-        )
+        self.sensor_names = sensor_names or [
+            MICROPHONE_SENSOR_NAME,
+            "Baros_P",
+            "Baros_T",
+            "Diff_Baros",
+            "Acc",
+            "Gyro",
+            "Mag",
+            "Analog Vbat",
+            "Constat",
+        ]
 
         self.default_handles = default_handles or {
             "34": "Abs. baros",
