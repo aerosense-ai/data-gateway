@@ -28,7 +28,7 @@ class Configuration:
     :param int analog_samples_per_packet: number of samples per packet from analog sensors
     :param int baros_samples_per_packet: number of samples per packet from barometers
     :param int constat_samples_per_packet: number of samples per packet from connection statistics
-    :param tuple sensor_names: Sensors present on the measurement node
+    :param list sensor_names: Sensors present on the measurement node
     :param dict|None default_handles: Each handle identifies packet type, i.e. expected contents of packet payload
     :param dict|None samples_per_packet: TODO
     :param dict|None number_of_sensors: TODO
@@ -65,17 +65,7 @@ class Configuration:
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         constat_samples_per_packet=24,
-        sensor_names=(
-            MICROPHONE_SENSOR_NAME,
-            "Baros_P",
-            "Baros_T",
-            "Diff_Baros",
-            "Acc",
-            "Gyro",
-            "Mag",
-            "Analog Vbat",
-            "Constat",
-        ),
+        sensor_names=None,
         default_handles=None,
         decline_reason=None,
         sleep_state=None,
@@ -113,7 +103,21 @@ class Configuration:
         self.baros_samples_per_packet = baros_samples_per_packet
         self.diff_baros_samples_per_packet = diff_baros_samples_per_packet
         self.constat_samples_per_packet = constat_samples_per_packet
-        self.sensor_names = sensor_names
+
+        self.sensor_names = (
+            sensor_names
+            or [
+                MICROPHONE_SENSOR_NAME,
+                "Baros_P",
+                "Baros_T",
+                "Diff_Baros",
+                "Acc",
+                "Gyro",
+                "Mag",
+                "Analog Vbat",
+                "Constat",
+            ],
+        )
 
         self.default_handles = default_handles or {
             "34": "Abs. baros",

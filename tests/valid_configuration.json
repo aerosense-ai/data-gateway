@@ -25,6 +25,17 @@
   "baros_samples_per_packet": 1,
   "diff_baros_samples_per_packet": 24,
   "constat_samples_per_packet": 24,
+  "sensor_names": [
+    "Mics",
+    "Baros_P",
+    "Baros_T",
+    "Diff_Baros",
+    "Acc",
+    "Gyro",
+    "Mag",
+    "Analog Vbat",
+    "Constat"
+  ],
   "default_handles": {
     "34": "Abs. baros",
     "36": "Diff. baros",
