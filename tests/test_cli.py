@@ -101,7 +101,7 @@ class TestStart(BaseTestCase):
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
+                        ["start", "--interactive", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
                         input=commands,
                     )
 

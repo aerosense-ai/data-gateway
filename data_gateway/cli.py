@@ -61,7 +61,14 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(dir_okay=False),
     default="config.json",
     show_default=True,
-    help="Path to your Aerosense deployment configuration file.",
+    help="Path to your Aerosense deployment configuration JSON file.",
+)
+@click.option(
+    "--routine-file",
+    type=click.Path(dir_okay=False),
+    default="routine.json",
+    show_default=True,
+    help="Path to sensor command routine JSON file.",
 )
 @click.option(
     "--save-locally",
@@ -76,6 +83,14 @@ def gateway_cli(logger_uri, log_level):
     is_flag=True,
     default=False,
     show_default=True,
+)
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Run the gateway in interactive mode, allowing commands to be sent to the serial port via the command line.",
 )
 @click.option(
     "--output-dir",
@@ -128,8 +143,10 @@ def gateway_cli(logger_uri, log_level):
 def start(
     serial_port,
     config_file,
+    routine_file,
     save_locally,
     no_upload_to_cloud,
+    interactive,
     output_dir,
     window_size,
     gcp_project_name,
@@ -151,6 +168,7 @@ def start(
 
     from data_gateway.configuration import Configuration
     from data_gateway.packet_reader import PacketReader
+    from data_gateway.routine import Routine
 
     if os.path.exists(config_file):
         with open(config_file) as f:
@@ -158,7 +176,20 @@ def start(
         logger.info("Loaded configuration file from %r.", config_file)
     else:
         config = Configuration()
-        logger.info("Using default configuration.")
+        logger.info("No configuration file provided - using default configuration.")
+
+    if routine_file:
+        if interactive:
+            logger.warning("Sensor command routine files are ignored in interactive mode.")
+
+        else:
+            if os.path.exists(routine_file):
+                with open(routine_file) as f:
+                    routine = Routine(**json.load(f))
+                logger.info("Loaded routine file from %r.", routine_file)
+            else:
+                routine = None
+                logger.info("No routine provided - sensors only controlled by interactive user input.")
 
     config.session_data["label"] = label
 
@@ -212,20 +243,26 @@ def start(
     )
 
     try:
-        while not packet_reader.stop:
-            for line in sys.stdin:
+        if interactive:
+            while not packet_reader.stop:
+                for line in sys.stdin:
 
-                with open(commands_record_file, "a") as f:
-                    f.write(line)
+                    with open(commands_record_file, "a") as f:
+                        f.write(line)
 
-                if line.startswith("sleep") and line.endswith("\n"):
-                    time.sleep(int(line.split(" ")[-1].strip()))
-                elif line == "stop\n":
-                    packet_reader.stop = True
-                    break
+                    if line.startswith("sleep") and line.endswith("\n"):
+                        time.sleep(int(line.split(" ")[-1].strip()))
+                    elif line == "stop\n":
+                        packet_reader.stop = True
+                        break
 
-                # Send the command to the node
-                serial_port.write(line.encode("utf_8"))
+                    # Send the command to the node
+                    serial_port.write(line.encode("utf_8"))
+
+        else:
+            if routine is not None:
+                routine.action = lambda command: serial_port.write(command.encode("utf_8"))
+                routine.run()
 
     except KeyboardInterrupt:
         packet_reader.stop = True
