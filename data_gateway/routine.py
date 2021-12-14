@@ -20,7 +20,7 @@ class Routine:
         self.stop_after = stop_after
 
         if self.period:
-            for command, delay in self.commands.items():
+            for command, delay in self.commands:
                 if delay > self.period:
                     raise ValueError("The delay for each command in the routine should be less than the period.")
 
@@ -35,7 +35,7 @@ class Routine:
         while True:
             cycle_start_time = time.perf_counter()
 
-            for command, delay in self.commands.items():
+            for command, delay in self.commands:
                 scheduler.enter(delay=delay, priority=1, action=self.action, argument=(command,))
 
             scheduler.run(blocking=True)

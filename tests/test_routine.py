@@ -12,7 +12,7 @@ class TestRoutine(TestCase):
         def record_commands(command):
             recorded_commands.append((command, time.perf_counter()))
 
-        routine = Routine(commands={"first-command": 0.1, "second-command": 0.3}, action=record_commands)
+        routine = Routine(commands=[("first-command", 0.1), ("second-command", 0.3)], action=record_commands)
 
         start_time = time.perf_counter()
         routine.run()
@@ -26,7 +26,7 @@ class TestRoutine(TestCase):
     def test_error_raised_if_any_delay_is_greater_than_period(self):
         """Test that an error is raised if any of the command delays is greater than the period."""
         with self.assertRaises(ValueError):
-            Routine(commands={"first-command": 10, "second-command": 0.3}, action=None, period=1)
+            Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, period=1)
 
     def test_routine_with_period(self):
         """Test that commands can be scheduled to repeat at the given period."""
@@ -36,7 +36,7 @@ class TestRoutine(TestCase):
             recorded_commands.append((command, time.perf_counter()))
 
         routine = Routine(
-            commands={"first-command": 0.1, "second-command": 0.3},
+            commands=[("first-command", 0.1), ("second-command", 0.3)],
             action=record_commands,
             period=0.4,
             stop_after=1,
