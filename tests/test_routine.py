@@ -18,10 +18,10 @@ class TestRoutine(TestCase):
         routine.run()
 
         self.assertEqual(recorded_commands[0][0], "first-command")
-        self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, places=1)
+        self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, delta=0.1)
 
         self.assertEqual(recorded_commands[1][0], "second-command")
-        self.assertAlmostEqual(recorded_commands[1][1], start_time + 0.3, places=1)
+        self.assertAlmostEqual(recorded_commands[1][1], start_time + 0.3, delta=0.1)
 
     def test_error_raised_if_any_delay_is_greater_than_period(self):
         """Test that an error is raised if any of the command delays is greater than the period."""
@@ -46,13 +46,13 @@ class TestRoutine(TestCase):
         routine.run()
 
         self.assertEqual(recorded_commands[0][0], "first-command")
-        self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, places=1)
+        self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, delta=0.1)
 
         self.assertEqual(recorded_commands[1][0], "second-command")
-        self.assertAlmostEqual(recorded_commands[1][1], start_time + 0.3, places=1)
+        self.assertAlmostEqual(recorded_commands[1][1], start_time + 0.3, delta=0.1)
 
         self.assertEqual(recorded_commands[2][0], "first-command")
-        self.assertAlmostEqual(recorded_commands[2][1], start_time + 0.1 + routine.period, places=1)
+        self.assertAlmostEqual(recorded_commands[2][1], start_time + 0.1 + routine.period, delta=0.1)
 
         self.assertEqual(recorded_commands[3][0], "second-command")
-        self.assertAlmostEqual(recorded_commands[3][1], start_time + 0.3 + routine.period, places=1)
+        self.assertAlmostEqual(recorded_commands[3][1], start_time + 0.3 + routine.period, delta=0.1)
