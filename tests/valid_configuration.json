@@ -8,6 +8,7 @@
   "acc_range": 16,
   "gyro_freq": 100,
   "gyro_range": 2000,
+  "mag_freq": 12.5,
   "analog_freq": 16384,
   "constat_period": 45,
   "serial_buffer_rx_size": 100000,
@@ -24,6 +25,17 @@
   "baros_samples_per_packet": 1,
   "diff_baros_samples_per_packet": 24,
   "constat_samples_per_packet": 24,
+  "sensor_names": [
+    "Mics",
+    "Baros_P",
+    "Baros_T",
+    "Diff_Baros",
+    "Acc",
+    "Gyro",
+    "Mag",
+    "Analog Vbat",
+    "Constat"
+  ],
   "default_handles": {
     "34": "Abs. baros",
     "36": "Diff. baros",

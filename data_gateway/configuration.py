@@ -3,6 +3,7 @@ from data_gateway import MICROPHONE_SENSOR_NAME
 
 class Configuration:
     """A data class containing the configuration values for the firmware and hardware used by the data gateway.
+    TODO Refactor configuration: make each sensor a nested dict, with all the sensor parameters realtive to it.
 
     :param float mics_freq: microphones sampling frequency
     :param float mics_bm: TODO
@@ -17,19 +18,18 @@ class Configuration:
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
     :param float baudrate: serial port baud rate
-    :param str endian: one of "little" or "big"
+    :param Literal["little", "big"] endian: one of "little" or "big"
     :param float max_timestamp_slack: TODO   # 5ms
     :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
     :param int packet_key: TODO
     :param int type_handle_def: TODO
     :param int mics_samples_per_packet: number of samples per packet from microphones
-    :param int baros_packet_size: TODO
-    :param int baros_group_size: TODO
     :param int imu_samples_per_packet: TODO
     :param int analog_samples_per_packet: number of samples per packet from analog sensors
     :param int baros_samples_per_packet: number of samples per packet from barometers
     :param int constat_samples_per_packet: number of samples per packet from connection statistics
-    :param dict|None default_handles: TODO
+    :param list sensor_names: Sensors present on the measurement node
+    :param dict|None default_handles: Each handle identifies packet type, i.e. expected contents of packet payload
     :param dict|None samples_per_packet: TODO
     :param dict|None number_of_sensors: TODO
     :param dict|None period: TODO
@@ -48,6 +48,7 @@ class Configuration:
         acc_range=16,
         gyro_freq=100,
         gyro_range=2000,
+        mag_freq=12.5,
         analog_freq=16384,
         constat_period=45,  # period in ms
         serial_buffer_rx_size=100000,
@@ -64,6 +65,7 @@ class Configuration:
         imu_samples_per_packet=int(240 / 2 / 3),
         analog_samples_per_packet=60,
         constat_samples_per_packet=24,
+        sensor_names=None,
         default_handles=None,
         decline_reason=None,
         sleep_state=None,
@@ -84,6 +86,7 @@ class Configuration:
         self.acc_range = acc_range
         self.gyro_freq = gyro_freq
         self.gyro_range = gyro_range
+        self.mag_freq = mag_freq
         self.analog_freq = analog_freq
         self.constat_period = constat_period
         self.serial_buffer_rx_size = serial_buffer_rx_size
@@ -100,6 +103,18 @@ class Configuration:
         self.baros_samples_per_packet = baros_samples_per_packet
         self.diff_baros_samples_per_packet = diff_baros_samples_per_packet
         self.constat_samples_per_packet = constat_samples_per_packet
+
+        self.sensor_names = sensor_names or [
+            MICROPHONE_SENSOR_NAME,
+            "Baros_P",
+            "Baros_T",
+            "Diff_Baros",
+            "Acc",
+            "Gyro",
+            "Mag",
+            "Analog Vbat",
+            "Constat",
+        ]
 
         self.default_handles = default_handles or {
             "34": "Abs. baros",
@@ -171,7 +186,7 @@ class Configuration:
             "Diff_Baros": 1 / self.diff_baros_freq,
             "Acc": 1 / self.acc_freq,
             "Gyro": 1 / self.gyro_freq,
-            "Mag": 1 / 12.5,
+            "Mag": 1 / self.mag_freq,
             "Analog Vbat": 1 / self.analog_freq,
             "Constat": self.constat_period / 1000,
         }

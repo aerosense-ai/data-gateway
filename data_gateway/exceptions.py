@@ -6,8 +6,8 @@ class UnknownPacketTypeError(GatewayError, ValueError):
     """Raise if attempting to parse a packet of unknown type"""
 
 
-class UnknownSensorTypeError(GatewayError, TypeError):
-    """Raise if an unknown sensor type is used."""
+class UnknownSensorNameError(GatewayError, ValueError):
+    """Raise if an unknown sensor name is used."""
 
 
 class WrongNumberOfSensorCoordinatesError(GatewayError, ValueError):

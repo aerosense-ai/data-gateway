@@ -46,17 +46,6 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.sleep = False
         self.stop = False
-        self.sensor_names = (
-            MICROPHONE_SENSOR_NAME,
-            "Baros_P",
-            "Baros_T",
-            "Diff_Baros",
-            "Acc",
-            "Gyro",
-            "Mag",
-            "Analog Vbat",
-            "Constat",
-        )
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
@@ -64,7 +53,7 @@ class PacketReader:
 
         if upload_to_cloud:
             self.uploader = BatchingUploader(
-                sensor_names=self.sensor_names,
+                sensor_names=self.config.sensor_names,
                 project_name=project_name,
                 bucket_name=bucket_name,
                 window_size=window_size,
@@ -77,7 +66,7 @@ class PacketReader:
 
         if save_locally:
             self.writer = BatchingFileWriter(
-                sensor_names=self.sensor_names,
+                sensor_names=self.config.sensor_names,
                 window_size=window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
@@ -99,7 +88,7 @@ class PacketReader:
         previous_timestamp = {}
         data = {}
 
-        for sensor_name in self.sensor_names:
+        for sensor_name in self.config.sensor_names:
             previous_timestamp[sensor_name] = -1
             data[sensor_name] = [
                 ([0] * self.config.samples_per_packet[sensor_name])
@@ -128,12 +117,23 @@ class PacketReader:
                         self.update_handles(payload)
                         continue
 
+                    # Check for bytes in serial input buffer. A full buffer results in overflow.
+                    if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                        logger.warning(
+                            "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
+                            serial_port.in_waiting,
+                        )
+                        serial_port.close()
+                        serial_port.open()
+                        continue
+
                     self._parse_payload(
                         packet_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
                     )
 
     def update_handles(self, payload):
-        """Update the Bluetooth handles object.
+        """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
+        established.
 
         :param iter payload:
         :return None:
@@ -211,15 +211,15 @@ class PacketReader:
         elif len(payload) >= 1 and self.handles[packet_type] in ["Mic 1", "Cmd Decline", "Sleep State", "Info Message"]:
             self._parse_info_packet(self.handles[packet_type], payload)
 
-    def _parse_sensor_packet_data(self, sensor_type, payload, data):
+    def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
 
-        :param str sensor_type: Type of the sensor
+        :param str packet_type: Type of the packet
         :param iter payload: Raw payload to be parsed
         :param dict data: Initialised data dict to be completed with parsed data
         :return dict data:
         """
-        if sensor_type == "Abs. baros":
+        if packet_type == "Abs. baros":
             # Write the received payload to the data field
             # TODO bytes_per_sample should probably be in the configuration
             bytes_per_sample = 6
@@ -239,7 +239,7 @@ class PacketReader:
 
             return data, ["Baros_P", "Baros_T"]
 
-        if sensor_type == "Diff. baros":
+        if packet_type == "Diff. baros":
             bytes_per_sample = 2
             for i in range(self.config.diff_baros_samples_per_packet):
                 for j in range(self.config.number_of_sensors["Diff_Baros"]):
@@ -255,7 +255,7 @@ class PacketReader:
 
             return data, ["Diff_Baros"]
 
-        if sensor_type == "Mic 0":
+        if packet_type == "Mic 0":
             # Write the received payload to the data field
             bytes_per_sample = 3
 
@@ -287,11 +287,11 @@ class PacketReader:
 
             return data, [MICROPHONE_SENSOR_NAME]
 
-        if sensor_type.startswith("IMU"):
+        if packet_type.startswith("IMU"):
 
             imu_sensor_names = {"IMU Accel": "Acc", "IMU Gyro": "Gyro", "IMU Magnetometer": "Mag"}
 
-            imu_sensor = imu_sensor_names[sensor_type]
+            imu_sensor = imu_sensor_names[packet_type]
 
             # Write the received payload to the data field
             for i in range(self.config.imu_samples_per_packet):
@@ -308,11 +308,11 @@ class PacketReader:
             return data, [imu_sensor]
 
         # TODO Analog sensor definitions
-        if sensor_type in {"Analog Kinetron", "Analog1", "Analog2"}:
+        if packet_type in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Analog packet. Not supported atm")
-            raise exceptions.UnknownSensorTypeError(f"Sensor of type {sensor_type!r} is unknown.")
+            raise exceptions.UnknownPacketTypeError(f"Packet of type {packet_type!r} is unknown.")
 
-        if sensor_type == "Analog Vbat":
+        if packet_type == "Analog Vbat":
 
             def val_to_v(val):
                 return val / 1e6
@@ -326,7 +326,7 @@ class PacketReader:
 
             return data, ["Analog Vbat"]
 
-        if sensor_type == "Constat":
+        if packet_type == "Constat":
             bytes_per_sample = 10
             for i in range(self.config.constat_samples_per_packet):
                 data["Constat"][0][i] = struct.unpack(
@@ -351,9 +351,9 @@ class PacketReader:
 
             return data, ["Constat"]
 
-        else:  # if sensor_type not in self.handles
-            logger.error("Sensor of type %r is unknown.", sensor_type)
-            raise exceptions.UnknownSensorTypeError(f"Sensor of type {sensor_type!r} is unknown.")
+        else:  # if packet_type not in self.handles
+            logger.error("Sensor of type %r is unknown.", packet_type)
+            raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
 
     def _parse_info_packet(self, information_type, payload):
         """Parse information type packet and send the information to logger.
@@ -377,7 +377,7 @@ class PacketReader:
         elif information_type == "Sleep State":
             state_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("\n%s\n", self.config.sleep_state[state_index])
-            self.sleep = bool(state_index)
+            self.sleep = bool(int(state_index))
 
         elif information_type == "Info Message":
             info_index = str(int.from_bytes(payload[0:1], self.config.endian, signed=False))
@@ -395,49 +395,64 @@ class PacketReader:
                     state_of_charge / 256,
                 )
 
-    def _check_for_packet_loss(self, sensor_type, timestamp, previous_timestamp):
+    def _check_for_packet_loss(self, sensor_name, timestamp, previous_timestamp):
         """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for
-        the sensor_type.
+        the sensor_name.
 
         The sensor data arrives in packets that contain n samples from some sensors of the same type, e.g. one barometer
         packet contains 40 samples from 4 barometers each. Timestamp arrives once per packet. The difference between
         timestamps in two consecutive packets is expected to be approximately equal to the number of samples in the
         packet times sampling period.
 
-        :param str sensor_type:
+        :param str sensor_name:
         :param float timestamp: Current timestamp for the first sample in the packet Unit: s
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
         if self.sleep:
+            # During sleep, there are no new packets coming in.
+            # TODO Make previous_timestamp an attribute, move this to information packet parser and perform on wake-up
+            for sensor_name in self.config.sensor_names:
+                previous_timestamp[sensor_name] = -1
             return
 
-        if previous_timestamp[sensor_type] == -1:
-            logger.info("Received first %s packet" % sensor_type)
+        if previous_timestamp[sensor_name] == -1:
+            logger.info("Received first %s packet" % sensor_name)
         else:
             expected_current_timestamp = (
-                previous_timestamp[sensor_type]
-                + self.config.samples_per_packet[sensor_type] * self.config.period[sensor_type]
+                previous_timestamp[sensor_name]
+                + self.config.samples_per_packet[sensor_name] * self.config.period[sensor_name]
             )
-            timestamp_deviation = expected_current_timestamp - timestamp
+            timestamp_deviation = timestamp - expected_current_timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
-                logger.warning("Lost %s packet(s): %s ms gap", sensor_type, timestamp_deviation * 1000)
+                logger.warning(
+                    "Possible packet loss. %s sensor packet is timestamped %d ms later than expected",
+                    sensor_name,
+                    timestamp_deviation * 1000,
+                )
 
-        previous_timestamp[sensor_type] = timestamp
+                if sensor_name in ["Acc", "Gyro", "Mag"]:
+                    # IMU sensors are not synchronised to CPU, so their actual periods might differ
+                    self.config.period[sensor_name] = (
+                        timestamp - previous_timestamp[sensor_name]
+                    ) / self.config.samples_per_packet[sensor_name]
+                    logger.debug("Updated %s period to %f ms.", sensor_name, self.config.period[sensor_name] * 1000)
 
-    def _timestamp_and_persist_data(self, data, sensor_type, timestamp, period):
+        previous_timestamp[sensor_name] = timestamp
+
+    def _timestamp_and_persist_data(self, data, sensor_name, timestamp, period):
         """Persist data to the required storage media.
         Since timestamps only come at a packet level, this function assumes constant period for
          the within-packet-timestamps
 
         :param dict data: data to persist
-        :param str sensor_type: sensor type to persist data from
+        :param str sensor_name: sensor type to persist data from
         :param float timestamp: timestamp in s
         :param float period:
         :return None:
         """
-        number_of_samples = len(data[sensor_type][0])
+        number_of_samples = len(data[sensor_name][0])
         time = None
 
         # Iterate through all sample times.
@@ -445,14 +460,14 @@ class PacketReader:
             time = timestamp + i * period
             sample = [time]
 
-            for meas in data[sensor_type]:
+            for meas in data[sensor_name]:
                 sample.append(meas[i])
 
-            self._add_data_to_current_window(sensor_type, data=sample)
+            self._add_data_to_current_window(sensor_name, data=sample)
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
         # UTC time now. Store it as the `start_timestamp` metadata in the windows.
-        if sensor_type == "Constat":
+        if sensor_name == "Constat":
             logger.debug("Constat packet: %d" % timestamp)
             if time and self.sensor_time_offset is None:
                 self._calculate_and_store_sensor_timestamp_offset(time)
@@ -475,15 +490,15 @@ class PacketReader:
             self.uploader.current_window["sensor_time_offset"] = self.sensor_time_offset
             self.uploader.ready_window["sensor_time_offset"] = self.sensor_time_offset
 
-    def _add_data_to_current_window(self, sensor_type, data):
+    def _add_data_to_current_window(self, sensor_name, data):
         """Add data to the current window.
 
-        :param str sensor_type: sensor type to persist data from
+        :param str sensor_name: sensor type to persist data from
         :param iter data: data to persist
         :return None:
         """
         if self.save_locally:
-            self.writer.add_to_current_window(sensor_type, data)
+            self.writer.add_to_current_window(sensor_name, data)
 
         if self.upload_to_cloud:
-            self.uploader.add_to_current_window(sensor_type, data)
+            self.uploader.add_to_current_window(sensor_name, data)
