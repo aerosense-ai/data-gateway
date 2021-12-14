@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import tempfile
@@ -123,7 +124,7 @@ class TestStart(BaseTestCase):
                     json.dump({"commands": [["startIMU", 0.1], ["startBaros", 0.2], ["stop", 0.3]]}, f)
 
                 routine_commands = []
-                dummy_serial_class_with_dummy_write_method = DummySerial
+                dummy_serial_class_with_dummy_write_method = copy.deepcopy(DummySerial)
                 dummy_serial_class_with_dummy_write_method.write = routine_commands.append
 
                 with mock.patch("serial.Serial", new=DummySerial):
