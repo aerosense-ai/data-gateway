@@ -1,8 +1,8 @@
-import copy
 import json
 import os
 import tempfile
 from unittest import mock
+from unittest.mock import call
 
 import requests
 from click.testing import CliRunner
@@ -123,25 +123,22 @@ class TestStart(BaseTestCase):
                 with open(routine_path, "w") as f:
                     json.dump({"commands": [["startIMU", 0.1], ["startBaros", 0.2], ["stop", 0.3]]}, f)
 
-                routine_commands = []
-                dummy_serial_class_with_dummy_write_method = copy.deepcopy(DummySerial)
-                dummy_serial_class_with_dummy_write_method.write = routine_commands.append
-
-                with mock.patch("serial.Serial", new=DummySerial):
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        [
-                            "start",
-                            "--no-upload-to-cloud",
-                            f"--routine-file={routine_path}",
-                            f"--output-dir={temporary_directory}",
-                        ],
-                    )
+                with mock.patch("data_gateway.dummy_serial.DummySerial.write") as mock_write:
+                    with mock.patch("serial.Serial", new=DummySerial):
+                        result = CliRunner().invoke(
+                            gateway_cli,
+                            [
+                                "start",
+                                "--no-upload-to-cloud",
+                                f"--routine-file={routine_path}",
+                                f"--output-dir={temporary_directory}",
+                            ],
+                        )
 
                 self.assertIsNone(result.exception)
                 self.assertEqual(result.exit_code, 0)
 
-        self.assertEqual(routine_commands, [b"startIMU", b"startBaros", b"stop"])
+        self.assertEqual(mock_write.call_args_list, [call(b"startIMU"), call(b"startBaros"), call(b"stop")])
 
     def test_log_level_can_be_set(self):
         """Test that the log level can be set."""
