@@ -71,11 +71,7 @@ def gateway_cli(logger_uri, log_level):
     help="Path to sensor command routine JSON file.",
 )
 @click.option(
-    "--save-locally",
-    "-l",
-    is_flag=True,
-    default=False,
-    show_default=True,
+    "--save-locally", "-l", is_flag=True, default=False, show_default=True, help="Save output JSON data to disk."
 )
 @click.option(
     "--no-upload-to-cloud",
@@ -83,6 +79,7 @@ def gateway_cli(logger_uri, log_level):
     is_flag=True,
     default=False,
     show_default=True,
+    help="Don't upload output JSON data to the cloud.",
 )
 @click.option(
     "--interactive",
