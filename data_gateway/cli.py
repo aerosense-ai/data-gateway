@@ -209,8 +209,8 @@ def start(
 
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
     packet_reader = PacketReader(
-        save_locally=True,
-        upload_to_cloud=False,
+        save_locally=save_locally,
+        upload_to_cloud=not no_upload_to_cloud,
         output_directory=output_dir,
         window_size=window_size,
         project_name=gcp_project_name,
