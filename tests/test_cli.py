@@ -91,7 +91,7 @@ class TestStart(BaseTestCase):
             os.chdir(initial_directory)
 
     def test_commands_are_recorded_in_interactive_mode(self):
-        """Ensure commands given in interactive mode are recorded. Interactive mode should work without the
+        """Ensure commands given in interactive mode are recorded. `--no-upload-to-cloud` mode should work without the
         GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
@@ -110,6 +110,37 @@ class TestStart(BaseTestCase):
 
                 with open(os.path.join(temporary_directory, os.listdir(temporary_directory)[0], "commands.txt")) as f:
                     self.assertEqual(f.read(), commands)
+
+    def test_with_routine(self):
+        """Ensure commands in a routine file are written to the serial port. `--no-upload-to-cloud` mode should work
+        without the GOOGLE_APPLICATION_CREDENTIALS environment variable.
+        """
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                routine_path = os.path.join(temporary_directory, "routine.json")
+
+                with open(routine_path, "w") as f:
+                    json.dump({"commands": [["startIMU", 0.1], ["startBaros", 0.2], ["stop", 0.3]]}, f)
+
+                routine_commands = []
+                dummy_serial_class_with_dummy_write_method = DummySerial
+                dummy_serial_class_with_dummy_write_method.write = routine_commands.append
+
+                with mock.patch("serial.Serial", new=DummySerial):
+                    result = CliRunner().invoke(
+                        gateway_cli,
+                        [
+                            "start",
+                            "--no-upload-to-cloud",
+                            f"--routine-file={routine_path}",
+                            f"--output-dir={temporary_directory}",
+                        ],
+                    )
+
+                self.assertIsNone(result.exception)
+                self.assertEqual(result.exit_code, 0)
+
+        self.assertEqual(routine_commands, [b"startIMU", b"startBaros", b"stop"])
 
     def test_log_level_can_be_set(self):
         """Test that the log level can be set."""
@@ -140,8 +171,8 @@ class TestStart(BaseTestCase):
                     self.assertTrue(debug_message_found)
 
     def test_start_and_stop_in_interactive_mode(self):
-        """Ensure the gateway can be started and stopped via the CLI in interactive mode. Interactive mode should work
-        without the GOOGLE_APPLICATION_CREDENTIALS environment variable.
+        """Ensure the gateway can be started and stopped via the CLI in interactive mode. `--no-upload-to-cloud` mode
+        should work without the GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with tempfile.TemporaryDirectory() as temporary_directory:
             with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
@@ -161,8 +192,8 @@ class TestStart(BaseTestCase):
             )
 
     def test_interactive_mode_writes_to_disk(self):
-        """Ensure interactive mode writes data to disk. It should work without the GOOGLE_APPLICATION_CREDENTIALS
-        environment variable.
+        """Ensure interactive mode writes data to disk. `--no-upload-to-cloud` mode should work without the
+        GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             serial_port = DummySerial(port="test")
@@ -191,7 +222,7 @@ class TestStart(BaseTestCase):
             self.assertEqual(result.exit_code, 0)
 
     def test_start_with_config_file(self):
-        """Ensure a configuration file can be provided via the CLI. Interactive mode should work without the
+        """Ensure a configuration file can be provided via the CLI. `--no-upload-to-cloud` mode should work without the
         GOOGLE_APPLICATION_CREDENTIALS environment variable.
         """
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
