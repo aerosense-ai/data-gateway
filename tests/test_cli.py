@@ -51,9 +51,7 @@ class TestCLI(BaseTestCase):
 
 class TestStart(BaseTestCase):
     def test_start(self):
-        """Ensure the gateway can be started via the CLI. The "stop-when-no-more-data" option is enabled so the test
-        doesn't run forever.
-        """
+        """Ensure the gateway can be started via the CLI."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             with mock.patch("serial.Serial", new=DummySerial):
                 result = CliRunner().invoke(
@@ -63,17 +61,15 @@ class TestStart(BaseTestCase):
                         f"--gcp-project-name={TEST_PROJECT_NAME}",
                         f"--gcp-bucket-name={TEST_BUCKET_NAME}",
                         f"--output-dir={temporary_directory}",
-                        "--stop-when-no-more-data",
                     ],
+                    input="stop\n",
                 )
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
 
     def test_start_with_default_output_directory(self):
-        """Ensure the gateway can be started via the CLI with a default output directory. The "stop-when-no-more-data"
-        option is enabled so the test doesn't run forever.
-        """
+        """Ensure the gateway can be started via the CLI with a default output directory."""
         initial_directory = os.getcwd()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -86,8 +82,8 @@ class TestStart(BaseTestCase):
                         "start",
                         f"--gcp-project-name={TEST_PROJECT_NAME}",
                         f"--gcp-bucket-name={TEST_BUCKET_NAME}",
-                        "--stop-when-no-more-data",
                     ],
+                    input="sleep 2\nstop\n",
                 )
 
             self.assertIsNone(result.exception)
@@ -105,7 +101,7 @@ class TestStart(BaseTestCase):
                 with mock.patch("serial.Serial", new=DummySerial):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                        ["start", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
                         input=commands,
                     )
 
@@ -125,7 +121,7 @@ class TestStart(BaseTestCase):
                         [
                             "--log-level=debug",
                             "start",
-                            "--interactive",
+                            "--no-upload-to-cloud",
                             f"--output-dir={temporary_directory}",
                         ],
                         input="stop\n",
@@ -153,7 +149,7 @@ class TestStart(BaseTestCase):
                     with mock.patch("serial.Serial", new=DummySerial):
                         result = CliRunner().invoke(
                             gateway_cli,
-                            ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                            ["start", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
                             input="stop\n",
                         )
 
@@ -178,7 +174,7 @@ class TestStart(BaseTestCase):
                 with mock.patch("serial.Serial", return_value=serial_port):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "--interactive", f"--output-dir={temporary_directory}"],
+                        ["start", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
                         input="sleep 2\nstop\n",
                     )
 
@@ -206,7 +202,7 @@ class TestStart(BaseTestCase):
                             gateway_cli,
                             [
                                 "start",
-                                "--interactive",
+                                "--no-upload-to-cloud",
                                 f"--config-file={CONFIGURATION_PATH}",
                                 f"--output-dir={temporary_directory}",
                             ],

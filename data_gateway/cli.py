@@ -64,16 +64,18 @@ def gateway_cli(logger_uri, log_level):
     help="Path to your Aerosense deployment configuration file.",
 )
 @click.option(
-    "--interactive",
-    "-i",
+    "--save-locally",
+    "-l",
     is_flag=True,
     default=False,
     show_default=True,
-    help="""
-        Run the gateway in interactive mode, allowing commands to be sent to the serial port via the command line.\n
-        WARNING: the output of the gateway will be saved to disk locally and not uploaded to the cloud if this option
-        is used. The same file/folder structure will be used either way.
-    """,
+)
+@click.option(
+    "--no-upload-to-cloud",
+    "-nc",
+    is_flag=True,
+    default=False,
+    show_default=True,
 )
 @click.option(
     "--output-dir",
@@ -111,12 +113,6 @@ def gateway_cli(logger_uri, log_level):
     help="An optional label to associate with data persisted in this run of the gateway.",
 )
 @click.option(
-    "--stop-when-no-more-data",
-    is_flag=True,
-    default=False,
-    help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
-)
-@click.option(
     "--save-csv-files",
     is_flag=True,
     default=False,
@@ -132,14 +128,14 @@ def gateway_cli(logger_uri, log_level):
 def start(
     serial_port,
     config_file,
-    interactive,
+    save_locally,
+    no_upload_to_cloud,
     output_dir,
     window_size,
     gcp_project_name,
     gcp_bucket_name,
     label,
     save_csv_files,
-    stop_when_no_more_data,
     use_dummy_serial_port,
 ):
     """Begin reading and persisting data from the serial port for the sensors at the installation defined in
@@ -177,25 +173,6 @@ def start(
     if os.name == "nt":
         serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
 
-    if not interactive:
-        logger.info(
-            "Starting packet reader in non-interactive mode - files will be uploaded to cloud storage at intervals of "
-            "%s seconds.",
-            window_size,
-        )
-
-        PacketReader(
-            save_locally=False,
-            upload_to_cloud=True,
-            output_directory=output_dir,
-            window_size=window_size,
-            project_name=gcp_project_name,
-            bucket_name=gcp_bucket_name,
-            configuration=config,
-        ).read_packets(serial_port, stop_when_no_more_data=stop_when_no_more_data)
-
-        return
-
     if not output_dir.startswith("/"):
         output_dir = os.path.join(".", output_dir)
 
@@ -208,21 +185,26 @@ def start(
         upload_to_cloud=False,
         output_directory=output_dir,
         window_size=window_size,
+        project_name=gcp_project_name,
+        bucket_name=gcp_bucket_name,
         configuration=config,
         save_csv_files=save_csv_files,
     )
 
-    thread = threading.Thread(
-        target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True
-    )
-    thread.start()
+    logger.info("Starting packet reader.")
 
-    logger.info(
-        "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
-        " to disk at %r at intervals of %s seconds.",
-        os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory),
-        window_size,
-    )
+    if not no_upload_to_cloud:
+        logger.info("Files will be uploaded to cloud storage at intervals of %s seconds.", window_size)
+
+    if save_locally:
+        logger.info(
+            "Files will be saved locally to disk at %r at intervals of %s seconds.",
+            os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory),
+            window_size,
+        )
+
+    thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
+    thread.start()
 
     # Keep a record of the commands given.
     commands_record_file = os.path.join(
