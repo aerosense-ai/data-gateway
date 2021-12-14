@@ -185,7 +185,7 @@ def start(
         else:
             if os.path.exists(routine_file):
                 with open(routine_file) as f:
-                    routine = Routine(**json.load(f))
+                    routine = Routine(**json.load(f), action=lambda command: serial_port.write(command.encode("utf_8")))
                 logger.info("Loaded routine file from %r.", routine_file)
             else:
                 routine = None
@@ -261,7 +261,6 @@ def start(
 
         else:
             if routine is not None:
-                routine.action = lambda command: serial_port.write(command.encode("utf_8"))
                 routine.run()
 
     except KeyboardInterrupt:
