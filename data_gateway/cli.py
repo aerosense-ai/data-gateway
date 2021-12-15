@@ -6,10 +6,14 @@ import time
 import click
 import pkg_resources
 import requests
+import serial
 from requests import HTTPError
 from slugify import slugify
 
+from data_gateway.configuration import Configuration
+from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+from data_gateway.routine import Routine
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -157,62 +161,23 @@ def start(
     nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
     [startBaros, startMics, startIMU, getBattery, stop].
     """
-    import json
     import sys
     import threading
 
-    import serial
-
-    from data_gateway.configuration import Configuration
     from data_gateway.packet_reader import PacketReader
-    from data_gateway.routine import Routine
 
-    if os.path.exists(config_file):
-        with open(config_file) as f:
-            config = Configuration.from_dict(json.load(f))
-        logger.info("Loaded configuration file from %r.", config_file)
-    else:
-        config = Configuration()
-        logger.info("No configuration file provided - using default configuration.")
-
-    if os.path.exists(routine_file):
-        if interactive:
-            logger.warning("Sensor command routine files are ignored in interactive mode.")
-        else:
-            with open(routine_file) as f:
-                routine = Routine(**json.load(f), action=lambda command: serial_port.write(command.encode("utf_8")))
-            logger.info("Loaded routine file from %r.", routine_file)
-    else:
-        routine = None
-        logger.info(
-            "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
-            routine_file,
-        )
-
+    config = _load_configuration(configuration_path=config_file)
     config.session_data["label"] = label
 
-    if not use_dummy_serial_port:
-        serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)
-    else:
-        from data_gateway.dummy_serial import DummySerial
-
-        serial_port = DummySerial(port=serial_port, baudrate=config.baudrate)
-
-    # `set_buffer_size` is only available on Windows.
-    if os.name == "nt":
-        serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
-
-    if not output_dir.startswith("/"):
-        output_dir = os.path.join(".", output_dir)
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    serial_port = _get_serial_port(serial_port, configuration=config, use_dummy_serial_port=use_dummy_serial_port)
+    routine = _load_routine(routine_path=routine_file, interactive=interactive, serial_port=serial_port)
+    output_directory = _update_and_create_output_directory(output_directory_path=output_dir)
 
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
     packet_reader = PacketReader(
         save_locally=save_locally,
         upload_to_cloud=not no_upload_to_cloud,
-        output_directory=output_dir,
+        output_directory=output_directory,
         window_size=window_size,
         project_name=gcp_project_name,
         bucket_name=gcp_bucket_name,
@@ -232,6 +197,8 @@ def start(
             window_size,
         )
 
+    # Start packet reader in a separate thread so commands can be sent to it in real time in interactive mode or by a
+    # routine.
     thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
     thread.start()
 
@@ -351,6 +318,90 @@ command=gateway start --config-file {os.path.abspath(config_file)}"""
 
     print(supervisord_conf_str)
     return 0
+
+
+def _load_configuration(configuration_path):
+    """Load a configuration from the path if it exists, otherwise load the default configuration.
+
+    :param str configuration_path:
+    :return data_gateway.configuration.Configuration:
+    """
+    if os.path.exists(configuration_path):
+        with open(configuration_path) as f:
+            configuration = Configuration.from_dict(json.load(f))
+
+        logger.info("Loaded configuration file from %r.", configuration_path)
+        return configuration
+
+    configuration = Configuration()
+    logger.info("No configuration file provided - using default configuration.")
+    return configuration
+
+
+def _get_serial_port(serial_port, configuration, use_dummy_serial_port):
+    """Get the serial port or a dummy serial port if specified.
+
+    :param str serial_port:
+    :param data_gateway.configuration.Configuration configuration:
+    :param bool use_dummy_serial_port:
+    :return serial.Serial:
+    """
+    if not use_dummy_serial_port:
+        serial_port = serial.Serial(port=serial_port, baudrate=configuration.baudrate)
+    else:
+        serial_port = DummySerial(port=serial_port, baudrate=configuration.baudrate)
+
+    # The buffer size can only be set on Windows.
+    if os.name == "nt":
+        serial_port.set_buffer_size(
+            rx_size=configuration.serial_buffer_rx_size,
+            tx_size=configuration.serial_buffer_tx_size,
+        )
+
+    return serial_port
+
+
+def _load_routine(routine_path, interactive, serial_port):
+    """Load a sensor commands routine from the path if exists, otherwise return no routine. If in interactive mode, the
+    routine file is ignored.
+
+    :param str routine_path:
+    :param bool interactive:
+    :param serial.Serial serial_port:
+    :return data_gateway.routine.Routine|None:
+    """
+    if os.path.exists(routine_path):
+        if interactive:
+            logger.warning("Sensor command routine files are ignored in interactive mode.")
+        else:
+            with open(routine_path) as f:
+                routine = Routine(**json.load(f), action=lambda command: serial_port.write(command.encode("utf_8")))
+
+            logger.info("Loaded routine file from %r.", routine_path)
+            return routine
+
+    logger.info(
+        "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
+        routine_path,
+    )
+
+    return None
+
+
+def _update_and_create_output_directory(output_directory_path):
+    """Set the output directory to a path relative to the current directory if the path does not start with "/" and
+    create it if it does not already exist.
+
+    :param str output_directory_path:
+    :return str:
+    """
+    if not output_directory_path.startswith("/"):
+        output_directory_path = os.path.join(".", output_directory_path)
+
+    if not os.path.exists(output_directory_path):
+        os.makedirs(output_directory_path)
+
+    return output_directory_path
 
 
 if __name__ == "__main__":
