@@ -175,18 +175,19 @@ def start(
         config = Configuration()
         logger.info("No configuration file provided - using default configuration.")
 
-    if routine_file:
+    if os.path.exists(routine_file):
         if interactive:
             logger.warning("Sensor command routine files are ignored in interactive mode.")
-
         else:
-            if os.path.exists(routine_file):
-                with open(routine_file) as f:
-                    routine = Routine(**json.load(f), action=lambda command: serial_port.write(command.encode("utf_8")))
-                logger.info("Loaded routine file from %r.", routine_file)
-            else:
-                routine = None
-                logger.info("No routine provided - sensors only controlled by interactive user input.")
+            with open(routine_file) as f:
+                routine = Routine(**json.load(f), action=lambda command: serial_port.write(command.encode("utf_8")))
+            logger.info("Loaded routine file from %r.", routine_file)
+    else:
+        routine = None
+        logger.info(
+            "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
+            routine_file,
+        )
 
     config.session_data["label"] = label
 
