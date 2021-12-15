@@ -72,6 +72,23 @@ class DummySerial(object):
         self._isOpen = True
         self.port = self.initial_port_name
 
+    @property
+    def is_open(self):
+        """Check if the serial port is open.
+
+        :return bool:
+        """
+        return self._isOpen
+
+    @is_open.setter
+    def is_open(self, value):
+        """Open or close the serial port.
+
+        :param bool value:
+        :return None:
+        """
+        self._isOpen = value
+
     def close(self):
         """Close the dummy serial port."""
         logger.debug("Closing port")

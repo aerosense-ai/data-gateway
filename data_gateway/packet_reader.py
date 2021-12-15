@@ -9,6 +9,7 @@ from octue.cloud import storage
 from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
+from data_gateway.serial_protocol import CustomReaderThread, Protocol
 
 
 logger = logging.getLogger(__name__)
@@ -85,51 +86,19 @@ class PacketReader:
         """
         self._persist_configuration()
 
-        previous_timestamp = {}
-        data = {}
-
-        for sensor_name in self.config.sensor_names:
-            previous_timestamp[sensor_name] = -1
-            data[sensor_name] = [
-                ([0] * self.config.samples_per_packet[sensor_name])
-                for _ in range(self.config.number_of_sensors[sensor_name])
-            ]
+        serial_port_protocol = Protocol
+        serial_port_protocol.configuration = self.config
+        serial_port_protocol.packet_reader = self
+        serial_port_protocol.initiator = self.config.packet_key.to_bytes(1, self.config.endian)
 
         with self.uploader:
             with self.writer:
                 while not self.stop:
-
-                    serial_data = serial_port.read()
-
-                    if len(serial_data) == 0:
-                        if stop_when_no_more_data:
-                            break
-                        continue
-
-                    if serial_data[0] != self.config.packet_key:
-                        continue
-
-                    packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
-                    length = int.from_bytes(serial_port.read(), self.config.endian)
-                    payload = serial_port.read(length)
-
-                    if packet_type == str(self.config.type_handle_def):
-                        self.update_handles(payload)
-                        continue
-
-                    # Check for bytes in serial input buffer. A full buffer results in overflow.
-                    if serial_port.in_waiting == self.config.serial_buffer_rx_size:
-                        logger.warning(
-                            "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
-                            serial_port.in_waiting,
-                        )
-                        serial_port.close()
-                        serial_port.open()
-                        continue
-
-                    self._parse_payload(
-                        packet_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
-                    )
+                    CustomReaderThread(
+                        serial_port,
+                        protocol_factory=serial_port_protocol,
+                        stop_when_no_more_data=stop_when_no_more_data,
+                    ).run()
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
