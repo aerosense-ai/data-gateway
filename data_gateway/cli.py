@@ -357,6 +357,8 @@ def _get_serial_port(serial_port, configuration, use_dummy_serial_port):
             rx_size=configuration.serial_buffer_rx_size,
             tx_size=configuration.serial_buffer_tx_size,
         )
+    else:
+        logger.warning("Serial port buffer size can only be set on Windows.")
 
     return serial_port
 
