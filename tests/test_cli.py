@@ -187,8 +187,8 @@ class TestStart(BaseTestCase):
 
                 self.assertTrue(debug_message_found)
 
-    def test_start_and_stop_in_local_save_mode(self):
-        """Ensure the gateway can be started and stopped via the CLI in `--save-locally` mode."""
+    def test_start_and_stop_in_interactive_mode(self):
+        """Ensure the gateway can be started and stopped via the CLI in interactive mode."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
                 with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
