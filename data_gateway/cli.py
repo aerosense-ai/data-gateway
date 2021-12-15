@@ -400,9 +400,7 @@ def _update_and_create_output_directory(output_directory_path):
     if not output_directory_path.startswith("/"):
         output_directory_path = os.path.join(".", output_directory_path)
 
-    if not os.path.exists(output_directory_path):
-        os.makedirs(output_directory_path)
-
+    os.makedirs(output_directory_path, exist_ok=True)
     return output_directory_path
 
 
