@@ -28,6 +28,21 @@ class TestRoutine(TestCase):
         with self.assertRaises(ValueError):
             Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, period=1)
 
+    def test_error_raised_if_stop_after_time_is_less_than_period(self):
+        """Test that an error is raised if the `stop_after` time is less than the period."""
+        with self.assertRaises(ValueError):
+            Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, period=1, stop_after=0.5)
+
+    def test_warning_raised_if_stop_after_time_provided_without_a_period(self):
+        """Test that a warning is raised if the `stop_after` time is provided without a period."""
+        with self.assertLogs() as logs_context:
+            Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, stop_after=0.5)
+
+        self.assertEqual(
+            logs_context.output[0],
+            "WARNING:data_gateway.routine:The `stop_after` parameter is ignored unless `period` is also given.",
+        )
+
     def test_routine_with_period(self):
         """Test that commands can be scheduled to repeat at the given period."""
         recorded_commands = []
