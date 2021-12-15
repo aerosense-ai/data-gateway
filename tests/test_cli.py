@@ -9,7 +9,7 @@ from click.testing import CliRunner
 
 from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
 from data_gateway.dummy_serial import DummySerial
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
 from tests.base import BaseTestCase
 
 
@@ -51,6 +51,11 @@ class TestCLI(BaseTestCase):
 
 
 class TestStart(BaseTestCase):
+    """Test the CLI start command. Note that the `--no-upload-to-cloud` mode should work without the
+    GOOGLE_APPLICATION_CREDENTIALS environment variable being available - it's removed from the environment in the
+    tests that use this mode.
+    """
+
     def test_start(self):
         """Ensure the gateway can be started via the CLI."""
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -59,8 +64,8 @@ class TestStart(BaseTestCase):
                     gateway_cli,
                     [
                         "start",
-                        f"--gcp-project-name={TEST_PROJECT_NAME}",
-                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--interactive",
+                        "--save-locally",
                         f"--output-dir={temporary_directory}",
                     ],
                     input="stop\n",
@@ -81,8 +86,8 @@ class TestStart(BaseTestCase):
                     gateway_cli,
                     [
                         "start",
-                        f"--gcp-project-name={TEST_PROJECT_NAME}",
-                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--interactive",
+                        "--save-locally",
                     ],
                     input="sleep 2\nstop\n",
                 )
@@ -92,19 +97,23 @@ class TestStart(BaseTestCase):
             os.chdir(initial_directory)
 
     def test_commands_are_recorded_in_interactive_mode(self):
-        """Ensure commands given in interactive mode are recorded. `--no-upload-to-cloud` mode should work without the
-        GOOGLE_APPLICATION_CREDENTIALS environment variable.
-        """
+        """Ensure commands given in interactive mode are recorded."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             commands = "here\nit\nis\nstop\n"
 
             with tempfile.TemporaryDirectory() as temporary_directory:
-                with mock.patch("serial.Serial", new=DummySerial):
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        ["start", "--interactive", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
-                        input=commands,
-                    )
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "start",
+                        "--interactive",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
+                        "--use-dummy-serial-port",
+                        f"--output-dir={temporary_directory}",
+                    ],
+                    input=commands,
+                )
 
                 self.assertIsNone(result.exception)
                 self.assertEqual(result.exit_code, 0)
@@ -113,9 +122,7 @@ class TestStart(BaseTestCase):
                     self.assertEqual(f.read(), commands)
 
     def test_with_routine(self):
-        """Ensure commands in a routine file are written to the serial port. `--no-upload-to-cloud` mode should work
-        without the GOOGLE_APPLICATION_CREDENTIALS environment variable.
-        """
+        """Ensure commands in a routine file are sent to the serial port."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             with tempfile.TemporaryDirectory() as temporary_directory:
                 routine_path = os.path.join(temporary_directory, "routine.json")
@@ -124,16 +131,17 @@ class TestStart(BaseTestCase):
                     json.dump({"commands": [["startIMU", 0.1], ["startBaros", 0.2], ["stop", 0.3]]}, f)
 
                 with mock.patch("data_gateway.dummy_serial.DummySerial.write") as mock_write:
-                    with mock.patch("serial.Serial", new=DummySerial):
-                        result = CliRunner().invoke(
-                            gateway_cli,
-                            [
-                                "start",
-                                "--no-upload-to-cloud",
-                                f"--routine-file={routine_path}",
-                                f"--output-dir={temporary_directory}",
-                            ],
-                        )
+                    result = CliRunner().invoke(
+                        gateway_cli,
+                        [
+                            "start",
+                            "--save-locally",
+                            "--no-upload-to-cloud",
+                            "--use-dummy-serial-port",
+                            f"--routine-file={routine_path}",
+                            f"--output-dir={temporary_directory}",
+                        ],
+                    )
 
                 self.assertIsNone(result.exception)
                 self.assertEqual(result.exit_code, 0)
@@ -143,44 +151,50 @@ class TestStart(BaseTestCase):
     def test_log_level_can_be_set(self):
         """Test that the log level can be set."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            with mock.patch("serial.Serial", new=DummySerial):
-                with self.assertLogs(level="DEBUG") as mock_logger:
+            with self.assertLogs(level="DEBUG") as mock_logger:
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "--log-level=debug",
+                        "start",
+                        "--interactive",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
+                        "--use-dummy-serial-port",
+                        f"--output-dir={temporary_directory}",
+                    ],
+                    input="stop\n",
+                )
+
+                self.assertIsNone(result.exception)
+                self.assertEqual(result.exit_code, 0)
+
+                debug_message_found = False
+
+                for message in mock_logger.output:
+                    if "DEBUG" in message:
+                        debug_message_found = True
+                        break
+
+                self.assertTrue(debug_message_found)
+
+    def test_start_and_stop_in_local_save_mode(self):
+        """Ensure the gateway can be started and stopped via the CLI in `--save-locally` mode."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+                with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
                     result = CliRunner().invoke(
                         gateway_cli,
                         [
-                            "--log-level=debug",
                             "start",
+                            "--interactive",
+                            "--save-locally",
                             "--no-upload-to-cloud",
+                            "--use-dummy-serial-port",
                             f"--output-dir={temporary_directory}",
                         ],
                         input="stop\n",
                     )
-
-                    self.assertIsNone(result.exception)
-                    self.assertEqual(result.exit_code, 0)
-
-                    debug_message_found = False
-
-                    for message in mock_logger.output:
-                        if "DEBUG" in message:
-                            debug_message_found = True
-                            break
-
-                    self.assertTrue(debug_message_found)
-
-    def test_start_and_stop_in_interactive_mode(self):
-        """Ensure the gateway can be started and stopped via the CLI in interactive mode. `--no-upload-to-cloud` mode
-        should work without the GOOGLE_APPLICATION_CREDENTIALS environment variable.
-        """
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-                with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
-                    with mock.patch("serial.Serial", new=DummySerial):
-                        result = CliRunner().invoke(
-                            gateway_cli,
-                            ["start", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
-                            input="stop\n",
-                        )
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
@@ -189,10 +203,8 @@ class TestStart(BaseTestCase):
                 any(call_arg[0][0].msg == "Stopping gateway." for call_arg in mock_local_logger_emit.call_args_list)
             )
 
-    def test_interactive_mode_writes_to_disk(self):
-        """Ensure interactive mode writes data to disk. `--no-upload-to-cloud` mode should work without the
-        GOOGLE_APPLICATION_CREDENTIALS environment variable.
-        """
+    def test_save_locally(self):
+        """Ensure `--save-locally` mode writes data to disk."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             serial_port = DummySerial(port="test")
             sensor_type = bytes([34])
@@ -203,7 +215,13 @@ class TestStart(BaseTestCase):
                 with mock.patch("serial.Serial", return_value=serial_port):
                     result = CliRunner().invoke(
                         gateway_cli,
-                        ["start", "--no-upload-to-cloud", f"--output-dir={temporary_directory}"],
+                        [
+                            "start",
+                            "--interactive",
+                            "--save-locally",
+                            "--no-upload-to-cloud",
+                            f"--output-dir={temporary_directory}",
+                        ],
                         input="sleep 2\nstop\n",
                     )
 
@@ -220,23 +238,23 @@ class TestStart(BaseTestCase):
             self.assertEqual(result.exit_code, 0)
 
     def test_start_with_config_file(self):
-        """Ensure a configuration file can be provided via the CLI. `--no-upload-to-cloud` mode should work without the
-        GOOGLE_APPLICATION_CREDENTIALS environment variable.
-        """
+        """Ensure a configuration file can be provided via the CLI."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
                 with tempfile.TemporaryDirectory() as temporary_directory:
-                    with mock.patch("serial.Serial", new=DummySerial):
-                        result = CliRunner().invoke(
-                            gateway_cli,
-                            [
-                                "start",
-                                "--no-upload-to-cloud",
-                                f"--config-file={CONFIGURATION_PATH}",
-                                f"--output-dir={temporary_directory}",
-                            ],
-                            input="stop\n",
-                        )
+                    result = CliRunner().invoke(
+                        gateway_cli,
+                        [
+                            "start",
+                            "--interactive",
+                            "--save-locally",
+                            "--no-upload-to-cloud",
+                            "--use-dummy-serial-port",
+                            f"--config-file={CONFIGURATION_PATH}",
+                            f"--output-dir={temporary_directory}",
+                        ],
+                        input="stop\n",
+                    )
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
