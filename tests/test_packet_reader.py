@@ -424,12 +424,12 @@ class TestPacketReader(BaseTestCase):
             [bytes([1]), bytes([2]), bytes([3])],
             [bytes([0]), bytes([1]), bytes([2]), bytes([3])],
             [bytes([0]), bytes([1])],
-            [bytes([0])],
+            [bytes([0] * 13)],
         ]
 
         for index, packet_type in enumerate(packet_types):
             for payload in payloads[index]:
-                serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([1]), payload)))
+                serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([len(payload)]), payload)))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
