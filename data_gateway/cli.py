@@ -234,13 +234,15 @@ def start(
     thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
     thread.start()
 
-    # Keep a record of the commands given.
-    commands_record_file = os.path.join(
-        packet_reader.output_directory, packet_reader.session_subdirectory, "commands.txt"
-    )
-
     try:
         if interactive:
+            # Keep a record of the commands given.
+            commands_record_file = os.path.join(
+                packet_reader.output_directory, packet_reader.session_subdirectory, "commands.txt"
+            )
+
+            os.makedirs(os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory), exist_ok=True)
+
             while not packet_reader.stop:
                 for line in sys.stdin:
 
