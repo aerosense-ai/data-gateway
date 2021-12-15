@@ -12,7 +12,7 @@ from slugify import slugify
 
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
-from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+from data_gateway.exceptions import DataMustBeSavedError, WrongNumberOfSensorCoordinatesError
 from data_gateway.routine import Routine
 
 
@@ -165,6 +165,12 @@ def start(
     import threading
 
     from data_gateway.packet_reader import PacketReader
+
+    if not save_locally and no_upload_to_cloud:
+        raise DataMustBeSavedError(
+            "Data from the gateway must either be saved locally or uploaded to the cloud. Please adjust the CLI "
+            "options provided."
+        )
 
     config = _load_configuration(configuration_path=config_file)
     config.session_data["label"] = label

@@ -9,6 +9,7 @@ from click.testing import CliRunner
 
 from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
 from data_gateway.dummy_serial import DummySerial
+from data_gateway.exceptions import DataMustBeSavedError
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
 from tests.base import BaseTestCase
 
@@ -53,23 +54,31 @@ class TestCLI(BaseTestCase):
 class TestStart(BaseTestCase):
     """Test the CLI start command. Note that the `--no-upload-to-cloud` mode should work without the
     GOOGLE_APPLICATION_CREDENTIALS environment variable being available - it's removed from the environment in the
-    tests that use this mode.
+    tests that use this mode. The CLI is run in interactive mode so the packet reader thread can be stopped at the end
+    of the test.
     """
+
+    def test_error_raised_if_not_saving_locally_or_uploading_to_cloud(self):
+        """Test that an error is raised if the `--no-upload-to-cloud` option is given without the `--save-locally`
+        option.
+        """
+        result = CliRunner().invoke(gateway_cli, ["start", "--interactive", "--no-upload-to-cloud"])
+        self.assertIsInstance(result.exception, DataMustBeSavedError)
 
     def test_start(self):
         """Ensure the gateway can be started via the CLI."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            with mock.patch("serial.Serial", new=DummySerial):
-                result = CliRunner().invoke(
-                    gateway_cli,
-                    [
-                        "start",
-                        "--interactive",
-                        "--save-locally",
-                        f"--output-dir={temporary_directory}",
-                    ],
-                    input="stop\n",
-                )
+            result = CliRunner().invoke(
+                gateway_cli,
+                [
+                    "start",
+                    "--interactive",
+                    "--save-locally",
+                    "--use-dummy-serial-port",
+                    f"--output-dir={temporary_directory}",
+                ],
+                input="stop\n",
+            )
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
@@ -81,16 +90,16 @@ class TestStart(BaseTestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             os.chdir(temporary_directory)
 
-            with mock.patch("serial.Serial", new=DummySerial):
-                result = CliRunner().invoke(
-                    gateway_cli,
-                    [
-                        "start",
-                        "--interactive",
-                        "--save-locally",
-                    ],
-                    input="sleep 2\nstop\n",
-                )
+            result = CliRunner().invoke(
+                gateway_cli,
+                [
+                    "start",
+                    "--interactive",
+                    "--save-locally",
+                    "--use-dummy-serial-port",
+                ],
+                input="sleep 2\nstop\n",
+            )
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
