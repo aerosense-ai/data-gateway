@@ -31,7 +31,7 @@ class TestRoutine(TestCase):
     def test_error_raised_if_stop_after_time_is_less_than_period(self):
         """Test that an error is raised if the `stop_after` time is less than the period."""
         with self.assertRaises(ValueError):
-            Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, period=1, stop_after=0.5)
+            Routine(commands=[("first-command", 0.1), ("second-command", 0.3)], action=None, period=1, stop_after=0.5)
 
     def test_warning_raised_if_stop_after_time_provided_without_a_period(self):
         """Test that a warning is raised if the `stop_after` time is provided without a period."""
