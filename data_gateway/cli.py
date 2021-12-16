@@ -371,7 +371,8 @@ def _get_serial_port(serial_port, configuration, use_dummy_serial_port):
 
 def _load_routine(routine_path, interactive, serial_port):
     """Load a sensor commands routine from the path if exists, otherwise return no routine. If in interactive mode, the
-    routine file is ignored.
+    routine file is ignored. Note that "\n" has to be added to the end of each command sent to the serial port for it to
+    be executed - this is done automatically in this method.
 
     :param str routine_path:
     :param bool interactive:
@@ -383,7 +384,10 @@ def _load_routine(routine_path, interactive, serial_port):
             logger.warning("Sensor command routine files are ignored in interactive mode.")
         else:
             with open(routine_path) as f:
-                routine = Routine(**json.load(f), action=lambda command: serial_port.write(command.encode("utf_8")))
+                routine = Routine(
+                    **json.load(f),
+                    action=lambda command: serial_port.write((command + "\n").encode("utf_8")),
+                )
 
             logger.info("Loaded routine file from %r.", routine_path)
             return routine
