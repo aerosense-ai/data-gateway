@@ -155,7 +155,7 @@ class TestStart(BaseTestCase):
                 self.assertIsNone(result.exception)
                 self.assertEqual(result.exit_code, 0)
 
-        self.assertEqual(mock_write.call_args_list, [call(b"startIMU"), call(b"startBaros"), call(b"stop")])
+        self.assertEqual(mock_write.call_args_list, [call(b"startIMU\n"), call(b"startBaros\n"), call(b"stop\n")])
 
     def test_log_level_can_be_set(self):
         """Test that the log level can be set."""
