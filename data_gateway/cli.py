@@ -6,10 +6,14 @@ import time
 import click
 import pkg_resources
 import requests
+import serial
 from requests import HTTPError
 from slugify import slugify
 
-from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+from data_gateway.configuration import Configuration
+from data_gateway.dummy_serial import DummySerial
+from data_gateway.exceptions import DataMustBeSavedError, WrongNumberOfSensorCoordinatesError
+from data_gateway.routine import Routine
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -61,7 +65,25 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(dir_okay=False),
     default="config.json",
     show_default=True,
-    help="Path to your Aerosense deployment configuration file.",
+    help="Path to your Aerosense deployment configuration JSON file.",
+)
+@click.option(
+    "--routine-file",
+    type=click.Path(dir_okay=False),
+    default="routine.json",
+    show_default=True,
+    help="Path to sensor command routine JSON file.",
+)
+@click.option(
+    "--save-locally", "-l", is_flag=True, default=False, show_default=True, help="Save output JSON data to disk."
+)
+@click.option(
+    "--no-upload-to-cloud",
+    "-nc",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Don't upload output JSON data to the cloud.",
 )
 @click.option(
     "--interactive",
@@ -69,11 +91,7 @@ def gateway_cli(logger_uri, log_level):
     is_flag=True,
     default=False,
     show_default=True,
-    help="""
-        Run the gateway in interactive mode, allowing commands to be sent to the serial port via the command line.\n
-        WARNING: the output of the gateway will be saved to disk locally and not uploaded to the cloud if this option
-        is used. The same file/folder structure will be used either way.
-    """,
+    help="Run the gateway in interactive mode, allowing commands to be sent to the serial port via the command line.",
 )
 @click.option(
     "--output-dir",
@@ -111,12 +129,6 @@ def gateway_cli(logger_uri, log_level):
     help="An optional label to associate with data persisted in this run of the gateway.",
 )
 @click.option(
-    "--stop-when-no-more-data",
-    is_flag=True,
-    default=False,
-    help="Stop the gateway when no more data is received by the serial port (this is mainly for testing).",
-)
-@click.option(
     "--save-csv-files",
     is_flag=True,
     default=False,
@@ -132,6 +144,9 @@ def gateway_cli(logger_uri, log_level):
 def start(
     serial_port,
     config_file,
+    routine_file,
+    save_locally,
+    no_upload_to_cloud,
     interactive,
     output_dir,
     window_size,
@@ -139,7 +154,6 @@ def start(
     gcp_bucket_name,
     label,
     save_csv_files,
-    stop_when_no_more_data,
     use_dummy_serial_port,
 ):
     """Begin reading and persisting data from the serial port for the sensors at the installation defined in
@@ -147,103 +161,80 @@ def start(
     nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
     [startBaros, startMics, startIMU, getBattery, stop].
     """
-    import json
     import sys
     import threading
 
-    import serial
-
-    from data_gateway.configuration import Configuration
     from data_gateway.packet_reader import PacketReader
 
-    if os.path.exists(config_file):
-        with open(config_file) as f:
-            config = Configuration.from_dict(json.load(f))
-        logger.info("Loaded configuration file from %r.", config_file)
-    else:
-        config = Configuration()
-        logger.info("Using default configuration.")
-
-    config.session_data["label"] = label
-
-    if not use_dummy_serial_port:
-        serial_port = serial.Serial(port=serial_port, baudrate=config.baudrate)
-    else:
-        from data_gateway.dummy_serial import DummySerial
-
-        serial_port = DummySerial(port=serial_port, baudrate=config.baudrate)
-
-    # `set_buffer_size` is only available on Windows.
-    if os.name == "nt":
-        serial_port.set_buffer_size(rx_size=config.serial_buffer_rx_size, tx_size=config.serial_buffer_tx_size)
-
-    if not interactive:
-        logger.info(
-            "Starting packet reader in non-interactive mode - files will be uploaded to cloud storage at intervals of "
-            "%s seconds.",
-            window_size,
+    if not save_locally and no_upload_to_cloud:
+        raise DataMustBeSavedError(
+            "Data from the gateway must either be saved locally or uploaded to the cloud. Please adjust the CLI "
+            "options provided."
         )
 
-        PacketReader(
-            save_locally=False,
-            upload_to_cloud=True,
-            output_directory=output_dir,
-            window_size=window_size,
-            project_name=gcp_project_name,
-            bucket_name=gcp_bucket_name,
-            configuration=config,
-        ).read_packets(serial_port, stop_when_no_more_data=stop_when_no_more_data)
+    config = _load_configuration(configuration_path=config_file)
+    config.session_data["label"] = label
 
-        return
-
-    if not output_dir.startswith("/"):
-        output_dir = os.path.join(".", output_dir)
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    serial_port = _get_serial_port(serial_port, configuration=config, use_dummy_serial_port=use_dummy_serial_port)
+    routine = _load_routine(routine_path=routine_file, interactive=interactive, serial_port=serial_port)
+    output_directory = _update_and_create_output_directory(output_directory_path=output_dir)
 
     # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
     packet_reader = PacketReader(
-        save_locally=True,
-        upload_to_cloud=False,
-        output_directory=output_dir,
+        save_locally=save_locally,
+        upload_to_cloud=not no_upload_to_cloud,
+        output_directory=output_directory,
         window_size=window_size,
+        project_name=gcp_project_name,
+        bucket_name=gcp_bucket_name,
         configuration=config,
         save_csv_files=save_csv_files,
     )
 
-    thread = threading.Thread(
-        target=packet_reader.read_packets, args=(serial_port, stop_when_no_more_data), daemon=True
-    )
+    logger.info("Starting packet reader.")
+
+    if not no_upload_to_cloud:
+        logger.info("Files will be uploaded to cloud storage at intervals of %s seconds.", window_size)
+
+    if save_locally:
+        logger.info(
+            "Files will be saved locally to disk at %r at intervals of %s seconds.",
+            os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory),
+            window_size,
+        )
+
+    # Start packet reader in a separate thread so commands can be sent to it in real time in interactive mode or by a
+    # routine.
+    thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
     thread.start()
 
-    logger.info(
-        "Starting gateway in interactive mode - files will *not* be uploaded to cloud storage but will instead be saved"
-        " to disk at %r at intervals of %s seconds.",
-        os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory),
-        window_size,
-    )
-
-    # Keep a record of the commands given.
-    commands_record_file = os.path.join(
-        packet_reader.output_directory, packet_reader.session_subdirectory, "commands.txt"
-    )
-
     try:
-        while not packet_reader.stop:
-            for line in sys.stdin:
+        if interactive:
+            # Keep a record of the commands given.
+            commands_record_file = os.path.join(
+                packet_reader.output_directory, packet_reader.session_subdirectory, "commands.txt"
+            )
 
-                with open(commands_record_file, "a") as f:
-                    f.write(line)
+            os.makedirs(os.path.join(packet_reader.output_directory, packet_reader.session_subdirectory), exist_ok=True)
 
-                if line.startswith("sleep") and line.endswith("\n"):
-                    time.sleep(int(line.split(" ")[-1].strip()))
-                elif line == "stop\n":
-                    packet_reader.stop = True
-                    break
+            while not packet_reader.stop:
+                for line in sys.stdin:
 
-                # Send the command to the node
-                serial_port.write(line.encode("utf_8"))
+                    with open(commands_record_file, "a") as f:
+                        f.write(line)
+
+                    if line.startswith("sleep") and line.endswith("\n"):
+                        time.sleep(int(line.split(" ")[-1].strip()))
+                    elif line == "stop\n":
+                        packet_reader.stop = True
+                        break
+
+                    # Send the command to the node
+                    serial_port.write(line.encode("utf_8"))
+
+        else:
+            if routine is not None:
+                routine.run()
 
     except KeyboardInterrupt:
         packet_reader.stop = True
@@ -333,6 +324,93 @@ command=gateway start --config-file {os.path.abspath(config_file)}"""
 
     print(supervisord_conf_str)
     return 0
+
+
+def _load_configuration(configuration_path):
+    """Load a configuration from the path if it exists, otherwise load the default configuration.
+
+    :param str configuration_path:
+    :return data_gateway.configuration.Configuration:
+    """
+    if os.path.exists(configuration_path):
+        with open(configuration_path) as f:
+            configuration = Configuration.from_dict(json.load(f))
+
+        logger.info("Loaded configuration file from %r.", configuration_path)
+        return configuration
+
+    configuration = Configuration()
+    logger.info("No configuration file provided - using default configuration.")
+    return configuration
+
+
+def _get_serial_port(serial_port, configuration, use_dummy_serial_port):
+    """Get the serial port or a dummy serial port if specified.
+
+    :param str serial_port:
+    :param data_gateway.configuration.Configuration configuration:
+    :param bool use_dummy_serial_port:
+    :return serial.Serial:
+    """
+    if not use_dummy_serial_port:
+        serial_port = serial.Serial(port=serial_port, baudrate=configuration.baudrate)
+    else:
+        serial_port = DummySerial(port=serial_port, baudrate=configuration.baudrate)
+
+    # The buffer size can only be set on Windows.
+    if os.name == "nt":
+        serial_port.set_buffer_size(
+            rx_size=configuration.serial_buffer_rx_size,
+            tx_size=configuration.serial_buffer_tx_size,
+        )
+    else:
+        logger.warning("Serial port buffer size can only be set on Windows.")
+
+    return serial_port
+
+
+def _load_routine(routine_path, interactive, serial_port):
+    """Load a sensor commands routine from the path if exists, otherwise return no routine. If in interactive mode, the
+    routine file is ignored. Note that "\n" has to be added to the end of each command sent to the serial port for it to
+    be executed - this is done automatically in this method.
+
+    :param str routine_path:
+    :param bool interactive:
+    :param serial.Serial serial_port:
+    :return data_gateway.routine.Routine|None:
+    """
+    if os.path.exists(routine_path):
+        if interactive:
+            logger.warning("Sensor command routine files are ignored in interactive mode.")
+            return
+        else:
+            with open(routine_path) as f:
+                routine = Routine(
+                    **json.load(f),
+                    action=lambda command: serial_port.write((command + "\n").encode("utf_8")),
+                )
+
+            logger.info("Loaded routine file from %r.", routine_path)
+            return routine
+
+    logger.info(
+        "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
+        routine_path,
+    )
+
+
+def _update_and_create_output_directory(output_directory_path):
+    """Set the output directory to a path relative to the current directory if the path does not start with "/" and
+    create it if it does not already exist.
+
+    :param str output_directory_path:
+    :return str:
+    """
+    if not output_directory_path.startswith("/"):
+        output_directory_path = os.path.join(".", output_directory_path)
+
+    os.makedirs(output_directory_path, exist_ok=True)
+    return output_directory_path
 
 
 if __name__ == "__main__":
