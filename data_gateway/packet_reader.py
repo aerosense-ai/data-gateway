@@ -5,12 +5,11 @@ import os
 import struct
 
 from octue.cloud import storage
-from serial.threaded import ReaderThread
 
 from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
-from data_gateway.serial_protocol import Protocol
+from data_gateway.serial_protocol import CustomReaderThread, SerialPortReadingProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -87,17 +86,15 @@ class PacketReader:
         """
         self._persist_configuration()
 
-        serial_port_protocol = Protocol
-        serial_port_protocol.configuration = self.config
-        serial_port_protocol.packet_reader = self
-        serial_port_protocol.serial_port = serial_port
-        serial_port_protocol.stop_when_no_more_data = stop_when_no_more_data
-        serial_port_protocol.initiator = self.config.packet_key.to_bytes(1, self.config.endian)
-
         with self.uploader:
             with self.writer:
                 while not self.stop:
-                    ReaderThread(serial_port, protocol_factory=serial_port_protocol).run()
+                    CustomReaderThread(
+                        serial_port,
+                        protocol_factory=SerialPortReadingProtocol,
+                        packet_reader=self,
+                        stop_when_no_more_data=stop_when_no_more_data,
+                    ).run()
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
@@ -131,30 +128,7 @@ class PacketReader:
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
 
-    def _persist_configuration(self):
-        """Persist the configuration to disk and/or cloud storage.
-
-        :return None:
-        """
-        configuration_dictionary = self.config.to_dict()
-
-        if self.save_locally:
-            with open(
-                os.path.abspath(os.path.join(self.output_directory, self.session_subdirectory, "configuration.json")),
-                "w",
-            ) as f:
-                json.dump(configuration_dictionary, f)
-
-        if self.upload_to_cloud:
-            self.uploader.client.upload_from_string(
-                string=json.dumps(configuration_dictionary),
-                bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(
-                    self.output_directory, self.session_subdirectory, "configuration.json"
-                ),
-            )
-
-    def _parse_payload(self, packet_type, payload, data, previous_timestamp):
+    def parse_payload(self, packet_type, payload, data, previous_timestamp):
         """Check if a full payload has been received (correct length) with correct packet type handle, then parse the
         payload from a serial port.
 
@@ -178,6 +152,29 @@ class PacketReader:
 
         elif len(payload) >= 1 and self.handles[packet_type] in ["Mic 1", "Cmd Decline", "Sleep State", "Info Message"]:
             self._parse_info_packet(self.handles[packet_type], payload)
+
+    def _persist_configuration(self):
+        """Persist the configuration to disk and/or cloud storage.
+
+        :return None:
+        """
+        configuration_dictionary = self.config.to_dict()
+
+        if self.save_locally:
+            with open(
+                os.path.abspath(os.path.join(self.output_directory, self.session_subdirectory, "configuration.json")),
+                "w",
+            ) as f:
+                json.dump(configuration_dictionary, f)
+
+        if self.upload_to_cloud:
+            self.uploader.client.upload_from_string(
+                string=json.dumps(configuration_dictionary),
+                bucket_name=self.uploader.bucket_name,
+                path_in_bucket=storage.path.join(
+                    self.output_directory, self.session_subdirectory, "configuration.json"
+                ),
+            )
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
