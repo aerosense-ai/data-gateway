@@ -40,6 +40,7 @@ outages.
    installation
    using_the_gateway
    output_data
+   sensor_command_routines
    deployment
    cloud_functions
    cloud_preprocessing
