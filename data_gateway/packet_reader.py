@@ -89,16 +89,14 @@ class PacketReader:
         serial_port_protocol = Protocol
         serial_port_protocol.configuration = self.config
         serial_port_protocol.packet_reader = self
+        serial_port_protocol.serial_port = serial_port
+        serial_port_protocol.stop_when_no_more_data = stop_when_no_more_data
         serial_port_protocol.initiator = self.config.packet_key.to_bytes(1, self.config.endian)
 
         with self.uploader:
             with self.writer:
                 while not self.stop:
-                    CustomReaderThread(
-                        serial_port,
-                        protocol_factory=serial_port_protocol,
-                        stop_when_no_more_data=stop_when_no_more_data,
-                    ).run()
+                    CustomReaderThread(serial_port, protocol_factory=serial_port_protocol).run()
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is

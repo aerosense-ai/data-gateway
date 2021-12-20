@@ -4,6 +4,8 @@ import serial.threaded
 class Protocol(serial.threaded.Protocol):
     configuration = None
     packet_reader = None
+    serial_port = None
+    stop_when_no_more_data = False
     initiator = b"\0"
 
     def __init__(self):
@@ -68,6 +70,10 @@ class Protocol(serial.threaded.Protocol):
             self.handle_packet()
             self._prepare_for_new_packet()
 
+        if self.stop_when_no_more_data and self.serial_port.in_waiting == 0:
+            self.serial_port.close()
+            self.packet_reader.stop = True
+
     def handle_packet(self):
         """Handle a packet by either updating the handles or parsing it as a payload for the packet reader.
 
@@ -96,10 +102,6 @@ class Protocol(serial.threaded.Protocol):
 
 
 class CustomReaderThread(serial.threaded.ReaderThread):
-    def __init__(self, serial_instance, protocol_factory, stop_when_no_more_data=False):
-        self.stop_when_no_more_data = stop_when_no_more_data
-        super().__init__(serial_instance, protocol_factory)
-
     def run(self):
         """Reader loop"""
         if not hasattr(self.serial, "cancel_read"):
@@ -136,11 +138,6 @@ class CustomReaderThread(serial.threaded.ReaderThread):
                     except Exception as e:
                         error = e
                         break
-
-                else:
-                    if self.stop_when_no_more_data:
-                        self.serial.is_open = False
-                        self.protocol.packet_reader.stop = True
 
         self.alive = False
         self.protocol.connection_lost(error)
