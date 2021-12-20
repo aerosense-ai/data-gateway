@@ -52,37 +52,39 @@ class Protocol(serial.threaded.Protocol):
         # Receive further bytes for the current packet.
         if self.current_packet_type is None:
             self.current_packet_type = str(int.from_bytes(data, self.configuration.endian))
+            return
 
-        elif self.current_packet_expected_length is None:
+        # Get the expected length of the packet.
+        if self.current_packet_expected_length is None:
             self.current_packet_expected_length = int.from_bytes(data, self.configuration.endian)
+            return
 
         # Collect more data until the expected packet length is reached.
-        elif len(self.current_packet) < self.current_packet_expected_length:
+        if len(self.current_packet) < self.current_packet_expected_length:
             self.current_packet.extend(data)
 
         # When the expected packet length is reached, handle the packet and get ready for the next one.
-        else:
-            self.handle_packet(self.current_packet)
-            self._get_ready_for_new_packet()
+        if len(self.current_packet) == self.current_packet_expected_length:
+            self.handle_packet()
+            self._prepare_for_new_packet()
 
-    def handle_packet(self, packet):
+    def handle_packet(self):
         """Handle a packet by either updating the handles or parsing it as a payload for the packet reader.
 
-        :param bytes packet:
         :return None:
         """
         if self.current_packet_type == str(self.configuration.type_handle_def):
-            self.packet_reader.update_handles(packet)
+            self.packet_reader.update_handles(self.current_packet)
             return
 
         self.packet_reader._parse_payload(
             packet_type=self.current_packet_type,
-            payload=packet,
+            payload=self.current_packet,
             data=self.collected_data,
             previous_timestamp=self.previous_timestamp,
         )
 
-    def _get_ready_for_new_packet(self):
+    def _prepare_for_new_packet(self):
         """Reset the current packet information.
 
         :return None:
