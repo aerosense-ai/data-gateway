@@ -5,11 +5,12 @@ import os
 import struct
 
 from octue.cloud import storage
+from serial.threaded import ReaderThread
 
 from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
-from data_gateway.serial_protocol import CustomReaderThread, Protocol
+from data_gateway.serial_protocol import Protocol
 
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class PacketReader:
         with self.uploader:
             with self.writer:
                 while not self.stop:
-                    CustomReaderThread(serial_port, protocol_factory=serial_port_protocol).run()
+                    ReaderThread(serial_port, protocol_factory=serial_port_protocol).run()
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
