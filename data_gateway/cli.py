@@ -382,6 +382,7 @@ def _load_routine(routine_path, interactive, serial_port):
     if os.path.exists(routine_path):
         if interactive:
             logger.warning("Sensor command routine files are ignored in interactive mode.")
+            return
         else:
             with open(routine_path) as f:
                 routine = Routine(
@@ -396,8 +397,6 @@ def _load_routine(routine_path, interactive, serial_port):
         "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
         routine_path,
     )
-
-    return None
 
 
 def _update_and_create_output_directory(output_directory_path):
