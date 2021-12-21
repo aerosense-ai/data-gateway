@@ -8,6 +8,7 @@ from octue.cloud import storage
 
 from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
+from data_gateway.packet_assembler import PacketAssembler
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
 
 
@@ -85,72 +86,12 @@ class PacketReader:
         """
         self._persist_configuration()
 
-        previous_timestamp = {}
-        data = {}
-
-        for sensor_name in self.config.sensor_names:
-            previous_timestamp[sensor_name] = -1
-            data[sensor_name] = [
-                ([0] * self.config.samples_per_packet[sensor_name])
-                for _ in range(self.config.number_of_sensors[sensor_name])
-            ]
+        packet_assembler = PacketAssembler(packet_reader=self)
 
         with self.uploader:
             with self.writer:
                 while not self.stop:
-                    buffer = bytearray(serial_port.read(size=serial_port.in_waiting))
-
-                    if len(buffer) == 0:
-                        continue
-
-                    current_packet = bytearray()
-                    current_packet_type = None
-                    current_packet_expected_length = None
-                    currently_receiving_packet = False
-
-                    while len(buffer) > 0:
-                        byte = bytearray([buffer.pop(0)])
-
-                        # Start collecting a packet if the initiator byte is received.
-                        if byte == self.config.packet_key.to_bytes(1, self.config.endian):
-                            currently_receiving_packet = True
-                            continue
-
-                        # Ignore byte if not currently receiving a packet.
-                        if not currently_receiving_packet:
-                            continue
-
-                        # Receive further bytes for the current packet.
-                        if current_packet_type is None:
-                            current_packet_type = str(int.from_bytes(byte, self.config.endian))
-                            continue
-
-                        # Get the expected length of the packet.
-                        if current_packet_expected_length is None:
-                            current_packet_expected_length = int.from_bytes(byte, self.config.endian)
-                            continue
-
-                        # Collect more data until the expected packet length is reached.
-                        if len(current_packet) < current_packet_expected_length:
-                            current_packet.extend(byte)
-
-                        # When the expected packet length is reached, handle the packet and get ready for the next one.
-                        if len(current_packet) == current_packet_expected_length:
-                            if current_packet_type == str(self.config.type_handle_def):
-                                self.update_handles(current_packet)
-                                return
-
-                            self._parse_payload(
-                                packet_type=current_packet_type,
-                                payload=current_packet,
-                                data=data,
-                                previous_timestamp=previous_timestamp,
-                            )
-
-                            current_packet = bytearray()
-                            current_packet_type = None
-                            current_packet_expected_length = None
-                            currently_receiving_packet = False
+                    packet_assembler.run(data=serial_port.read(size=serial_port.in_waiting))
 
                     if stop_when_no_more_data and serial_port.in_waiting == 0:
                         serial_port.close()
