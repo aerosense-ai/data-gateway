@@ -98,24 +98,63 @@ class PacketReader:
         with self.uploader:
             with self.writer:
                 while not self.stop:
+                    buffer = bytearray(serial_port.read(size=serial_port.in_waiting))
 
-                    serial_data = serial_port.read()
-
-                    if len(serial_data) == 0:
-                        if stop_when_no_more_data:
-                            break
+                    if len(buffer) == 0:
                         continue
 
-                    if serial_data[0] != self.config.packet_key:
-                        continue
+                    current_packet = bytearray()
+                    current_packet_type = None
+                    current_packet_expected_length = None
+                    currently_receiving_packet = False
 
-                    packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
-                    length = int.from_bytes(serial_port.read(), self.config.endian)
-                    payload = serial_port.read(length)
+                    while len(buffer) > 0:
+                        byte = bytearray([buffer.pop(0)])
 
-                    if packet_type == str(self.config.type_handle_def):
-                        self.update_handles(payload)
-                        continue
+                        # Start collecting a packet if the initiator byte is received.
+                        if byte == self.config.packet_key.to_bytes(1, self.config.endian):
+                            currently_receiving_packet = True
+                            continue
+
+                        # Ignore byte if not currently receiving a packet.
+                        if not currently_receiving_packet:
+                            continue
+
+                        # Receive further bytes for the current packet.
+                        if current_packet_type is None:
+                            current_packet_type = str(int.from_bytes(byte, self.config.endian))
+                            continue
+
+                        # Get the expected length of the packet.
+                        if current_packet_expected_length is None:
+                            current_packet_expected_length = int.from_bytes(byte, self.config.endian)
+                            continue
+
+                        # Collect more data until the expected packet length is reached.
+                        if len(current_packet) < current_packet_expected_length:
+                            current_packet.extend(byte)
+
+                        # When the expected packet length is reached, handle the packet and get ready for the next one.
+                        if len(current_packet) == current_packet_expected_length:
+                            if current_packet_type == str(self.config.type_handle_def):
+                                self.update_handles(current_packet)
+                                return
+
+                            self._parse_payload(
+                                packet_type=current_packet_type,
+                                payload=current_packet,
+                                data=data,
+                                previous_timestamp=previous_timestamp,
+                            )
+
+                            current_packet = bytearray()
+                            current_packet_type = None
+                            current_packet_expected_length = None
+                            currently_receiving_packet = False
+
+                    if stop_when_no_more_data and serial_port.in_waiting == 0:
+                        serial_port.close()
+                        self.stop = True
 
                     # Check for bytes in serial input buffer. A full buffer results in overflow.
                     if serial_port.in_waiting == self.config.serial_buffer_rx_size:
@@ -126,10 +165,6 @@ class PacketReader:
                         serial_port.close()
                         serial_port.open()
                         continue
-
-                    self._parse_payload(
-                        packet_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
-                    )
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
