@@ -418,18 +418,24 @@ class TestPacketReader(BaseTestCase):
         """Test that the packet reader works with info packets."""
         serial_port = DummySerial(port="test")
 
-        packet_types = [bytes([40]), bytes([54]), bytes([56]), bytes([58])]
+        packet_types = {
+            "Mic 1": bytes([40]),
+            "Cmd Decline": bytes([54]),
+            "Sleep State": bytes([56]),
+            "Info Message": bytes([58]),
+        }
 
-        payloads = [
-            [bytes([1]), bytes([2]), bytes([3])],
-            [bytes([0]), bytes([1]), bytes([2]), bytes([3])],
-            [bytes([0]), bytes([1])],
-            [bytes([0])],
-        ]
+        payloads = {
+            "Mic 1": [bytes([1]), bytes([2]), bytes([3])],
+            "Cmd Decline": [bytes([0]), bytes([1]), bytes([2]), bytes([3])],
+            "Sleep State": [bytes([0]), bytes([1])],
+            "Info Message": [bytes([0] * 13)],
+        }
 
-        for index, packet_type in enumerate(packet_types):
-            for payload in payloads[index]:
-                serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([1]), payload)))
+        for packet_type, packet_key in packet_types.items():
+            for payload in payloads[packet_type]:
+                packet_length = bytes([len(payload)])
+                serial_port.write(data=b"".join([PACKET_KEY, packet_key, packet_length, payload]))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -441,6 +447,16 @@ class TestPacketReader(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            with patch("data_gateway.packet_reader.logger") as mock_logger:
+            with self.assertLogs() as logging_context:
                 packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-                self.assertEqual(11, len(mock_logger.method_calls))
+
+            self.assertIn("Microphone data reading done", logging_context.output[0])
+            self.assertIn("Microphone data erasing done", logging_context.output[1])
+            self.assertIn("Microphones started", logging_context.output[2])
+            self.assertIn("Command declined, Bad block detection ongoing", logging_context.output[3])
+            self.assertIn("Command declined, Task already registered, cannot register again", logging_context.output[4])
+            self.assertIn("Command declined, Task is not registered, cannot de-register", logging_context.output[5])
+            self.assertIn("Command declined, Connection Parameter update unfinished", logging_context.output[6])
+            self.assertIn("Exiting sleep", logging_context.output[7])
+            self.assertIn("Entering sleep", logging_context.output[8])
+            self.assertIn("Battery info", logging_context.output[9])
