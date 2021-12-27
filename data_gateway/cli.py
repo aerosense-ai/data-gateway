@@ -207,6 +207,7 @@ def start(
     # Start packet reader in a separate thread so commands can be sent to it in real time in interactive mode or by a
     # routine.
     reader_thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
+    reader_thread.setName("ReaderThread")
     reader_thread.start()
 
     try:

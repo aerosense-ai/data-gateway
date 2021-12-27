@@ -108,6 +108,7 @@ class PacketReader:
                     daemon=True,
                 )
 
+                parser_thread.setName("ParserThread")
                 parser_thread.start()
 
                 while not self.stop:
