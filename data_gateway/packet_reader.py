@@ -99,12 +99,21 @@ class PacketReader:
 
         with self.uploader:
             with self.writer:
-
                 packet_queue = queue.Queue()
-                parser_thread = threading.Thread(target=self._parse_payload, args=(packet_queue,), daemon=True)
+                error_queue = queue.Queue()
+
+                parser_thread = threading.Thread(
+                    target=self._parse_payload,
+                    kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
+                    daemon=True,
+                )
+
                 parser_thread.start()
 
                 while not self.stop:
+                    if not error_queue.empty():
+                        raise error_queue.get()
+
                     serial_data = serial_port.read()
 
                     if len(serial_data) == 0:
@@ -197,36 +206,41 @@ class PacketReader:
                 ),
             )
 
-    def _parse_payload(self, packet_queue):
+    def _parse_payload(self, packet_queue, error_queue):
         """Check if a full payload has been received (correct length) with correct packet type handle, then parse the
         payload from a serial port.
 
         :param queue.Queue packet_queue:
+        :param queue.Queue error_queue:
         :return None:
         """
-        while not self.stop:
-            packet_type, payload, data, previous_timestamp = packet_queue.get().values()
+        try:
+            while not self.stop:
+                packet_type, payload, data, previous_timestamp = packet_queue.get().values()
 
-            if packet_type not in self.handles:
-                logger.error("Received packet with unknown type: %s", packet_type)
-                raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
+                if packet_type not in self.handles:
+                    logger.error("Received packet with unknown type: %s", packet_type)
+                    raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
 
-            if len(payload) == 244:  # If the full data payload is received, proceed parsing it
-                timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
+                if len(payload) == 244:  # If the full data payload is received, proceed parsing it
+                    timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
-                data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
+                    data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
 
-                for sensor_name in sensor_names:
-                    self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
-                    self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
+                    for sensor_name in sensor_names:
+                        self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
+                        self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
 
-            elif len(payload) >= 1 and self.handles[packet_type] in [
-                "Mic 1",
-                "Cmd Decline",
-                "Sleep State",
-                "Info Message",
-            ]:
-                self._parse_info_packet(self.handles[packet_type], payload)
+                elif len(payload) >= 1 and self.handles[packet_type] in [
+                    "Mic 1",
+                    "Cmd Decline",
+                    "Sleep State",
+                    "Info Message",
+                ]:
+                    self._parse_info_packet(self.handles[packet_type], payload)
+
+        except Exception as e:
+            error_queue.put(e)
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
