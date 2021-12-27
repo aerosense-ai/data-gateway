@@ -2,7 +2,9 @@ import datetime
 import json
 import logging
 import os
+import queue
 import struct
+import threading
 
 from octue.cloud import storage
 
@@ -97,8 +99,12 @@ class PacketReader:
 
         with self.uploader:
             with self.writer:
-                while not self.stop:
 
+                packet_queue = queue.Queue()
+                parser_thread = threading.Thread(target=self._parse_payload, args=(packet_queue,), daemon=True)
+                parser_thread.start()
+
+                while not self.stop:
                     serial_data = serial_port.read()
 
                     if len(serial_data) == 0:
@@ -127,8 +133,13 @@ class PacketReader:
                         serial_port.open()
                         continue
 
-                    self._parse_payload(
-                        packet_type=packet_type, payload=payload, data=data, previous_timestamp=previous_timestamp
+                    packet_queue.put(
+                        {
+                            "packet_type": packet_type,
+                            "payload": payload,
+                            "data": data,
+                            "previous_timestamp": previous_timestamp,
+                        }
                     )
 
     def update_handles(self, payload):
@@ -186,30 +197,36 @@ class PacketReader:
                 ),
             )
 
-    def _parse_payload(self, packet_type, payload, data, previous_timestamp):
+    def _parse_payload(self, packet_queue):
         """Check if a full payload has been received (correct length) with correct packet type handle, then parse the
         payload from a serial port.
 
-        :param str packet_type:
-        :param iter payload:
-        :param dict data:
-        :param dict previous_timestamp:
+        :param queue.Queue packet_queue:
+        :return None:
         """
-        if packet_type not in self.handles:
-            logger.error("Received packet with unknown type: %s", packet_type)
-            raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
+        while not self.stop:
+            packet_type, payload, data, previous_timestamp = packet_queue.get().values()
 
-        if len(payload) == 244:  # If the full data payload is received, proceed parsing it
-            timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
+            if packet_type not in self.handles:
+                logger.error("Received packet with unknown type: %s", packet_type)
+                raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
 
-            data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
+            if len(payload) == 244:  # If the full data payload is received, proceed parsing it
+                timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
-            for sensor_name in sensor_names:
-                self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
-                self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
+                data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
 
-        elif len(payload) >= 1 and self.handles[packet_type] in ["Mic 1", "Cmd Decline", "Sleep State", "Info Message"]:
-            self._parse_info_packet(self.handles[packet_type], payload)
+                for sensor_name in sensor_names:
+                    self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
+                    self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
+
+            elif len(payload) >= 1 and self.handles[packet_type] in [
+                "Mic 1",
+                "Cmd Decline",
+                "Sleep State",
+                "Info Message",
+            ]:
+                self._parse_info_packet(self.handles[packet_type], payload)
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
