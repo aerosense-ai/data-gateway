@@ -115,7 +115,13 @@ class PacketReader:
                     if not error_queue.empty():
                         raise error_queue.get()
 
+                    # Check for bytes in serial input buffer. A full buffer may result in overflow.
+                    
+                    # if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                    #     logger.warning("Buffer is full. Some data may be lost.")
+                    
                     serial_data = serial_port.read()
+                    
 
                     if len(serial_data) == 0:
                         if stop_when_no_more_data:
@@ -133,16 +139,6 @@ class PacketReader:
                         self.update_handles(payload)
                         continue
 
-                    # Check for bytes in serial input buffer. A full buffer results in overflow.
-                    if serial_port.in_waiting == self.config.serial_buffer_rx_size:
-                        logger.warning(
-                            "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
-                            serial_port.in_waiting,
-                        )
-                        serial_port.close()
-                        serial_port.open()
-                        continue
-
                     packet_queue.put(
                         {
                             "packet_type": packet_type,
@@ -151,6 +147,7 @@ class PacketReader:
                             "previous_timestamp": previous_timestamp,
                         }
                     )
+
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
@@ -222,8 +219,8 @@ class PacketReader:
                 packet_type, payload, data, previous_timestamp = packet_queue.get().values()
 
                 if packet_type not in self.handles:
-                    logger.error("Received packet with unknown type: %s", packet_type)
-                    raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
+                    logger.warning("Received packet with unknown type: %s", packet_type)
+                    continue
 
                 if len(payload) == 244:  # If the full data payload is received, proceed parsing it
                     timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
@@ -233,14 +230,16 @@ class PacketReader:
                     for sensor_name in sensor_names:
                         self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
                         self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
+                        
+                    continue
 
-                elif len(payload) >= 1 and self.handles[packet_type] in [
+                if self.handles[packet_type] in [
                     "Mic 1",
                     "Cmd Decline",
                     "Sleep State",
                     "Info Message",
                 ]:
-                    self._parse_info_packet(self.handles[packet_type], payload)
+                    self._parse_info_packet(self.handles[packet_type], payload, previous_timestamp)
 
         except Exception as e:
             error_queue.put(e)
@@ -389,7 +388,7 @@ class PacketReader:
             logger.error("Sensor of type %r is unknown.", packet_type)
             raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
 
-    def _parse_info_packet(self, information_type, payload):
+    def _parse_info_packet(self, information_type, payload, previous_timestamp):
         """Parse information type packet and send the information to logger.
 
         :param str information_type: From packet handles, defines what information is stored in payload.
@@ -403,17 +402,28 @@ class PacketReader:
                 logger.info("Microphone data erasing done")
             elif payload[0] == 3:
                 logger.info("Microphones started ")
+            return
 
-        elif information_type == "Cmd Decline":
+        if information_type == "Cmd Decline":
             reason_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("Command declined, %s", self.config.decline_reason[reason_index])
+            return
 
-        elif information_type == "Sleep State":
+        if information_type == "Sleep State":
             state_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("\n%s\n", self.config.sleep_state[state_index])
-            self.sleep = bool(int(state_index))
+            
+            if bool(int(state_index)):
+                self.sleep = True
+            else:
+                self.sleep = False
+                # Reset previous timestamp on wake up
+                for sensor_name in self.config.sensor_names:
+                    previous_timestamp[sensor_name] = -1
+                    
+            return
 
-        elif information_type == "Info Message":
+        if information_type == "Info Message":
             info_index = str(int.from_bytes(payload[0:1], self.config.endian, signed=False))
             logger.info(self.config.info_type[info_index])
 
@@ -428,6 +438,8 @@ class PacketReader:
                     cycle / 100,
                     state_of_charge / 256,
                 )
+           
+            return
 
     def _check_for_packet_loss(self, sensor_name, timestamp, previous_timestamp):
         """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for
@@ -443,13 +455,6 @@ class PacketReader:
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
-        if self.sleep:
-            # During sleep, there are no new packets coming in.
-            # TODO Make previous_timestamp an attribute, move this to information packet parser and perform on wake-up
-            for sensor_name in self.config.sensor_names:
-                previous_timestamp[sensor_name] = -1
-            return
-
         if previous_timestamp[sensor_name] == -1:
             logger.info("Received first %s packet" % sensor_name)
         else:
@@ -460,19 +465,24 @@ class PacketReader:
             timestamp_deviation = timestamp - expected_current_timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
-                logger.warning(
-                    "Possible packet loss. %s sensor packet is timestamped %d ms later than expected",
-                    sensor_name,
-                    timestamp_deviation * 1000,
-                )
-
+                
+                if self.sleep:
+                    # Only Constat comes during sleep
+                    return
+            	 
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
                     # IMU sensors are not synchronised to CPU, so their actual periods might differ
                     self.config.period[sensor_name] = (
                         timestamp - previous_timestamp[sensor_name]
                     ) / self.config.samples_per_packet[sensor_name]
                     logger.debug("Updated %s period to %f ms.", sensor_name, self.config.period[sensor_name] * 1000)
-
+                else:
+                    logger.warning(
+                        "Possible packet loss. %s sensor packet is timestamped %d ms later than expected",
+                        sensor_name,
+                        timestamp_deviation * 1000,
+                    )
+                
         previous_timestamp[sensor_name] = timestamp
 
     def _timestamp_and_persist_data(self, data, sensor_name, timestamp, period):
