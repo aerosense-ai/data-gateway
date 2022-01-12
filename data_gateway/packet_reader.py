@@ -116,12 +116,10 @@ class PacketReader:
                         raise error_queue.get()
 
                     # Check for bytes in serial input buffer. A full buffer may result in overflow.
-                    
                     # if serial_port.in_waiting == self.config.serial_buffer_rx_size:
                     #     logger.warning("Buffer is full. Some data may be lost.")
-                    
+
                     serial_data = serial_port.read()
-                    
 
                     if len(serial_data) == 0:
                         if stop_when_no_more_data:
@@ -147,7 +145,6 @@ class PacketReader:
                             "previous_timestamp": previous_timestamp,
                         }
                     )
-
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
@@ -230,7 +227,7 @@ class PacketReader:
                     for sensor_name in sensor_names:
                         self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
                         self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
-                        
+
                     continue
 
                 if self.handles[packet_type] in [
@@ -412,7 +409,7 @@ class PacketReader:
         if information_type == "Sleep State":
             state_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("\n%s\n", self.config.sleep_state[state_index])
-            
+
             if bool(int(state_index)):
                 self.sleep = True
             else:
@@ -420,7 +417,7 @@ class PacketReader:
                 # Reset previous timestamp on wake up
                 for sensor_name in self.config.sensor_names:
                     previous_timestamp[sensor_name] = -1
-                    
+
             return
 
         if information_type == "Info Message":
@@ -438,7 +435,7 @@ class PacketReader:
                     cycle / 100,
                     state_of_charge / 256,
                 )
-           
+
             return
 
     def _check_for_packet_loss(self, sensor_name, timestamp, previous_timestamp):
@@ -465,11 +462,12 @@ class PacketReader:
             timestamp_deviation = timestamp - expected_current_timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
-                
+
                 if self.sleep:
                     # Only Constat comes during sleep
+                    # TODO add different period for constat during sleep
                     return
-            	 
+
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
                     # IMU sensors are not synchronised to CPU, so their actual periods might differ
                     self.config.period[sensor_name] = (
@@ -482,7 +480,7 @@ class PacketReader:
                         sensor_name,
                         timestamp_deviation * 1000,
                     )
-                
+
         previous_timestamp[sensor_name] = timestamp
 
     def _timestamp_and_persist_data(self, data, sensor_name, timestamp, period):
