@@ -10,7 +10,6 @@ import serial
 from requests import HTTPError
 from slugify import slugify
 
-from data_gateway import LOG_FORMATTER
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError, WrongNumberOfSensorCoordinatesError
@@ -46,11 +45,15 @@ def gateway_cli(logger_uri, log_level):
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
     # Apply log handler locally.
-    apply_log_handler(log_level=log_level.upper(), formatter=LOG_FORMATTER)
+    apply_log_handler(log_level=log_level.upper(), include_thread_name=True)
 
     # Stream logs to remote handler if required.
     if logger_uri is not None:
-        apply_log_handler(handler=get_remote_handler(logger_uri=logger_uri), log_level=log_level.upper())
+        apply_log_handler(
+            handler=get_remote_handler(logger_uri=logger_uri),
+            log_level=log_level.upper(),
+            include_thread_name=True,
+        )
 
 
 @gateway_cli.command()
