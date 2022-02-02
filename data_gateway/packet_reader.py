@@ -83,59 +83,60 @@ class PacketReader:
         :param bool stop_when_no_more_data: stop reading when no more data is received from the port (for testing)
         :return None:
         """
-        logger.debug("Beginning reading packets from serial port.")
+        try:
+            logger.debug("Beginning reading packets from serial port.")
 
-        previous_timestamp = {}
-        data = {}
+            previous_timestamp = {}
+            data = {}
 
-        for sensor_name in self.config.sensor_names:
-            previous_timestamp[sensor_name] = -1
-            data[sensor_name] = [
-                ([0] * self.config.samples_per_packet[sensor_name])
-                for _ in range(self.config.number_of_sensors[sensor_name])
-            ]
+            for sensor_name in self.config.sensor_names:
+                previous_timestamp[sensor_name] = -1
+                data[sensor_name] = [
+                    ([0] * self.config.samples_per_packet[sensor_name])
+                    for _ in range(self.config.number_of_sensors[sensor_name])
+                ]
 
-        while not self.stop:
-            if not error_queue.empty():
-                raise error_queue.get()
+            while not self.stop:
+                serial_data = serial_port.read()
 
-            serial_data = serial_port.read()
+                if len(serial_data) == 0:
+                    if stop_when_no_more_data:
+                        break
+                    continue
 
-            if len(serial_data) == 0:
-                if stop_when_no_more_data:
-                    break
-                continue
+                if serial_data[0] != self.config.packet_key:
+                    continue
 
-            if serial_data[0] != self.config.packet_key:
-                continue
+                packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
+                length = int.from_bytes(serial_port.read(), self.config.endian)
+                payload = serial_port.read(length)
+                logger.debug("Packet received.")
 
-            packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
-            length = int.from_bytes(serial_port.read(), self.config.endian)
-            payload = serial_port.read(length)
-            logger.debug("Packet received.")
+                if packet_type == str(self.config.type_handle_def):
+                    self.update_handles(payload)
+                    continue
 
-            if packet_type == str(self.config.type_handle_def):
-                self.update_handles(payload)
-                continue
+                # Check for bytes in serial input buffer. A full buffer results in overflow.
+                if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                    logger.warning(
+                        "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
+                        serial_port.in_waiting,
+                    )
+                    serial_port.close()
+                    serial_port.open()
+                    continue
 
-            # Check for bytes in serial input buffer. A full buffer results in overflow.
-            if serial_port.in_waiting == self.config.serial_buffer_rx_size:
-                logger.warning(
-                    "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
-                    serial_port.in_waiting,
+                packet_queue.put(
+                    {
+                        "packet_type": packet_type,
+                        "payload": payload,
+                        "data": data,
+                        "previous_timestamp": previous_timestamp,
+                    }
                 )
-                serial_port.close()
-                serial_port.open()
-                continue
 
-            packet_queue.put(
-                {
-                    "packet_type": packet_type,
-                    "payload": payload,
-                    "data": data,
-                    "previous_timestamp": previous_timestamp,
-                }
-            )
+        except Exception as e:
+            error_queue.put(e)
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
@@ -202,14 +203,15 @@ class PacketReader:
         :param queue.Queue error_queue: a thread-safe queue to put any exceptions on to for the reader thread to handle
         :return None:
         """
-        with self.uploader:
-            with self.writer:
-                try:
+        try:
+            with self.uploader:
+                with self.writer:
                     while not self.stop:
                         packet_type, payload, data, previous_timestamp = packet_queue.get().values()
 
                         if packet_type not in self.handles:
                             logger.error("Received packet with unknown type: %s", packet_type)
+
                             raise exceptions.UnknownPacketTypeError(
                                 "Received packet with unknown type: {}".format(packet_type)
                             )
@@ -235,8 +237,8 @@ class PacketReader:
                         ]:
                             self._parse_info_packet(self.handles[packet_type], payload)
 
-                except Exception as e:
-                    error_queue.put(e)
+        except Exception as e:
+            error_queue.put(e)
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.

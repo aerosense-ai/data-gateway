@@ -23,18 +23,18 @@ class DataGateway:
     def __init__(
         self,
         serial_port,
-        config_file,
-        routine_file,
-        save_locally,
-        no_upload_to_cloud,
-        interactive,
-        output_dir,
-        window_size,
-        gcp_project_name,
-        gcp_bucket_name,
-        label,
-        save_csv_files,
-        use_dummy_serial_port,
+        config_file="config.json",
+        routine_file="routine.json",
+        save_locally=False,
+        no_upload_to_cloud=False,
+        interactive=False,
+        output_directory="data_gateway",
+        window_size=600,
+        project_name=None,
+        bucket_name=None,
+        label=None,
+        save_csv_files=False,
+        use_dummy_serial_port=False,
     ):
         if not save_locally and no_upload_to_cloud:
             raise DataMustBeSavedError(
@@ -63,10 +63,10 @@ class DataGateway:
         self.packet_reader = PacketReader(
             save_locally=save_locally,
             upload_to_cloud=not no_upload_to_cloud,
-            output_directory=self._update_and_create_output_directory(output_directory_path=output_dir),
+            output_directory=self._update_and_create_output_directory(output_directory_path=output_directory),
             window_size=window_size,
-            project_name=gcp_project_name,
-            bucket_name=gcp_bucket_name,
+            project_name=project_name,
+            bucket_name=bucket_name,
             configuration=packet_reader_configuration,
             save_csv_files=save_csv_files,
         )
@@ -101,20 +101,35 @@ class DataGateway:
                 reader_thread_pool.submit(self.packet_reader.read_packets, self.serial_port, packet_queue, error_queue)
 
             parser_thread = threading.Thread(
+                name="ParserThread",
                 target=self.packet_reader.parse_payload,
                 kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
                 daemon=True,
             )
 
-            parser_thread.setName("ParserThread")
             parser_thread.start()
 
             if self.interactive:
-                self._send_commands_to_sensors()
+                commands_thread = threading.Thread(
+                    name="SensorCommandsThread",
+                    target=self._send_commands_to_sensors,
+                    daemon=True,
+                )
 
-            else:
-                if self.routine is not None:
-                    self.routine.run()
+                commands_thread.start()
+
+            elif self.routine is not None:
+                commands_thread = threading.Thread(
+                    name="SensorCommandsThread",
+                    target=self.routine.run,
+                    daemon=True,
+                )
+
+                commands_thread.start()
+
+            while not self.packet_reader.stop:
+                if not error_queue.empty():
+                    raise error_queue.get()
 
         except (KeyboardInterrupt, PacketReaderStopError):
             pass
@@ -128,7 +143,9 @@ class DataGateway:
     def _send_commands_to_sensors(self):
         # Keep a record of the commands given.
         commands_record_file = os.path.join(
-            self.packet_reader.output_directory, self.packet_reader.session_subdirectory, "commands.txt"
+            self.packet_reader.output_directory,
+            self.packet_reader.session_subdirectory,
+            "commands.txt",
         )
 
         os.makedirs(
@@ -138,7 +155,6 @@ class DataGateway:
 
         while not self.packet_reader.stop:
             for line in sys.stdin:
-
                 with open(commands_record_file, "a") as f:
                     f.write(line)
 
@@ -175,19 +191,20 @@ class DataGateway:
         :param bool use_dummy_serial_port:
         :return serial.Serial:
         """
-        if not use_dummy_serial_port:
-            serial_port = serial.Serial(port=serial_port, baudrate=configuration.baudrate)
-        else:
-            serial_port = DummySerial(port=serial_port, baudrate=configuration.baudrate)
+        if isinstance(serial_port, str):
+            if not use_dummy_serial_port:
+                serial_port = serial.Serial(port=serial_port, baudrate=configuration.baudrate)
+            else:
+                serial_port = DummySerial(port=serial_port, baudrate=configuration.baudrate)
 
-        # The buffer size can only be set on Windows.
-        if os.name == "nt":
-            serial_port.set_buffer_size(
-                rx_size=configuration.serial_buffer_rx_size,
-                tx_size=configuration.serial_buffer_tx_size,
-            )
-        else:
-            logger.warning("Serial port buffer size can only be set on Windows.")
+            # The buffer size can only be set on Windows.
+            if os.name == "nt":
+                serial_port.set_buffer_size(
+                    rx_size=configuration.serial_buffer_rx_size,
+                    tx_size=configuration.serial_buffer_tx_size,
+                )
+            else:
+                logger.warning("Serial port buffer size can only be set on Windows.")
 
         return serial_port
 
