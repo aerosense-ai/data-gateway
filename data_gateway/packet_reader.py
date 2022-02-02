@@ -78,8 +78,8 @@ class PacketReader:
             self.writer = NoOperationContextManager()
 
     def read_packets(self, serial_port, stop_when_no_more_data=False):
-        """Read packets from a serial port and send them to a separate parser thread that will also upload them to
-        Google Cloud storage and/or write them to disk.
+        """Read packets from a serial port and send them to a separate thread that will parse and upload them to Google
+        Cloud storage and/or write them to disk.
 
         :param serial.Serial serial_port: name of serial port to read from
         :param bool stop_when_no_more_data: stop reading when no more data is received from the port (for testing)
@@ -214,7 +214,7 @@ class PacketReader:
         thread to handle.
 
         :param queue.Queue packet_queue: a thread-safe queue of packets provided by the reader thread
-        :param queue.Queue error_queue: a thread-safe queue to put any exceptions on to for th reader thread to handle
+        :param queue.Queue error_queue: a thread-safe queue to put any exceptions on to for the reader thread to handle
         :return None:
         """
         try:
