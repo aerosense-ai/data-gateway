@@ -3,7 +3,7 @@ from octue.log_handlers import apply_log_handler
 from data_gateway.configuration import Configuration
 
 
-apply_log_handler()
+apply_log_handler(include_thread_name=True)
 
 
 TEST_PROJECT_NAME = "a-project-name"

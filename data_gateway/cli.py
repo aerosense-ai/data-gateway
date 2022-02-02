@@ -45,11 +45,15 @@ def gateway_cli(logger_uri, log_level):
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
     # Apply log handler locally.
-    apply_log_handler(log_level=log_level.upper())
+    apply_log_handler(log_level=log_level.upper(), include_thread_name=True)
 
     # Stream logs to remote handler if required.
     if logger_uri is not None:
-        apply_log_handler(handler=get_remote_handler(logger_uri=logger_uri), log_level=log_level.upper())
+        apply_log_handler(
+            handler=get_remote_handler(logger_uri=logger_uri),
+            log_level=log_level.upper(),
+            include_thread_name=True,
+        )
 
 
 @gateway_cli.command()
@@ -205,8 +209,9 @@ def start(
 
     # Start packet reader in a separate thread so commands can be sent to it in real time in interactive mode or by a
     # routine.
-    thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
-    thread.start()
+    reader_thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
+    reader_thread.setName("ReaderThread")
+    reader_thread.start()
 
     try:
         if interactive:
