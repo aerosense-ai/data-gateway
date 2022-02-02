@@ -85,6 +85,7 @@ class PacketReader:
         :param bool stop_when_no_more_data: stop reading when no more data is received from the port (for testing)
         :return None:
         """
+        logger.debug("Beginning reading for packets.")
         self._persist_configuration()
 
         previous_timestamp = {}
