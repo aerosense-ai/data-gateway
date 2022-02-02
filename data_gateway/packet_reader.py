@@ -109,7 +109,8 @@ class PacketReader:
                     daemon=True,
                 )
 
-                parser_thread.setName("ParserThread")
+                current_reader_thread_number = threading.current_thread().name.split("_")[-1]
+                parser_thread.setName(f"ParserThread_{current_reader_thread_number}")
                 parser_thread.start()
 
                 while not self.stop:
