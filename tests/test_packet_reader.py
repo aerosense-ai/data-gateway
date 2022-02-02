@@ -8,8 +8,8 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway import exceptions
 from data_gateway.configuration import Configuration
+from data_gateway.data_gateway import DataGateway
 from data_gateway.dummy_serial import DummySerial
-from data_gateway.packet_reader import PacketReader
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
 
@@ -73,16 +73,16 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port=serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
             with self.assertRaises(exceptions.UnknownPacketTypeError):
-                packet_reader.read_packets(serial_port, stop_when_no_more_data=False)
+                data_gateway.start()
 
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""
@@ -93,18 +93,19 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port=serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+
+            data_gateway.start(stop_when_no_more_data=True)
 
             configuration_path = os.path.join(
-                temporary_directory, packet_reader.session_subdirectory, "configuration.json"
+                temporary_directory, data_gateway.packet_reader.session_subdirectory, "configuration.json"
             )
 
             # Check configuration file is present and valid locally.
@@ -115,7 +116,9 @@ class TestPacketReader(BaseTestCase):
         configuration = self.storage_client.download_as_string(
             bucket_name=TEST_BUCKET_NAME,
             path_in_bucket=storage.path.join(
-                packet_reader.uploader.output_directory, packet_reader.session_subdirectory, "configuration.json"
+                data_gateway.packet_reader.uploader.output_directory,
+                data_gateway.packet_reader.session_subdirectory,
+                "configuration.json",
             ),
         )
 
@@ -136,18 +139,18 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=False,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            with patch("data_gateway.packet_reader.logger") as mock_logger:
-                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-                self.assertIn("Handle error", mock_logger.method_calls[0].args[0])
+            with self.assertLogs() as logging_context:
+                data_gateway.start(stop_when_no_more_data=True)
+                self.assertIn("Handle error", logging_context.output[3])
 
     def test_update_handles(self):
         """Test that the handles can be updated."""
@@ -163,20 +166,21 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=False,
+                no_upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            with patch("data_gateway.packet_reader.logger") as mock_logger:
-                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-                self.assertIn("Successfully updated handles", mock_logger.method_calls[0].args[0])
+            with self.assertLogs() as logging_context:
+                data_gateway.start(stop_when_no_more_data=True)
+                self.assertIn("Successfully updated handles", logging_context.output[2])
 
-    def test_packet_reader_with_baros_p_sensor(self):
+    def test_data_gateway_with_baros_p_sensor(self):
         """Test that the packet reader works with the Baro_P sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([34])
@@ -185,20 +189,25 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Baros_P"])
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros_P"], number_of_windows_to_check=1)
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader, temporary_directory, sensor_names=["Baros_P"]
+            )
 
-    def test_packet_reader_with_baros_t_sensor(self):
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Baros_P"], number_of_windows_to_check=1
+        )
+
+    def test_data_gateway_with_baros_t_sensor(self):
         """Test that the packet reader works with the Baro_T sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([34])
@@ -207,20 +216,24 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Baros_T"])
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader, temporary_directory, sensor_names=["Baros_T"]
+            )
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Baros_T"], number_of_windows_to_check=1)
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Baros_T"], number_of_windows_to_check=1
+        )
 
-    def test_packet_reader_with_diff_baros_sensor(self):
+    def test_data_gateway_with_diff_baros_sensor(self):
         """Test that the packet reader works with the Diff_Baros sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([36])
@@ -229,24 +242,26 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Diff_Baros"])
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader, temporary_directory, sensor_names=["Diff_Baros"]
+            )
 
         self._check_windows_are_uploaded_to_cloud(
-            packet_reader,
+            data_gateway.packet_reader,
             sensor_names=["Diff_Baros"],
             number_of_windows_to_check=1,
         )
 
-    def test_packet_reader_with_mic_sensor(self):
+    def test_data_gateway_with_mic_sensor(self):
         """Test that the packet reader works with the mic sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([38])
@@ -255,20 +270,22 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Mics"])
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Mics"])
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Mics"], number_of_windows_to_check=1)
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Mics"], number_of_windows_to_check=1
+        )
 
-    def test_packet_reader_with_acc_sensor(self):
+    def test_data_gateway_with_acc_sensor(self):
         """Test that the packet reader works with the acc sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([42])
@@ -277,20 +294,22 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Acc"])
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Acc"])
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Acc"], number_of_windows_to_check=1)
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Acc"], number_of_windows_to_check=1
+        )
 
-    def test_packet_reader_with_gyro_sensor(self):
+    def test_data_gateway_with_gyro_sensor(self):
         """Test that the packet reader works with the gyro sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([44])
@@ -299,20 +318,22 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Gyro"])
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Gyro"])
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Gyro"], number_of_windows_to_check=1)
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Gyro"], number_of_windows_to_check=1
+        )
 
-    def test_packet_reader_with_mag_sensor(self):
+    def test_data_gateway_with_mag_sensor(self):
         """Test that the packet reader works with the mag sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([46])
@@ -321,20 +342,22 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Mag"])
+            data_gateway.start(stop_when_no_more_data=True)
+            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Mag"])
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Mag"], number_of_windows_to_check=1)
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Mag"], number_of_windows_to_check=1
+        )
 
-    def test_packet_reader_with_connections_statistics(self):
+    def test_data_gateway_with_connections_statistics(self):
         """Test that the packet reader works with the connection statistics "sensor"."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([52])
@@ -343,21 +366,25 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+            data_gateway.start(stop_when_no_more_data=True)
 
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Constat"])
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader, temporary_directory, sensor_names=["Constat"]
+            )
 
-        self._check_windows_are_uploaded_to_cloud(packet_reader, sensor_names=["Constat"], number_of_windows_to_check=1)
+        self._check_windows_are_uploaded_to_cloud(
+            data_gateway.packet_reader, sensor_names=["Constat"], number_of_windows_to_check=1
+        )
 
-    def test_packet_reader_with_connections_statistics_in_sleep_mode(self):
+    def test_data_gateway_with_connections_statistics_in_sleep_mode(self):
         """Test that the packet reader works with the connection statistics "sensor" in sleep state. Normally,
         randomly generated payloads would trigger packet loss warning in logger. Check that this warning is suppressed
         in sleep mode.
@@ -372,9 +399,10 @@ class TestPacketReader(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=False,
+                no_upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
@@ -382,9 +410,11 @@ class TestPacketReader(BaseTestCase):
             )
 
             with patch("data_gateway.packet_reader.logger") as mock_logger:
-                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+                data_gateway.start(stop_when_no_more_data=True)
 
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=["Constat"])
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader, temporary_directory, sensor_names=["Constat"]
+            )
             self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
@@ -398,23 +428,27 @@ class TestPacketReader(BaseTestCase):
             serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
+            data_gateway.start(stop_when_no_more_data=True)
 
-            self._check_data_is_written_to_files(packet_reader, temporary_directory, sensor_names=sensor_names)
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader, temporary_directory, sensor_names=sensor_names
+            )
 
         self._check_windows_are_uploaded_to_cloud(
-            packet_reader, sensor_names=sensor_names, number_of_windows_to_check=1
+            data_gateway.packet_reader,
+            sensor_names=sensor_names,
+            number_of_windows_to_check=1,
         )
 
-    def test_packet_reader_with_info_packets(self):
+    def test_data_gateway_with_info_packets(self):
         """Test that the packet reader works with info packets."""
         serial_port = DummySerial(port="test")
 
@@ -432,15 +466,32 @@ class TestPacketReader(BaseTestCase):
                 serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([1]), payload)))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            packet_reader = PacketReader(
+            data_gateway = DataGateway(
+                serial_port,
                 save_locally=True,
-                upload_to_cloud=False,
+                no_upload_to_cloud=True,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            with patch("data_gateway.packet_reader.logger") as mock_logger:
-                packet_reader.read_packets(serial_port, stop_when_no_more_data=True)
-                self.assertEqual(11, len(mock_logger.method_calls))
+            with self.assertLogs() as logging_context:
+                data_gateway.start(stop_when_no_more_data=True)
+
+                log_messages_combined = "\n".join(logging_context.output)
+
+                for message in [
+                    "Microphone data reading done",
+                    "Microphone data erasing done",
+                    "Microphones started ",
+                    "Command declined, Bad block detection ongoing",
+                    "Command declined, Task already registered, cannot register again",
+                    "Command declined, Task is not registered, cannot de-register",
+                    "Command declined, Connection Parameter update unfinished",
+                    "\nExiting sleep\n",
+                    "\nEntering sleep\n",
+                    "Battery info",
+                    "Voltage : 0.000000V\n Cycle count: 0.000000\nState of charge: 0.000000%",
+                ]:
+                    self.assertIn(message, log_messages_combined)
