@@ -101,6 +101,7 @@ class PacketReader:
 
                 if len(serial_data) == 0:
                     if stop_when_no_more_data:
+                        self.stop = True
                         break
                     continue
 

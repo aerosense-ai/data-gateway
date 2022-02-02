@@ -71,7 +71,7 @@ class DataGateway:
             save_csv_files=save_csv_files,
         )
 
-    def start(self):
+    def start(self, stop_when_no_more_data=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
         the configuration. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing
         them into stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop].
@@ -98,7 +98,13 @@ class DataGateway:
 
         try:
             for _ in range(reader_thread_pool._max_workers):
-                reader_thread_pool.submit(self.packet_reader.read_packets, self.serial_port, packet_queue, error_queue)
+                reader_thread_pool.submit(
+                    self.packet_reader.read_packets,
+                    self.serial_port,
+                    packet_queue,
+                    error_queue,
+                    stop_when_no_more_data,
+                )
 
             parser_thread = threading.Thread(
                 name="ParserThread",
