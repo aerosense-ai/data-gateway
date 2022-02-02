@@ -12,7 +12,7 @@ from slugify import slugify
 
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
-from data_gateway.exceptions import DataMustBeSavedError, WrongNumberOfSensorCoordinatesError
+from data_gateway.exceptions import DataMustBeSavedError, PacketReaderStopError, WrongNumberOfSensorCoordinatesError
 from data_gateway.routine import Routine
 
 
@@ -166,7 +166,7 @@ def start(
     [startBaros, startMics, startIMU, getBattery, stop].
     """
     import sys
-    import threading
+    from concurrent.futures import ThreadPoolExecutor
 
     from data_gateway.packet_reader import PacketReader
 
@@ -207,13 +207,14 @@ def start(
             window_size,
         )
 
-    # Start packet reader in a separate thread so commands can be sent to it in real time in interactive mode or by a
-    # routine.
-    reader_thread = threading.Thread(target=packet_reader.read_packets, args=(serial_port,), daemon=True)
-    reader_thread.setName("ReaderThread")
-    reader_thread.start()
+    # Start packet reader in a thread pool for parallelised reading and so commands can be sent to the serial port in
+    # real time.
+    reader_thread_pool = ThreadPoolExecutor(thread_name_prefix="ReaderThread")
 
     try:
+        for _ in range(reader_thread_pool._max_workers):
+            reader_thread_pool.submit(packet_reader.read_packets, args=[serial_port])
+
         if interactive:
             # Keep a record of the commands given.
             commands_record_file = os.path.join(
@@ -231,8 +232,7 @@ def start(
                     if line.startswith("sleep") and line.endswith("\n"):
                         time.sleep(int(line.split(" ")[-1].strip()))
                     elif line == "stop\n":
-                        packet_reader.stop = True
-                        break
+                        raise PacketReaderStopError()
 
                     # Send the command to the node
                     serial_port.write(line.encode("utf_8"))
@@ -241,11 +241,14 @@ def start(
             if routine is not None:
                 routine.run()
 
-    except KeyboardInterrupt:
-        packet_reader.stop = True
+    except (KeyboardInterrupt, PacketReaderStopError):
+        pass
 
-    logger.info("Stopping gateway.")
-    packet_reader.writer.force_persist()
+    finally:
+        logger.info("Stopping gateway.")
+        packet_reader.stop = True
+        reader_thread_pool.shutdown(wait=False, cancel_futures=True)
+        packet_reader.writer.force_persist()
 
 
 @gateway_cli.command()

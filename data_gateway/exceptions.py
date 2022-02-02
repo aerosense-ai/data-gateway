@@ -18,3 +18,7 @@ class WrongNumberOfSensorCoordinatesError(GatewayError, ValueError):
 
 class DataMustBeSavedError(GatewayError, ValueError):
     """Raise if options are given to the packet reader that mean no data will be saved locally or uploaded to the cloud."""
+
+
+class PacketReaderStopError(GatewayError):
+    pass
