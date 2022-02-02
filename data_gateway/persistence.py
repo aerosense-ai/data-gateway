@@ -64,7 +64,7 @@ class TimeBatcher:
         self.force_persist()
 
     def add_to_current_window(self, sensor_name, data):
-        """Add serialised data (a string) to the current window for the given sensor name.
+        """Add data to the current window for the given sensor name.
 
         :param str sensor_name: name of sensor
         :param iter data: data to add to window
