@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+import queue
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -88,38 +90,27 @@ class DataGateway:
                 self.window_size,
             )
 
-        # Start packet reader in a thread pool for parallelised reading and so commands can be sent to the serial port
-        # in real time.
+        self.packet_reader._persist_configuration()
+
         reader_thread_pool = ThreadPoolExecutor(thread_name_prefix="ReaderThread")
+        packet_queue = queue.Queue()
+        error_queue = queue.Queue()
 
         try:
             for _ in range(reader_thread_pool._max_workers):
-                reader_thread_pool.submit(self.packet_reader.read_packets, self.serial_port)
+                reader_thread_pool.submit(self.packet_reader.read_packets, self.serial_port, packet_queue, error_queue)
+
+            parser_thread = threading.Thread(
+                target=self.packet_reader.parse_payload,
+                kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
+                daemon=True,
+            )
+
+            parser_thread.setName("ParserThread")
+            parser_thread.start()
 
             if self.interactive:
-                # Keep a record of the commands given.
-                commands_record_file = os.path.join(
-                    self.packet_reader.output_directory, self.packet_reader.session_subdirectory, "commands.txt"
-                )
-
-                os.makedirs(
-                    os.path.join(self.packet_reader.output_directory, self.packet_reader.session_subdirectory),
-                    exist_ok=True,
-                )
-
-                while not self.packet_reader.stop:
-                    for line in sys.stdin:
-
-                        with open(commands_record_file, "a") as f:
-                            f.write(line)
-
-                        if line.startswith("sleep") and line.endswith("\n"):
-                            time.sleep(int(line.split(" ")[-1].strip()))
-                        elif line == "stop\n":
-                            raise PacketReaderStopError()
-
-                        # Send the command to the node
-                        self.serial_port.write(line.encode("utf_8"))
+                self._send_commands_to_sensors()
 
             else:
                 if self.routine is not None:
@@ -133,6 +124,31 @@ class DataGateway:
             self.packet_reader.stop = True
             reader_thread_pool.shutdown(wait=False)
             self.packet_reader.writer.force_persist()
+
+    def _send_commands_to_sensors(self):
+        # Keep a record of the commands given.
+        commands_record_file = os.path.join(
+            self.packet_reader.output_directory, self.packet_reader.session_subdirectory, "commands.txt"
+        )
+
+        os.makedirs(
+            os.path.join(self.packet_reader.output_directory, self.packet_reader.session_subdirectory),
+            exist_ok=True,
+        )
+
+        while not self.packet_reader.stop:
+            for line in sys.stdin:
+
+                with open(commands_record_file, "a") as f:
+                    f.write(line)
+
+                if line.startswith("sleep") and line.endswith("\n"):
+                    time.sleep(int(line.split(" ")[-1].strip()))
+                elif line == "stop\n":
+                    raise PacketReaderStopError()
+
+                # Send the command to the node
+                self.serial_port.write(line.encode("utf_8"))
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists, otherwise load the default configuration.

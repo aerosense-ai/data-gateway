@@ -2,9 +2,7 @@ import datetime
 import json
 import logging
 import os
-import queue
 import struct
-import threading
 
 from octue.cloud import storage
 
@@ -77,7 +75,7 @@ class PacketReader:
         else:
             self.writer = NoOperationContextManager()
 
-    def read_packets(self, serial_port, stop_when_no_more_data=False):
+    def read_packets(self, serial_port, packet_queue, error_queue, stop_when_no_more_data=False):
         """Read packets from a serial port and send them to a separate thread that will parse and upload them to Google
         Cloud storage and/or write them to disk.
 
@@ -85,8 +83,7 @@ class PacketReader:
         :param bool stop_when_no_more_data: stop reading when no more data is received from the port (for testing)
         :return None:
         """
-        logger.debug("Beginning reading for packets.")
-        self._persist_configuration()
+        logger.debug("Beginning reading packets from serial port.")
 
         previous_timestamp = {}
         data = {}
@@ -98,61 +95,47 @@ class PacketReader:
                 for _ in range(self.config.number_of_sensors[sensor_name])
             ]
 
-        with self.uploader:
-            with self.writer:
-                packet_queue = queue.Queue()
-                error_queue = queue.Queue()
+        while not self.stop:
+            if not error_queue.empty():
+                raise error_queue.get()
 
-                parser_thread = threading.Thread(
-                    target=self._parse_payload,
-                    kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
-                    daemon=True,
+            serial_data = serial_port.read()
+
+            if len(serial_data) == 0:
+                if stop_when_no_more_data:
+                    break
+                continue
+
+            if serial_data[0] != self.config.packet_key:
+                continue
+
+            packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
+            length = int.from_bytes(serial_port.read(), self.config.endian)
+            payload = serial_port.read(length)
+            logger.debug("Packet received.")
+
+            if packet_type == str(self.config.type_handle_def):
+                self.update_handles(payload)
+                continue
+
+            # Check for bytes in serial input buffer. A full buffer results in overflow.
+            if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                logger.warning(
+                    "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
+                    serial_port.in_waiting,
                 )
+                serial_port.close()
+                serial_port.open()
+                continue
 
-                current_reader_thread_number = threading.current_thread().name.split("_")[-1]
-                parser_thread.setName(f"ParserThread_{current_reader_thread_number}")
-                parser_thread.start()
-
-                while not self.stop:
-                    if not error_queue.empty():
-                        raise error_queue.get()
-
-                    serial_data = serial_port.read()
-
-                    if len(serial_data) == 0:
-                        if stop_when_no_more_data:
-                            break
-                        continue
-
-                    if serial_data[0] != self.config.packet_key:
-                        continue
-
-                    packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
-                    length = int.from_bytes(serial_port.read(), self.config.endian)
-                    payload = serial_port.read(length)
-
-                    if packet_type == str(self.config.type_handle_def):
-                        self.update_handles(payload)
-                        continue
-
-                    # Check for bytes in serial input buffer. A full buffer results in overflow.
-                    if serial_port.in_waiting == self.config.serial_buffer_rx_size:
-                        logger.warning(
-                            "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
-                            serial_port.in_waiting,
-                        )
-                        serial_port.close()
-                        serial_port.open()
-                        continue
-
-                    packet_queue.put(
-                        {
-                            "packet_type": packet_type,
-                            "payload": payload,
-                            "data": data,
-                            "previous_timestamp": previous_timestamp,
-                        }
-                    )
+            packet_queue.put(
+                {
+                    "packet_type": packet_type,
+                    "payload": payload,
+                    "data": data,
+                    "previous_timestamp": previous_timestamp,
+                }
+            )
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
@@ -209,7 +192,7 @@ class PacketReader:
                 ),
             )
 
-    def _parse_payload(self, packet_queue, error_queue):
+    def parse_payload(self, packet_queue, error_queue):
         """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
         with the correct packet type handle, then parse the payload. After parsing/processing, upload them to Google
         Cloud storage and/or write them to disk. If any errors are raised, put them on the error queue for the reader
@@ -219,33 +202,41 @@ class PacketReader:
         :param queue.Queue error_queue: a thread-safe queue to put any exceptions on to for the reader thread to handle
         :return None:
         """
-        try:
-            while not self.stop:
-                packet_type, payload, data, previous_timestamp = packet_queue.get().values()
+        with self.uploader:
+            with self.writer:
+                try:
+                    while not self.stop:
+                        packet_type, payload, data, previous_timestamp = packet_queue.get().values()
 
-                if packet_type not in self.handles:
-                    logger.error("Received packet with unknown type: %s", packet_type)
-                    raise exceptions.UnknownPacketTypeError("Received packet with unknown type: {}".format(packet_type))
+                        if packet_type not in self.handles:
+                            logger.error("Received packet with unknown type: %s", packet_type)
+                            raise exceptions.UnknownPacketTypeError(
+                                "Received packet with unknown type: {}".format(packet_type)
+                            )
 
-                if len(payload) == 244:  # If the full data payload is received, proceed parsing it
-                    timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
+                        if len(payload) == 244:  # If the full data payload is received, proceed parsing it
+                            timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
 
-                    data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
+                            data, sensor_names = self._parse_sensor_packet_data(
+                                self.handles[packet_type], payload, data
+                            )
 
-                    for sensor_name in sensor_names:
-                        self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
-                        self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
+                            for sensor_name in sensor_names:
+                                self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
+                                self._timestamp_and_persist_data(
+                                    data, sensor_name, timestamp, self.config.period[sensor_name]
+                                )
 
-                elif len(payload) >= 1 and self.handles[packet_type] in [
-                    "Mic 1",
-                    "Cmd Decline",
-                    "Sleep State",
-                    "Info Message",
-                ]:
-                    self._parse_info_packet(self.handles[packet_type], payload)
+                        elif len(payload) >= 1 and self.handles[packet_type] in [
+                            "Mic 1",
+                            "Cmd Decline",
+                            "Sleep State",
+                            "Info Message",
+                        ]:
+                            self._parse_info_packet(self.handles[packet_type], payload)
 
-        except Exception as e:
-            error_queue.put(e)
+                except Exception as e:
+                    error_queue.put(e)
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
