@@ -247,7 +247,7 @@ def start(
     finally:
         logger.info("Stopping gateway.")
         packet_reader.stop = True
-        reader_thread_pool.shutdown(wait=False, cancel_futures=True)
+        reader_thread_pool.shutdown(wait=False)
         packet_reader.writer.force_persist()
 
 
