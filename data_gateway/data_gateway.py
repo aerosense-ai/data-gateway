@@ -145,6 +145,7 @@ class DataGateway:
             self.packet_reader.stop = True
             reader_thread_pool.shutdown(wait=False)
             self.packet_reader.writer.force_persist()
+            self.packet_reader.uploader.force_persist()
 
     def _send_commands_to_sensors(self):
         # Keep a record of the commands given.
