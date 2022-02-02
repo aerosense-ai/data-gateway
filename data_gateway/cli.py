@@ -213,7 +213,7 @@ def start(
 
     try:
         for _ in range(reader_thread_pool._max_workers):
-            reader_thread_pool.submit(packet_reader.read_packets, args=[serial_port])
+            reader_thread_pool.submit(packet_reader.read_packets, serial_port)
 
         if interactive:
             # Keep a record of the commands given.
