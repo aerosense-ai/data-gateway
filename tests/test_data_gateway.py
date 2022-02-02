@@ -14,10 +14,10 @@ from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJE
 from tests.base import BaseTestCase
 
 
-class TestPacketReader(BaseTestCase):
-    """Test packet reader with different sensors. NOTE: The payloads are generated randomly. Consequently,
-    two consecutive packets are extremely unlikely to have consecutive timestamps. This will trigger lost packet
-    warning during tests.
+class TestDataGateway(BaseTestCase):
+    """Test `DataGateway` with different sensors. NOTE: The payloads are generated randomly. Consequently, two
+    consecutive packets are extremely unlikely to have consecutive timestamps. This will trigger lost packet warning
+    during tests.
     """
 
     @classmethod
@@ -28,41 +28,6 @@ class TestPacketReader(BaseTestCase):
         """
         cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
-
-    def _check_windows_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_windows_to_check=5):
-        """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage."""
-        number_of_windows = packet_reader.uploader._window_number
-        self.assertTrue(number_of_windows > 0)
-
-        for i in range(number_of_windows_to_check):
-            data = json.loads(
-                self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        packet_reader.uploader.output_directory,
-                        packet_reader.uploader._session_subdirectory,
-                        f"window-{i}.json",
-                    ),
-                )
-            )
-
-            for name in sensor_names:
-                lines = data["sensor_data"][name]
-                self.assertTrue(len(lines[0]) > 1)
-
-    def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
-        """Check that non-trivial data is written to the given file."""
-        window_directory = os.path.join(temporary_directory, packet_reader.writer._session_subdirectory)
-        windows = [file for file in os.listdir(window_directory) if file.startswith(packet_reader.writer._file_prefix)]
-        self.assertTrue(len(windows) > 0)
-
-        for window in windows:
-            with open(os.path.join(window_directory, window)) as f:
-                data = json.load(f)
-
-                for name in sensor_names:
-                    lines = data["sensor_data"][name]
-                    self.assertTrue(len(lines[0]) > 1)
 
     def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
         """Test that an `UnknownPacketTypeException` is raised if an unknown sensor type packet is received."""
@@ -495,3 +460,38 @@ class TestPacketReader(BaseTestCase):
                     "Voltage : 0.000000V\n Cycle count: 0.000000\nState of charge: 0.000000%",
                 ]:
                     self.assertIn(message, log_messages_combined)
+
+    def _check_windows_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_windows_to_check=5):
+        """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage."""
+        number_of_windows = packet_reader.uploader._window_number
+        self.assertTrue(number_of_windows > 0)
+
+        for i in range(number_of_windows_to_check):
+            data = json.loads(
+                self.storage_client.download_as_string(
+                    bucket_name=TEST_BUCKET_NAME,
+                    path_in_bucket=storage.path.join(
+                        packet_reader.uploader.output_directory,
+                        packet_reader.uploader._session_subdirectory,
+                        f"window-{i}.json",
+                    ),
+                )
+            )
+
+            for name in sensor_names:
+                lines = data["sensor_data"][name]
+                self.assertTrue(len(lines[0]) > 1)
+
+    def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
+        """Check that non-trivial data is written to the given file."""
+        window_directory = os.path.join(temporary_directory, packet_reader.writer._session_subdirectory)
+        windows = [file for file in os.listdir(window_directory) if file.startswith(packet_reader.writer._file_prefix)]
+        self.assertTrue(len(windows) > 0)
+
+        for window in windows:
+            with open(os.path.join(window_directory, window)) as f:
+                data = json.load(f)
+
+                for name in sensor_names:
+                    lines = data["sensor_data"][name]
+                    self.assertTrue(len(lines[0]) > 1)
