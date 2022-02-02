@@ -11,7 +11,7 @@ import serial
 
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
-from data_gateway.exceptions import DataMustBeSavedError, PacketReaderStopError
+from data_gateway.exceptions import DataMustBeSavedError
 from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
 
@@ -137,7 +137,7 @@ class DataGateway:
                 if not error_queue.empty():
                     raise error_queue.get()
 
-        except (KeyboardInterrupt, PacketReaderStopError):
+        except KeyboardInterrupt:
             pass
 
         finally:
@@ -168,7 +168,7 @@ class DataGateway:
                 if line.startswith("sleep") and line.endswith("\n"):
                     time.sleep(int(line.split(" ")[-1].strip()))
                 elif line == "stop\n":
-                    raise PacketReaderStopError()
+                    self.packet_reader.stop = True
 
                 # Send the command to the node
                 self.serial_port.write(line.encode("utf_8"))
@@ -183,7 +183,7 @@ class DataGateway:
             with open(configuration_path) as f:
                 configuration = Configuration.from_dict(json.load(f))
 
-            logger.debug("Loaded configuration file from %r.", configuration_path)
+            logger.info("Loaded configuration file from %r.", configuration_path)
             return configuration
 
         configuration = Configuration()

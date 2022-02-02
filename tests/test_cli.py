@@ -249,7 +249,7 @@ class TestStart(BaseTestCase):
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
+            with self.assertLogs() as logging_context:
                 with tempfile.TemporaryDirectory() as temporary_directory:
                     result = CliRunner().invoke(
                         gateway_cli,
@@ -267,7 +267,7 @@ class TestStart(BaseTestCase):
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
-            self.assertIn("Loaded configuration file", mock_local_logger_emit.call_args_list[0][0][0].msg)
+            self.assertIn("Loaded configuration file", logging_context.output[0])
 
 
 class TestCreateInstallation(BaseTestCase):
