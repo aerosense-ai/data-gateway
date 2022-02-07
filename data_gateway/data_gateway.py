@@ -151,9 +151,6 @@ class DataGateway:
                 if not error_queue.empty():
                     raise error_queue.get()
 
-        except KeyboardInterrupt:
-            pass
-
         finally:
             logger.info("Stopping gateway.")
             self.packet_reader.stop = True
