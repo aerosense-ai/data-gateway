@@ -127,7 +127,7 @@ class DataGateway:
 
             parser_thread = threading.Thread(
                 name="ParserThread",
-                target=self.packet_reader.parse_payload,
+                target=self.packet_reader.parse_packets,
                 kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
                 daemon=True,
             )
