@@ -23,7 +23,7 @@ from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_i
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
-class TestCleanAndUploadWindow(BaseTestCase, CredentialsEnvironmentVariableAsFile):
+class TestCleanAndUploadWindow(BaseTestCase):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
@@ -40,24 +40,25 @@ class TestCleanAndUploadWindow(BaseTestCase, CredentialsEnvironmentVariableAsFil
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger.
         """
-        GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
-            string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
-            bucket_name=self.SOURCE_BUCKET_NAME,
-            path_in_bucket="window-0.json",
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
-        )
+        with CredentialsEnvironmentVariableAsFile():
+            GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
+                string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
+                bucket_name=self.SOURCE_BUCKET_NAME,
+                path_in_bucket="window-0.json",
+                metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            )
 
-        with patch.dict(
-            os.environ,
-            {
-                "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
-                "DESTINATION_PROJECT_NAME": "destination-project",
-                "DESTINATION_BUCKET_NAME": "destination-bucket",
-                "BIG_QUERY_DATASET_NAME": "blah",
-            },
-        ):
-            with patch("window_handler.BigQueryDataset") as mock_dataset:
-                main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+            with patch.dict(
+                os.environ,
+                {
+                    "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
+                    "DESTINATION_PROJECT_NAME": "destination-project",
+                    "DESTINATION_BUCKET_NAME": "destination-bucket",
+                    "BIG_QUERY_DATASET_NAME": "blah",
+                },
+            ):
+                with patch("window_handler.BigQueryDataset") as mock_dataset:
+                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
