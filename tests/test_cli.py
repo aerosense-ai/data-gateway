@@ -253,7 +253,6 @@ class TestStart(BaseTestCase):
 
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI."""
-        # with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
         with self.assertLogs() as logging_context:
             with tempfile.TemporaryDirectory() as temporary_directory:
                 result = CliRunner().invoke(
