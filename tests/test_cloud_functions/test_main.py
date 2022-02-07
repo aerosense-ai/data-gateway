@@ -11,7 +11,6 @@ from octue.utils.encoders import OctueJSONEncoder
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
-from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -40,23 +39,23 @@ class TestCleanAndUploadWindow(BaseTestCase):
         """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
         storage trigger.
         """
-        with CredentialsEnvironmentVariableAsFile():
-            GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
-                string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
-                bucket_name=self.SOURCE_BUCKET_NAME,
-                path_in_bucket="window-0.json",
-                metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
-            )
+        GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
+            string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
+            bucket_name=self.SOURCE_BUCKET_NAME,
+            path_in_bucket="window-0.json",
+            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+        )
 
-            with patch.dict(
-                os.environ,
-                {
-                    "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
-                    "DESTINATION_PROJECT_NAME": "destination-project",
-                    "DESTINATION_BUCKET_NAME": "destination-bucket",
-                    "BIG_QUERY_DATASET_NAME": "blah",
-                },
-            ):
+        with patch.dict(
+            os.environ,
+            {
+                "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
+                "DESTINATION_PROJECT_NAME": "destination-project",
+                "DESTINATION_BUCKET_NAME": "destination-bucket",
+                "BIG_QUERY_DATASET_NAME": "blah",
+            },
+        ):
+            with patch("big_query.bigquery.Client"):
                 with patch("window_handler.BigQueryDataset") as mock_dataset:
                     main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
@@ -95,7 +94,8 @@ class TestCleanAndUploadWindow(BaseTestCase):
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
                 with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
-                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                    with patch("big_query.bigquery.Client"):
+                        main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
