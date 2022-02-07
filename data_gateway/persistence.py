@@ -137,7 +137,7 @@ class BatchingFileWriter(TimeBatcher):
     """A file writer that groups the given into time windows, saving each window to disk.
 
     :param iter(str) sensor_names: names of sensors to make windows for
-    :param float window_size:     :param float window_size: length of time window in seconds
+    :param float window_size: length of time window in seconds
     :param str session_subdirectory: directory within output directory to persist into
     :param str output_directory: directory to write windows to
     :param int storage_limit: storage limit in bytes (default is 1 GB)

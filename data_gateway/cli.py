@@ -162,19 +162,19 @@ def start(
     [startBaros, startMics, startIMU, getBattery, stop].
     """
     data_gateway = DataGateway(
-        serial_port,
-        config_file,
-        routine_file,
-        save_locally,
-        no_upload_to_cloud,
-        interactive,
-        output_dir,
-        window_size,
-        gcp_project_name,
-        gcp_bucket_name,
-        label,
-        save_csv_files,
-        use_dummy_serial_port,
+        serial_port=serial_port,
+        configuration_path=config_file,
+        routine_path=routine_file,
+        save_locally=save_locally,
+        upload_to_cloud=not no_upload_to_cloud,
+        interactive=interactive,
+        output_directory=output_dir,
+        window_size=window_size,
+        project_name=gcp_project_name,
+        bucket_name=gcp_bucket_name,
+        label=label,
+        save_csv_files=save_csv_files,
+        use_dummy_serial_port=use_dummy_serial_port,
     )
 
     data_gateway.start()

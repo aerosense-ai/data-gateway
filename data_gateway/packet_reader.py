@@ -19,11 +19,11 @@ class PacketReader:
 
     :param bool save_locally: save data windows locally
     :param bool upload_to_cloud: upload data windows to Google cloud
-    :param str|None output_directory:
-    :param float window_size: length of time window in seconds
+    :param str|None output_directory: the directory in which to save data in the cloud bucket or local file system
+    :param float window_size: the period in seconds at which data is persisted.
     :param str|None project_name: name of Google Cloud project to upload to
-    :param str|None bucket_name: name of Google Cloud project to upload to
-    :param data_gateway.configuration.Configuration|None configuration:
+    :param str|None bucket_name: name of Google Cloud bucket to upload to
+    :param data_gateway.configuration.Configuration|None configuration: the configuration for reading and parsing data
     :param bool save_csv_files: save sensor data to .csv when in interactive mode
     :return None:
     """
@@ -42,6 +42,7 @@ class PacketReader:
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.output_directory = output_directory
+        self.window_size = window_size
         self.config = configuration or Configuration()
         self.handles = self.config.default_handles
         self.sleep = False
@@ -56,7 +57,7 @@ class PacketReader:
                 sensor_names=self.config.sensor_names,
                 project_name=project_name,
                 bucket_name=bucket_name,
-                window_size=window_size,
+                window_size=self.window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 metadata={"data_gateway__configuration": self.config.to_dict()},
@@ -67,7 +68,7 @@ class PacketReader:
         if save_locally:
             self.writer = BatchingFileWriter(
                 sensor_names=self.config.sensor_names,
-                window_size=window_size,
+                window_size=self.window_size,
                 session_subdirectory=self.session_subdirectory,
                 output_directory=output_directory,
                 save_csv_files=save_csv_files,
@@ -171,7 +172,7 @@ class PacketReader:
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
 
-    def _persist_configuration(self):
+    def persist_configuration(self):
         """Persist the configuration to disk and/or cloud storage.
 
         :return None:

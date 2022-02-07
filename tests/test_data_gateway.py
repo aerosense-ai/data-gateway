@@ -134,7 +134,7 @@ class TestDataGateway(BaseTestCase):
             data_gateway = DataGateway(
                 serial_port,
                 save_locally=True,
-                no_upload_to_cloud=True,
+                upload_to_cloud=False,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
@@ -367,7 +367,7 @@ class TestDataGateway(BaseTestCase):
             data_gateway = DataGateway(
                 serial_port,
                 save_locally=True,
-                no_upload_to_cloud=True,
+                upload_to_cloud=False,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
@@ -434,7 +434,7 @@ class TestDataGateway(BaseTestCase):
             data_gateway = DataGateway(
                 serial_port,
                 save_locally=True,
-                no_upload_to_cloud=True,
+                upload_to_cloud=False,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
