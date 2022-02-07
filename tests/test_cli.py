@@ -10,7 +10,7 @@ from click.testing import CliRunner
 from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
+from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
 
 
@@ -73,7 +73,8 @@ class TestStart(BaseTestCase):
                 [
                     "start",
                     "--interactive",
-                    "--save-locally",
+                    f"--gcp-project-name={TEST_PROJECT_NAME}",
+                    f"--gcp-bucket-name={TEST_BUCKET_NAME}",
                     "--use-dummy-serial-port",
                     f"--output-dir={temporary_directory}",
                 ],
@@ -88,22 +89,26 @@ class TestStart(BaseTestCase):
         initial_directory = os.getcwd()
 
         with tempfile.TemporaryDirectory() as temporary_directory:
-            os.chdir(temporary_directory)
+            try:
+                os.chdir(temporary_directory)
 
-            result = CliRunner().invoke(
-                gateway_cli,
-                [
-                    "start",
-                    "--interactive",
-                    "--save-locally",
-                    "--use-dummy-serial-port",
-                ],
-                input="sleep 2\nstop\n",
-            )
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "start",
+                        "--interactive",
+                        f"--gcp-project-name={TEST_PROJECT_NAME}",
+                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--use-dummy-serial-port",
+                    ],
+                    input="sleep 2\nstop\n",
+                )
 
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
-            os.chdir(initial_directory)
+                self.assertIsNone(result.exception)
+                self.assertEqual(result.exit_code, 0)
+
+            finally:
+                os.chdir(initial_directory)
 
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded."""
@@ -248,26 +253,26 @@ class TestStart(BaseTestCase):
 
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI."""
-        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            with self.assertLogs() as logging_context:
-                with tempfile.TemporaryDirectory() as temporary_directory:
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        [
-                            "start",
-                            "--interactive",
-                            "--save-locally",
-                            "--no-upload-to-cloud",
-                            "--use-dummy-serial-port",
-                            f"--config-file={CONFIGURATION_PATH}",
-                            f"--output-dir={temporary_directory}",
-                        ],
-                        input="stop\n",
-                    )
+        # with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+        with self.assertLogs() as logging_context:
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "start",
+                        "--interactive",
+                        f"--gcp-project-name={TEST_PROJECT_NAME}",
+                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--use-dummy-serial-port",
+                        f"--config-file={CONFIGURATION_PATH}",
+                        f"--output-dir={temporary_directory}",
+                    ],
+                    input="stop\n",
+                )
 
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
-            self.assertIn("Loaded configuration file", logging_context.output[0])
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Loaded configuration file", logging_context.output[0])
 
 
 class TestCreateInstallation(BaseTestCase):
