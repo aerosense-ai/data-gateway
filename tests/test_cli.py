@@ -8,6 +8,7 @@ import requests
 from click.testing import CliRunner
 
 from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
+from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
@@ -253,8 +254,10 @@ class TestStart(BaseTestCase):
 
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI."""
-        with self.assertLogs() as logging_context:
-            with tempfile.TemporaryDirectory() as temporary_directory:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch(
+                "data_gateway.data_gateway.Configuration.from_dict", return_value=Configuration()
+            ) as mock_configuration_from_dict:
                 result = CliRunner().invoke(
                     gateway_cli,
                     [
@@ -271,7 +274,7 @@ class TestStart(BaseTestCase):
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("Loaded configuration file", logging_context.output[0])
+        mock_configuration_from_dict.assert_called()
 
 
 class TestCreateInstallation(BaseTestCase):

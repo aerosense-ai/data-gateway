@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import sys
@@ -22,7 +23,7 @@ from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_i
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
-class TestCleanAndUploadWindow(CredentialsEnvironmentVariableAsFile, BaseTestCase):
+class TestCleanAndUploadWindow(BaseTestCase, CredentialsEnvironmentVariableAsFile):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
@@ -59,7 +60,7 @@ class TestCleanAndUploadWindow(CredentialsEnvironmentVariableAsFile, BaseTestCas
                 main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
-        expected_configuration = self.VALID_CONFIGURATION.copy()
+        expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
         del expected_configuration["session_data"]
         self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
         self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)

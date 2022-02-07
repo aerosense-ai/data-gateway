@@ -20,21 +20,22 @@ logger = logging.getLogger(__name__)
 
 
 class DataGateway:
-    """A class for running the data gateway for wind turbine sensor data. The gateway is run with multiple threads
-    reading from the serial port which put the packets they read into a queue for a single parser thread to process and
-    persist. An additional thread is run for sending commands to the sensors either interactively or via a routine. If
-    a "stop" signal is sent as a command, all threads are stopped and any data in the current window is persisted.
+    """A class for running the data gateway for collecting wind turbine sensor data. The gateway is run with multiple
+    threads reading from the serial port which put the packets they read into a queue for a single parser thread to
+    process and persist. An additional thread is run for sending commands to the sensors either interactively or via a
+    routine. If a "stop" signal is sent as a command, all threads are stopped and any data in the current window is
+    persisted.
 
     :param str|serial.Serial serial_port: the name of the serial port to use or a `serial.Serial` instance
     :param str configuration_path: the path to a JSON configuration file for reading and parsing data
     :param str routine_path: the path to a JSON routine file containing sensor commands to be run automatically
     :param bool save_locally: if `True`, save data windows locally
-    :param bool upload_to_cloud: if `True`, upload data windows to Google cloud
-    :param bool interactive: if `True`, allow commands to be sent to the sensors automatically
+    :param bool upload_to_cloud: if `True`, upload data windows to Google Cloud Storage
+    :param bool interactive: if `True`, allow commands entered into `stdin` to be sent to the sensors in real time
     :param str output_directory: the directory in which to save data in the cloud bucket or local file system
     :param float window_size: the period in seconds at which data is persisted
-    :param str|None project_name: the name of Google Cloud project to upload to
-    :param str|None bucket_name: the name of Google Cloud bucket to upload to
+    :param str|None project_name: the name of the Google Cloud project to upload to
+    :param str|None bucket_name: the name of the Google Cloud bucket to upload to
     :param str|None label: a label to be associated with the data collected in this run of the data gateway
     :param bool save_csv_files: if `True`, also save windows locally as CSV files for debugging
     :param bool use_dummy_serial_port: if `True` use a dummy serial port for testing
@@ -74,7 +75,6 @@ class DataGateway:
             use_dummy_serial_port=use_dummy_serial_port,
         )
 
-        # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
         self.packet_reader = PacketReader(
             save_locally=save_locally,
             upload_to_cloud=upload_to_cloud,
@@ -91,21 +91,21 @@ class DataGateway:
     def start(self, stop_when_no_more_data=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
         the configuration. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing
-        them into stdin and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop].
+        them into `stdin` and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop].
 
         :return None:
         """
         logger.info("Starting packet reader.")
 
         if self.packet_reader.upload_to_cloud:
-            logger.info(
-                "Files will be uploaded to cloud storage at intervals of %s seconds.", self.packet_reader.window_size
+            logger.debug(
+                "Files will be uploaded to cloud storage at intervals of %s seconds.",
+                self.packet_reader.window_size,
             )
 
         if self.packet_reader.save_locally:
-            logger.info(
-                "Files will be saved locally to disk at %r at intervals of %s seconds.",
-                os.path.join(self.packet_reader.output_directory, self.packet_reader.session_subdirectory),
+            logger.debug(
+                "Files will be saved locally to disk at intervals of %s seconds.",
                 self.packet_reader.window_size,
             )
 
@@ -137,7 +137,7 @@ class DataGateway:
             if self.interactive:
                 interactive_commands_thread = threading.Thread(
                     name="InteractiveCommandsThread",
-                    target=self._send_commands_to_sensors,
+                    target=self._send_commands_from_stdin_to_sensors,
                     daemon=True,
                 )
 
@@ -147,6 +147,7 @@ class DataGateway:
                 routine_thread = threading.Thread(name="RoutineCommandsThread", target=self.routine.run, daemon=True)
                 routine_thread.start()
 
+            # Raise any errors from the reader threads and parser thread.
             while not self.packet_reader.stop:
                 if not error_queue.empty():
                     raise error_queue.get()
@@ -161,27 +162,28 @@ class DataGateway:
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists, otherwise load the default configuration.
 
-        :param str configuration_path:
+        :param str configuration_path: path to the configuration JSON file
         :return data_gateway.configuration.Configuration:
         """
         if os.path.exists(configuration_path):
             with open(configuration_path) as f:
                 configuration = Configuration.from_dict(json.load(f))
 
-            logger.info("Loaded configuration file from %r.", configuration_path)
+            logger.debug("Loaded configuration file from %r.", configuration_path)
             return configuration
 
         configuration = Configuration()
-        logger.info("No configuration file provided - using default configuration.")
+        logger.debug("No configuration file provided - using default configuration.")
         return configuration
 
     def _get_serial_port(self, serial_port, configuration, use_dummy_serial_port):
-        """Get the serial port or a dummy serial port if specified.
+        """Get the serial port or a dummy serial port if specified. If a serial port instance is provided, return that
+        as the serial port to use.
 
-        :param str|serial.Serial serial_port:
-        :param data_gateway.configuration.Configuration configuration:
-        :param bool use_dummy_serial_port:
-        :return serial.Serial:
+        :param str|serial.Serial serial_port: the name of a serial port or a `serial.Serial` instance
+        :param data_gateway.configuration.Configuration configuration: the packet reader configuration
+        :param bool use_dummy_serial_port: if `True`, use a dummy serial port instead
+        :return serial.Serial|data_gateway.dummy_serial.DummySerial:
         """
         if isinstance(serial_port, str):
             if not use_dummy_serial_port:
@@ -196,17 +198,17 @@ class DataGateway:
                     tx_size=configuration.serial_buffer_tx_size,
                 )
             else:
-                logger.warning("Serial port buffer size can only be set on Windows.")
+                logger.debug("Serial port buffer size can only be set on Windows.")
 
         return serial_port
 
     def _load_routine(self, routine_path):
-        """Load a sensor commands routine from the path if exists, otherwise return no routine. If in interactive mode,
-        the routine file is ignored. Note that "\n" has to be added to the end of each command sent to the serial port
-        for it to be executed - this is done automatically in this method.
+        """Load a sensor commands routine from the path if it exists, otherwise return no routine. If in interactive
+        mode, the routine file is ignored. Note that "\n" has to be added to the end of each command sent to the serial
+        port for it to be executed - this is done automatically in this method.
 
-        :param str routine_path:
-        :return data_gateway.routine.Routine|None:
+        :param str routine_path: the path to the JSON routine file
+        :return data_gateway.routine.Routine|None: a sensor routine instance
         """
         if os.path.exists(routine_path):
             if self.interactive:
@@ -220,10 +222,10 @@ class DataGateway:
                         packet_reader=self.packet_reader,
                     )
 
-                logger.info("Loaded routine file from %r.", routine_path)
+                logger.debug("Loaded routine file from %r.", routine_path)
                 return routine
 
-        logger.info(
+        logger.debug(
             "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
             routine_path,
         )
@@ -232,8 +234,8 @@ class DataGateway:
         """Set the output directory to a path relative to the current directory if the path does not start with "/" and
         create it if it does not already exist.
 
-        :param str output_directory_path:
-        :return str:
+        :param str output_directory_path: the path to the directory to write output data to
+        :return str: the updated output directory path
         """
         if not output_directory_path.startswith("/"):
             output_directory_path = os.path.join(".", output_directory_path)
@@ -241,7 +243,7 @@ class DataGateway:
         os.makedirs(output_directory_path, exist_ok=True)
         return output_directory_path
 
-    def _send_commands_to_sensors(self):
+    def _send_commands_from_stdin_to_sensors(self):
         """Send commands from `stdin` to the sensors until the "stop" command is received or the packet reader is
         otherwise stopped. A record is kept of the commands sent to the sensors as a text file in the session
         subdirectory. Available commands: [startBaros, startMics, startIMU, getBattery, stop].
@@ -268,6 +270,8 @@ class DataGateway:
                     time.sleep(int(line.split(" ")[-1].strip()))
                 elif line == "stop\n":
                     self.packet_reader.stop = True
+                    self.serial_port.write(line.encode("utf_8"))
+                    break
 
                 # Send the command to the node
                 self.serial_port.write(line.encode("utf_8"))

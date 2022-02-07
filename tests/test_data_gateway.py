@@ -115,7 +115,7 @@ class TestDataGateway(BaseTestCase):
 
             with self.assertLogs() as logging_context:
                 data_gateway.start(stop_when_no_more_data=True)
-                self.assertIn("Handle error", logging_context.output[3])
+                self.assertIn("Handle error", logging_context.output[1])
 
     def test_update_handles(self):
         """Test that the handles can be updated."""
@@ -143,7 +143,7 @@ class TestDataGateway(BaseTestCase):
 
             with self.assertLogs() as logging_context:
                 data_gateway.start(stop_when_no_more_data=True)
-                self.assertIn("Successfully updated handles", logging_context.output[2])
+                self.assertIn("Successfully updated handles", logging_context.output[1])
 
     def test_data_gateway_with_baros_p_sensor(self):
         """Test that the packet reader works with the Baro_P sensor."""
