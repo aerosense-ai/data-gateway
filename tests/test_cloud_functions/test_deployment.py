@@ -13,7 +13,7 @@ from tests.base import DatasetMixin
 
 
 @unittest.skipUnless(
-    condition=os.getenv("RUN_DEPLOYMENT_TESTS", "").lower() == "true",
+    condition=os.getenv("RUN_DEPLOYMENT_TESTS", "0") == "1",
     reason="'RUN_DEPLOYMENT_TESTS' environment variable is False or not present.",
 )
 class TestDeployment(unittest.TestCase, DatasetMixin):
