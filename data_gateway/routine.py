@@ -19,9 +19,10 @@ class Routine:
     :return None:
     """
 
-    def __init__(self, commands, action, period=None, stop_after=None):
+    def __init__(self, commands, action, packet_reader, period=None, stop_after=None):
         self.commands = commands
         self.action = self._wrap_action_with_logger(action)
+        self.packet_reader = packet_reader
         self.period = period
         self.stop_after = stop_after
 
@@ -46,7 +47,7 @@ class Routine:
         scheduler = sched.scheduler(time.perf_counter)
         start_time = time.perf_counter()
 
-        while True:
+        while not self.packet_reader.stop:
             cycle_start_time = time.perf_counter()
 
             for command, delay in self.commands:
@@ -55,14 +56,16 @@ class Routine:
             scheduler.run(blocking=True)
 
             if self.period is None:
-                break
+                self.packet_reader.stop = True
+                return
 
             elapsed_time = time.perf_counter() - cycle_start_time
             time.sleep(self.period - elapsed_time)
 
             if self.stop_after:
                 if time.perf_counter() - start_time >= self.stop_after:
-                    break
+                    self.packet_reader.stop = True
+                    return
 
     def _wrap_action_with_logger(self, action):
         """Wrap the given action so that when it's run on a command, the command is logged.

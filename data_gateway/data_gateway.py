@@ -57,8 +57,6 @@ class DataGateway:
             use_dummy_serial_port=use_dummy_serial_port,
         )
 
-        self.routine = self._load_routine(routine_path=routine_file)
-
         # Start a new thread to parse the serial data while the main thread stays ready to take in commands from stdin.
         self.packet_reader = PacketReader(
             save_locally=save_locally,
@@ -70,6 +68,8 @@ class DataGateway:
             configuration=packet_reader_configuration,
             save_csv_files=save_csv_files,
         )
+
+        self.routine = self._load_routine(routine_path=routine_file)
 
     def start(self, stop_when_no_more_data=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
@@ -232,6 +232,7 @@ class DataGateway:
                     routine = Routine(
                         **json.load(f),
                         action=lambda command: self.serial_port.write((command + "\n").encode("utf_8")),
+                        packet_reader=self.packet_reader,
                     )
 
                 logger.info("Loaded routine file from %r.", routine_path)

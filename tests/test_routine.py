@@ -1,6 +1,7 @@
 import time
 from unittest import TestCase
 
+from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
 
 
@@ -12,7 +13,11 @@ class TestRoutine(TestCase):
         def record_commands(command):
             recorded_commands.append((command, time.perf_counter()))
 
-        routine = Routine(commands=[("first-command", 0.1), ("second-command", 0.3)], action=record_commands)
+        routine = Routine(
+            commands=[("first-command", 0.1), ("second-command", 0.3)],
+            action=record_commands,
+            packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
+        )
 
         start_time = time.perf_counter()
         routine.run()
@@ -26,20 +31,36 @@ class TestRoutine(TestCase):
     def test_error_raised_if_any_delay_is_greater_than_period(self):
         """Test that an error is raised if any of the command delays is greater than the period."""
         with self.assertRaises(ValueError):
-            Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, period=1)
+            Routine(
+                commands=[("first-command", 10), ("second-command", 0.3)],
+                action=None,
+                packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
+                period=1,
+            )
 
     def test_error_raised_if_stop_after_time_is_less_than_period(self):
         """Test that an error is raised if the `stop_after` time is less than the period."""
         with self.assertRaises(ValueError):
-            Routine(commands=[("first-command", 0.1), ("second-command", 0.3)], action=None, period=1, stop_after=0.5)
+            Routine(
+                commands=[("first-command", 0.1), ("second-command", 0.3)],
+                action=None,
+                packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
+                period=1,
+                stop_after=0.5,
+            )
 
     def test_warning_raised_if_stop_after_time_provided_without_a_period(self):
         """Test that a warning is raised if the `stop_after` time is provided without a period."""
-        with self.assertLogs() as logs_context:
-            Routine(commands=[("first-command", 10), ("second-command", 0.3)], action=None, stop_after=0.5)
+        with self.assertLogs() as logging_context:
+            Routine(
+                commands=[("first-command", 10), ("second-command", 0.3)],
+                action=None,
+                packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
+                stop_after=0.5,
+            )
 
         self.assertEqual(
-            logs_context.output[0],
+            logging_context.output[1],
             "WARNING:data_gateway.routine:The `stop_after` parameter is ignored unless `period` is also given.",
         )
 
@@ -53,6 +74,7 @@ class TestRoutine(TestCase):
         routine = Routine(
             commands=[("first-command", 0.1), ("second-command", 0.3)],
             action=record_commands,
+            packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
             period=0.4,
             stop_after=1,
         )
