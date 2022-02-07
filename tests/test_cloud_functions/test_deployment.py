@@ -17,7 +17,9 @@ from tests.base import DatasetMixin
     reason="'RUN_DEPLOYMENT_TESTS' environment variable is False or not present.",
 )
 class TestDeployment(unittest.TestCase, DatasetMixin):
-    storage_client = GoogleCloudStorageClient(os.environ["TEST_PROJECT_NAME"])
+    if os.getenv("RUN_DEPLOYMENT_TESTS", "0") == "1":
+        # The client must be instantiated here to avoid the storage emulator.
+        storage_client = GoogleCloudStorageClient(os.environ["TEST_PROJECT_NAME"])
 
     def test_clean_and_upload_window(self):
         """Test that a window can be uploaded to a cloud bucket, its data processed by the test cloud function, and the
