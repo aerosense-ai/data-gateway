@@ -11,7 +11,7 @@ from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
 from tests.base import BaseTestCase
 
 
@@ -74,8 +74,8 @@ class TestStart(BaseTestCase):
                 [
                     "start",
                     "--interactive",
-                    f"--gcp-project-name={TEST_PROJECT_NAME}",
-                    f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                    "--save-locally",
+                    "--no-upload-to-cloud",
                     "--use-dummy-serial-port",
                     f"--output-dir={temporary_directory}",
                 ],
@@ -98,8 +98,8 @@ class TestStart(BaseTestCase):
                     [
                         "start",
                         "--interactive",
-                        f"--gcp-project-name={TEST_PROJECT_NAME}",
-                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
                         "--use-dummy-serial-port",
                     ],
                     input="sleep 2\nstop\n",
@@ -263,8 +263,8 @@ class TestStart(BaseTestCase):
                     [
                         "start",
                         "--interactive",
-                        f"--gcp-project-name={TEST_PROJECT_NAME}",
-                        f"--gcp-bucket-name={TEST_BUCKET_NAME}",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
                         "--use-dummy-serial-port",
                         f"--config-file={CONFIGURATION_PATH}",
                         f"--output-dir={temporary_directory}",
