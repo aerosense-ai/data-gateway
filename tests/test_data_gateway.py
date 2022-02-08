@@ -6,7 +6,6 @@ from unittest.mock import patch
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 
-from data_gateway import exceptions
 from data_gateway.configuration import Configuration
 from data_gateway.data_gateway import DataGateway
 from data_gateway.dummy_serial import DummySerial
@@ -29,8 +28,8 @@ class TestDataGateway(BaseTestCase):
         cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
-    def test_error_is_raised_if_unknown_sensor_type_packet_is_received(self):
-        """Test that an `UnknownPacketTypeException` is raised if an unknown sensor type packet is received."""
+    def test_error_is_logged_if_unknown_sensor_type_packet_is_received(self):
+        """Test that an error is logged if an unknown sensor type packet is received."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([0])
 
@@ -46,8 +45,10 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            with self.assertRaises(exceptions.UnknownPacketTypeError):
-                data_gateway.start()
+            with self.assertLogs() as logging_context:
+                data_gateway.start(stop_when_no_more_data=True)
+
+        self.assertIn("Received packet with unknown type: 0", logging_context.output[1])
 
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""
