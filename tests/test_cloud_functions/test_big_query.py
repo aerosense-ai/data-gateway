@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 from tests.base import BaseTestCase
 from tests.test_cloud_functions import REPOSITORY_ROOT
-from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
+from tests.test_cloud_functions.mocks import MockBigQueryClient
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -32,19 +32,17 @@ class TestBigQueryDataset(BaseTestCase):
             "Constat": [[1636559720.639327, 36, 37, 38, 39]],
         }
 
-        with CredentialsEnvironmentVariableAsFile():
-            with patch("big_query.bigquery.Client.get_table"):
-                with patch("big_query.bigquery.Client.insert_rows", return_value=None) as mock_insert_rows:
+        mock_big_query_client = MockBigQueryClient()
 
-                    BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_data(
-                        data=data,
-                        configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
-                        installation_reference="turbine-1",
-                        label="my-test",
-                    )
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_data(
+                data=data,
+                configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
+                installation_reference="turbine-1",
+                label="my-test",
+            )
 
-        new_rows = mock_insert_rows.call_args.kwargs["rows"]
-        self.assertEqual(len(new_rows), 8)
+        self.assertEqual(len(mock_big_query_client.rows), 8)
 
         expected_rows = [
             {
@@ -113,20 +111,17 @@ class TestBigQueryDataset(BaseTestCase):
             },
         ]
 
-        self.assertEqual(new_rows, expected_rows)
+        self.assertEqual(mock_big_query_client.rows, expected_rows)
 
     def test_add_new_sensor_type(self):
         """Test that new sensor types can be added and that their references are their names slugified."""
-        with CredentialsEnvironmentVariableAsFile():
-            with patch("big_query.bigquery.Client.get_table"):
-                with patch("big_query.bigquery.Client.insert_rows", return_value=None) as mock_insert_rows:
+        mock_big_query_client = MockBigQueryClient()
 
-                    BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(
-                        name="My sensor_Name"
-                    )
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(name="My sensor_Name")
 
         self.assertEqual(
-            mock_insert_rows.call_args.kwargs["rows"][0],
+            mock_big_query_client.rows[0],
             {
                 "reference": "my-sensor-name",
                 "name": "My sensor_Name",
@@ -138,21 +133,19 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation(self):
         """Test that installations can be added."""
-        with CredentialsEnvironmentVariableAsFile():
-            with patch("big_query.bigquery.Client.get_table"):
-                with patch("big_query.bigquery.Client.insert_rows", return_value=None) as mock_insert_rows:
-                    with patch("big_query.bigquery.Client.query", return_value=Mock(result=lambda: [])):
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
 
-                        BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
-                            reference="my-installation",
-                            turbine_id="my-turbine",
-                            blade_id="my-blade",
-                            hardware_version="1.0.0",
-                            sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
-                        )
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
+                reference="my-installation",
+                turbine_id="my-turbine",
+                blade_id="my-blade",
+                hardware_version="1.0.0",
+                sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
+            )
 
         self.assertEqual(
-            mock_insert_rows.call_args.kwargs["rows"][0],
+            mock_big_query_client.rows[0],
             {
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
@@ -165,34 +158,33 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation_raises_error_if_installation_already_exists(self):
         """Test that an error is raised if attempting to add an installation that already exists."""
-        with CredentialsEnvironmentVariableAsFile():
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[1])
+
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
 
-            with patch("big_query.bigquery.Client.query", return_value=Mock(result=lambda: [1])):
-                with self.assertRaises(InstallationWithSameNameAlreadyExists):
-                    dataset.add_installation(
-                        reference="my-installation",
-                        turbine_id="my-turbine",
-                        blade_id="my-blade",
-                        hardware_version="1.0.0",
-                        sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
-                    )
+            with self.assertRaises(InstallationWithSameNameAlreadyExists):
+                dataset.add_installation(
+                    reference="my-installation",
+                    turbine_id="my-turbine",
+                    blade_id="my-blade",
+                    hardware_version="1.0.0",
+                    sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
+                )
 
     def test_add_configuration(self):
         """Test that a configuration can be added."""
-        with CredentialsEnvironmentVariableAsFile():
-            with patch("big_query.bigquery.Client.get_table"):
-                with patch("big_query.bigquery.Client.insert_rows", return_value=None) as mock_insert_rows:
-                    with patch("big_query.bigquery.Client.query", return_value=Mock(result=lambda: [])):
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
 
-                        BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_configuration(
-                            configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
-                        )
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_configuration(
+                configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
+            )
 
-        del mock_insert_rows.call_args.kwargs["rows"][0]["id"]
+        del mock_big_query_client.rows[0]["id"]
 
         self.assertEqual(
-            mock_insert_rows.call_args.kwargs["rows"][0],
+            mock_big_query_client.rows[0],
             {
                 "software_configuration": '{"blah": "blah"}',
                 "software_configuration_hash": "a9a553b17102e3f08a1ca32486086cdb8699f8f50c358b0fed8071b1d4c11bb2",
@@ -206,17 +198,14 @@ class TestBigQueryDataset(BaseTestCase):
         existing configuration is returned.
         """
         existing_configuration_id = "0846401a-89fb-424e-89e6-039063e0ee6d"
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[Mock(id=existing_configuration_id)])
 
-        with CredentialsEnvironmentVariableAsFile():
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
 
-            with patch(
-                "big_query.bigquery.Client.query",
-                return_value=Mock(result=lambda: [Mock(id=existing_configuration_id)]),
-            ):
-                with self.assertRaises(ConfigurationAlreadyExists):
-                    configuration_id = dataset.add_configuration(
-                        configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
-                    )
+            with self.assertRaises(ConfigurationAlreadyExists):
+                configuration_id = dataset.add_configuration(
+                    configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
+                )
 
-                    self.assertEqual(configuration_id, existing_configuration_id)
+                self.assertEqual(configuration_id, existing_configuration_id)
