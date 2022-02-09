@@ -111,28 +111,24 @@ class DataGateway:
 
         self.packet_reader.persist_configuration()
 
-        reader_thread_pool = ThreadPoolExecutor(thread_name_prefix="ReaderThread")
+        thread_pool = ThreadPoolExecutor(thread_name_prefix="DataGatewayThread")
         packet_queue = queue.Queue()
         error_queue = queue.Queue()
 
         try:
-            for _ in range(reader_thread_pool._max_workers):
-                reader_thread_pool.submit(
-                    self.packet_reader.read_packets,
-                    self.serial_port,
-                    packet_queue,
-                    error_queue,
-                    stop_when_no_more_data,
-                )
-
-            parser_thread = threading.Thread(
-                name="ParserThread",
-                target=self.packet_reader.parse_packets,
-                kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
-                daemon=True,
+            thread_pool.submit(
+                self.packet_reader.read_packets,
+                serial_port=self.serial_port,
+                packet_queue=packet_queue,
+                error_queue=error_queue,
+                stop_when_no_more_data=stop_when_no_more_data,
             )
 
-            parser_thread.start()
+            thread_pool.submit(
+                self.packet_reader.parse_packets,
+                packet_queue=packet_queue,
+                error_queue=error_queue,
+            )
 
             if self.interactive:
                 interactive_commands_thread = threading.Thread(
@@ -155,7 +151,7 @@ class DataGateway:
         finally:
             logger.info("Stopping gateway.")
             self.packet_reader.stop = True
-            reader_thread_pool.shutdown(wait=False)
+            thread_pool.shutdown(wait=False)
             self.packet_reader.writer.force_persist()
             self.packet_reader.uploader.force_persist()
 
