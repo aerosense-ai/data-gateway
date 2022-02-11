@@ -59,12 +59,11 @@ class PacketReader:
         os.makedirs(os.path.join(output_directory, self.session_subdirectory), exist_ok=True)
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
-    def read_packets(self, serial_port, packet_queue, stop_signal, stop_when_no_more_data=False):
+    def read_packets(self, serial_port, packet_queue, stop_signal):
         """Read packets from a serial port and send them to the parser thread for processing and persistence.
 
         :param serial.Serial serial_port: name of serial port to read from
         :param queue.Queue packet_queue: a thread-safe queue to put packets on to for the parser thread to pick up
-        :param bool stop_when_no_more_data: if `True`, stop reading when no more data is received from the port (for testing)
         :return None:
         """
         try:
@@ -74,10 +73,6 @@ class PacketReader:
                 serial_data = serial_port.read()
 
                 if len(serial_data) == 0:
-                    if stop_when_no_more_data:
-                        logger.info("Sending stop signal.")
-                        stop_signal.value = 1
-                        break
                     continue
 
                 if serial_data[0] != self.config.packet_key:
@@ -109,13 +104,14 @@ class PacketReader:
             stop_signal.value = 1
             raise e
 
-    def parse_packets(self, packet_queue, stop_signal, timeout=3600):
+    def parse_packets(self, packet_queue, stop_signal, stop_when_no_more_data=False):
         """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
         with the correct packet type handle, then parse the payload. After parsing/processing, upload them to Google
         Cloud storage and/or write them to disk. If any errors are raised, put them on the error queue for the main
         thread to handle.
 
         :param queue.Queue packet_queue: a thread-safe queue of packets provided by a reader thread
+        :param bool stop_when_no_more_data: if `True`, stop reading when no more data is received (for testing)
         :return None:
         """
         logger.info("Beginning parsing packets from serial port.")
@@ -158,7 +154,13 @@ class PacketReader:
             with self.uploader:
                 with self.writer:
                     while stop_signal.value == 0:
-                        packet_type, packet = packet_queue.get(timeout=timeout).values()
+                        try:
+                            packet_type, packet = packet_queue.get(timeout=5).values()
+                        except queue.Empty:
+                            if stop_when_no_more_data:
+                                break
+                            continue
+
                         logger.debug("Received packet for parsing.")
 
                         if packet_type not in self.handles:
@@ -192,13 +194,9 @@ class PacketReader:
                         ]:
                             self._parse_info_packet(self.handles[packet_type], packet)
 
-        except queue.Empty:
-            pass
-
-        except Exception as e:
+        finally:
             logger.info("Sending stop signal.")
             stop_signal.value = 1
-            raise e
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is

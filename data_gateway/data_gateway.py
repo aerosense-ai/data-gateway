@@ -109,7 +109,6 @@ class DataGateway:
                 "serial_port": self.serial_port,
                 "packet_queue": packet_queue,
                 "stop_signal": stop_signal,
-                "stop_when_no_more_data": stop_when_no_more_data,
             },
             daemon=True,
         )
@@ -120,6 +119,7 @@ class DataGateway:
             kwargs={
                 "packet_queue": packet_queue,
                 "stop_signal": stop_signal,
+                "stop_when_no_more_data": stop_when_no_more_data,
             },
             daemon=True,
         )
