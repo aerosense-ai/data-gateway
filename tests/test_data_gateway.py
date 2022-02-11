@@ -9,6 +9,7 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 from data_gateway.configuration import Configuration
 from data_gateway.data_gateway import DataGateway
 from data_gateway.dummy_serial import DummySerial
+from data_gateway.persistence import TimeBatcher
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
 from tests.base import BaseTestCase
 
@@ -164,13 +165,11 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader, temporary_directory, sensor_names=["Baros_P"]
-            )
+            data_gateway.start(stop_when_no_more_data=False)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros_P"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Baros_P"], number_of_windows_to_check=1
+            temporary_directory, sensor_names=["Baros_P"], number_of_windows_to_check=1
         )
 
     def test_data_gateway_with_baros_t_sensor(self):
@@ -462,31 +461,29 @@ class TestDataGateway(BaseTestCase):
                 ]:
                     self.assertIn(message, log_messages_combined)
 
-    def _check_windows_are_uploaded_to_cloud(self, packet_reader, sensor_names, number_of_windows_to_check=5):
+    def _check_windows_are_uploaded_to_cloud(self, output_directory, sensor_names, number_of_windows_to_check=5):
         """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage."""
-        number_of_windows = packet_reader.uploader._window_number
-        self.assertTrue(number_of_windows > 0)
-
-        for i in range(number_of_windows_to_check):
-            data = json.loads(
-                self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        packet_reader.uploader.output_directory,
-                        packet_reader.uploader._session_subdirectory,
-                        f"window-{i}.json",
-                    ),
-                )
+        window_paths = [
+            blob.name
+            for blob in self.storage_client.scandir(
+                cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, *output_directory.split(os.path.pathsep))
             )
+        ]
+
+        self.assertTrue(len(window_paths) >= number_of_windows_to_check)
+
+        for path in window_paths:
+            data = json.loads(self.storage_client.download_as_string(bucket_name=TEST_BUCKET_NAME, path_in_bucket=path))
 
             for name in sensor_names:
                 lines = data["sensor_data"][name]
                 self.assertTrue(len(lines[0]) > 1)
 
-    def _check_data_is_written_to_files(self, packet_reader, temporary_directory, sensor_names):
+    def _check_data_is_written_to_files(self, output_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
-        window_directory = os.path.join(temporary_directory, packet_reader.writer._session_subdirectory)
-        windows = [file for file in os.listdir(window_directory) if file.startswith(packet_reader.writer._file_prefix)]
+        session_subdirectory = os.listdir(output_directory)[0]
+        window_directory = os.path.join(output_directory, session_subdirectory)
+        windows = [file for file in os.listdir(window_directory) if file.startswith(TimeBatcher._file_prefix)]
         self.assertTrue(len(windows) > 0)
 
         for window in windows:

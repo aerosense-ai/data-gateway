@@ -48,6 +48,8 @@ class TimeBatcher:
     :return None:
     """
 
+    _file_prefix = "window"
+
     def __init__(
         self,
         sensor_names,
@@ -62,7 +64,6 @@ class TimeBatcher:
         self._session_subdirectory = session_subdirectory
         self._start_time = time.perf_counter()
         self._window_number = 0
-        self._file_prefix = "window"
 
     def __enter__(self):
         return self

@@ -41,7 +41,7 @@ def gateway_cli(logger_uri, log_level):
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
     # Apply log handler locally.
-    apply_log_handler(log_level=log_level.upper(), include_thread_name=True)
+    apply_log_handler(log_level=log_level.upper(), include_thread_name=True, include_process_name=True)
 
     # Stream logs to remote handler if required.
     if logger_uri is not None:
@@ -49,6 +49,7 @@ def gateway_cli(logger_uri, log_level):
             handler=get_remote_handler(logger_uri=logger_uri),
             log_level=log_level.upper(),
             include_thread_name=True,
+            include_process_name=True,
         )
 
 

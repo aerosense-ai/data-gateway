@@ -1,13 +1,12 @@
 import json
-import logging
+import multiprocessing
 import os
-import queue
 import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 import serial
+from octue.log_handlers import apply_log_handler
 
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
@@ -16,7 +15,8 @@ from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
 
 
-logger = logging.getLogger(__name__)
+logger = multiprocessing.get_logger()
+apply_log_handler(logger=logger)
 
 
 class DataGateway:
@@ -78,7 +78,7 @@ class DataGateway:
         self.packet_reader = PacketReader(
             save_locally=save_locally,
             upload_to_cloud=upload_to_cloud,
-            output_directory=self._update_and_create_output_directory(output_directory_path=output_directory),
+            output_directory=self._update_output_directory(output_directory_path=output_directory),
             window_size=window_size,
             project_name=project_name,
             bucket_name=bucket_name,
@@ -109,26 +109,39 @@ class DataGateway:
                 self.packet_reader.window_size,
             )
 
-        self.packet_reader.persist_configuration()
+        # self.packet_reader.persist_configuration()
 
-        thread_pool = ThreadPoolExecutor(thread_name_prefix="DataGatewayThread")
-        packet_queue = queue.Queue()
-        error_queue = queue.Queue()
+        packet_queue = multiprocessing.Queue()
+        error_queue = multiprocessing.Queue()
+        stop_signal = multiprocessing.Value("i", 0)
 
         try:
-            thread_pool.submit(
-                self.packet_reader.read_packets,
-                serial_port=self.serial_port,
-                packet_queue=packet_queue,
-                error_queue=error_queue,
-                stop_when_no_more_data=stop_when_no_more_data,
+            reader_process = multiprocessing.Process(
+                name="ReaderProcess",
+                target=self.packet_reader.read_packets,
+                kwargs={
+                    "serial_port": self.serial_port,
+                    "packet_queue": packet_queue,
+                    "error_queue": error_queue,
+                    "stop_signal": stop_signal,
+                    "stop_when_no_more_data": stop_when_no_more_data,
+                },
+                daemon=True,
             )
 
-            thread_pool.submit(
-                self.packet_reader.parse_packets,
-                packet_queue=packet_queue,
-                error_queue=error_queue,
+            parser_process = multiprocessing.Process(
+                name="ParserProcess",
+                target=self.packet_reader.parse_packets,
+                kwargs={
+                    "packet_queue": packet_queue,
+                    "error_queue": error_queue,
+                    "stop_signal": stop_signal,
+                },
+                daemon=True,
             )
+
+            reader_process.start()
+            parser_process.start()
 
             if self.interactive:
                 interactive_commands_thread = threading.Thread(
@@ -144,16 +157,13 @@ class DataGateway:
                 routine_thread.start()
 
             # Raise any errors from the reader threads and parser thread.
-            while not self.packet_reader.stop:
+            while stop_signal.value == 0:
                 if not error_queue.empty():
-                    raise error_queue.get()
+                    raise error_queue.get(timeout=10)
 
         finally:
-            logger.info("Stopping gateway.")
-            self.packet_reader.stop = True
-            thread_pool.shutdown(wait=False)
-            self.packet_reader.writer.force_persist()
-            self.packet_reader.uploader.force_persist()
+            logger.info("Sending stop signal.")
+            stop_signal.value = 1
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists, otherwise load the default configuration.
@@ -226,9 +236,8 @@ class DataGateway:
             routine_path,
         )
 
-    def _update_and_create_output_directory(self, output_directory_path):
-        """Set the output directory to a path relative to the current directory if the path does not start with "/" and
-        create it if it does not already exist.
+    def _update_output_directory(self, output_directory_path):
+        """Set the output directory to a path relative to the current directory if the path does not start with "/".
 
         :param str output_directory_path: the path to the directory to write output data to
         :return str: the updated output directory path
@@ -236,7 +245,6 @@ class DataGateway:
         if not output_directory_path.startswith("/"):
             output_directory_path = os.path.join(".", output_directory_path)
 
-        os.makedirs(output_directory_path, exist_ok=True)
         return output_directory_path
 
     def _send_commands_from_stdin_to_sensors(self):
