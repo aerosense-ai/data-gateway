@@ -39,7 +39,7 @@ class Routine:
             if self.stop_after:
                 logger.warning("The `stop_after` parameter is ignored unless `period` is also given.")
 
-    def run(self):
+    def run(self, stop_signal):
         """Send the commands to the action after the given delays, repeating if a period was given.
 
         :return None:
@@ -47,7 +47,7 @@ class Routine:
         scheduler = sched.scheduler(time.perf_counter)
         start_time = time.perf_counter()
 
-        while not self.packet_reader.stop:
+        while not stop_signal:
             cycle_start_time = time.perf_counter()
 
             for command, delay in self.commands:
@@ -56,7 +56,8 @@ class Routine:
             scheduler.run(blocking=True)
 
             if self.period is None:
-                self.packet_reader.stop = True
+                logger.info("Sending stop signal.")
+                stop_signal.value = 1
                 return
 
             elapsed_time = time.perf_counter() - cycle_start_time
@@ -64,7 +65,8 @@ class Routine:
 
             if self.stop_after:
                 if time.perf_counter() - start_time >= self.stop_after:
-                    self.packet_reader.stop = True
+                    logger.info("Sending stop signal.")
+                    stop_signal.value = 1
                     return
 
     def _wrap_action_with_logger(self, action):

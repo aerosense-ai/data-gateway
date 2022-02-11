@@ -147,13 +147,19 @@ class DataGateway:
                 interactive_commands_thread = threading.Thread(
                     name="InteractiveCommandsThread",
                     target=self._send_commands_from_stdin_to_sensors,
+                    kwargs={"stop_signal": stop_signal},
                     daemon=True,
                 )
 
                 interactive_commands_thread.start()
 
             elif self.routine is not None:
-                routine_thread = threading.Thread(name="RoutineCommandsThread", target=self.routine.run, daemon=True)
+                routine_thread = threading.Thread(
+                    name="RoutineCommandsThread",
+                    target=self.routine.run,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
                 routine_thread.start()
 
             # Raise any errors from the reader threads and parser thread.
@@ -247,7 +253,7 @@ class DataGateway:
 
         return output_directory_path
 
-    def _send_commands_from_stdin_to_sensors(self):
+    def _send_commands_from_stdin_to_sensors(self, stop_signal):
         """Send commands from `stdin` to the sensors until the "stop" command is received or the packet reader is
         otherwise stopped. A record is kept of the commands sent to the sensors as a text file in the session
         subdirectory. Available commands: [startBaros, startMics, startIMU, getBattery, stop].
@@ -265,7 +271,7 @@ class DataGateway:
             exist_ok=True,
         )
 
-        while not self.packet_reader.stop:
+        while stop_signal.value == 0:
             for line in sys.stdin:
                 with open(commands_record_file, "a") as f:
                     f.write(line)
@@ -273,8 +279,9 @@ class DataGateway:
                 if line.startswith("sleep") and line.endswith("\n"):
                     time.sleep(int(line.split(" ")[-1].strip()))
                 elif line == "stop\n":
-                    self.packet_reader.stop = True
                     self.serial_port.write(line.encode("utf_8"))
+                    logger.info("Sending stop signal.")
+                    stop_signal.value = 1
                     break
 
                 # Send the command to the node

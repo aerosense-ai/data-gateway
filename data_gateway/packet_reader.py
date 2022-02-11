@@ -55,7 +55,6 @@ class PacketReader:
         self.writer = None
         self.handles = self.config.default_handles
         self.sleep = False
-        self.stop = False
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
