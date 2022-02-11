@@ -100,64 +100,55 @@ class DataGateway:
         # self.packet_reader.persist_configuration()
 
         packet_queue = multiprocessing.Queue()
-        error_queue = multiprocessing.Queue()
         stop_signal = multiprocessing.Value("i", 0)
 
-        try:
-            reader_process = multiprocessing.Process(
-                name="ReaderProcess",
-                target=self.packet_reader.read_packets,
-                kwargs={
-                    "serial_port": self.serial_port,
-                    "packet_queue": packet_queue,
-                    "error_queue": error_queue,
-                    "stop_signal": stop_signal,
-                    "stop_when_no_more_data": stop_when_no_more_data,
-                },
+        reader_process = multiprocessing.Process(
+            name="ReaderProcess",
+            target=self.packet_reader.read_packets,
+            kwargs={
+                "serial_port": self.serial_port,
+                "packet_queue": packet_queue,
+                "stop_signal": stop_signal,
+                "stop_when_no_more_data": stop_when_no_more_data,
+            },
+            daemon=True,
+        )
+
+        parser_process = multiprocessing.Process(
+            name="ParserProcess",
+            target=self.packet_reader.parse_packets,
+            kwargs={
+                "packet_queue": packet_queue,
+                "stop_signal": stop_signal,
+            },
+            daemon=True,
+        )
+
+        reader_process.start()
+        parser_process.start()
+
+        if self.interactive:
+            interactive_commands_thread = threading.Thread(
+                name="InteractiveCommandsThread",
+                target=self._send_commands_from_stdin_to_sensors,
+                kwargs={"stop_signal": stop_signal},
                 daemon=True,
             )
 
-            parser_process = multiprocessing.Process(
-                name="ParserProcess",
-                target=self.packet_reader.parse_packets,
-                kwargs={
-                    "packet_queue": packet_queue,
-                    "error_queue": error_queue,
-                    "stop_signal": stop_signal,
-                },
+            interactive_commands_thread.start()
+
+        elif self.routine is not None:
+            routine_thread = threading.Thread(
+                name="RoutineCommandsThread",
+                target=self.routine.run,
+                kwargs={"stop_signal": stop_signal},
                 daemon=True,
             )
+            routine_thread.start()
 
-            reader_process.start()
-            parser_process.start()
-
-            if self.interactive:
-                interactive_commands_thread = threading.Thread(
-                    name="InteractiveCommandsThread",
-                    target=self._send_commands_from_stdin_to_sensors,
-                    kwargs={"stop_signal": stop_signal},
-                    daemon=True,
-                )
-
-                interactive_commands_thread.start()
-
-            elif self.routine is not None:
-                routine_thread = threading.Thread(
-                    name="RoutineCommandsThread",
-                    target=self.routine.run,
-                    kwargs={"stop_signal": stop_signal},
-                    daemon=True,
-                )
-                routine_thread.start()
-
-            # Raise any errors from the reader threads and parser thread.
-            while stop_signal.value == 0:
-                if not error_queue.empty():
-                    raise error_queue.get(timeout=10)
-
-        finally:
-            logger.info("Sending stop signal.")
-            stop_signal.value = 1
+        # Wait for the stop signal before exiting.
+        while stop_signal.value == 0:
+            time.sleep(5)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists, otherwise load the default configuration.
