@@ -97,7 +97,7 @@ class PacketReader:
                 packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
                 length = int.from_bytes(serial_port.read(), self.config.endian)
                 payload = serial_port.read(length)
-                logger.info("Read packet from serial port.")
+                logger.debug("Read packet from serial port.")
 
                 if packet_type == str(self.config.type_handle_def):
                     self.update_handles(payload)
@@ -168,7 +168,7 @@ class PacketReader:
                 with self.writer:
                     while stop_signal.value == 0:
                         packet_type, payload, data, previous_timestamp = packet_queue.get(timeout=1).values()
-                        logger.info("Received packet for parsing.")
+                        logger.debug("Received packet for parsing.")
 
                         if packet_type not in self.handles:
                             logger.error("Received packet with unknown type: %s", packet_type)
