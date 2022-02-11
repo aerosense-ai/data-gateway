@@ -8,12 +8,11 @@ import time
 
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
-from octue.log_handlers import apply_log_handler
 from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_directory
 
 
 logger = multiprocessing.get_logger()
-apply_log_handler(logger=logger)
+# apply_log_handler(logger=logger)
 
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 

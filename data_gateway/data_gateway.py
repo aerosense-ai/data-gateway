@@ -6,6 +6,7 @@ import threading
 import time
 
 import serial
+from octue.log_handlers import apply_log_handler
 
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
@@ -15,6 +16,7 @@ from data_gateway.routine import Routine
 
 
 logger = multiprocessing.get_logger()
+apply_log_handler(logger=logger, include_process_name=True, include_thread_name=True)
 
 
 class DataGateway:
