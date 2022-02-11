@@ -6,7 +6,6 @@ import threading
 import time
 
 import serial
-from octue.log_handlers import apply_log_handler
 
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
@@ -16,7 +15,6 @@ from data_gateway.routine import Routine
 
 
 logger = multiprocessing.get_logger()
-apply_log_handler(logger=logger)
 
 
 class DataGateway:
@@ -95,19 +93,7 @@ class DataGateway:
 
         :return None:
         """
-        logger.info("Starting packet reader.")
-
-        if self.packet_reader.upload_to_cloud:
-            logger.debug(
-                "Files will be uploaded to cloud storage at intervals of %s seconds.",
-                self.packet_reader.window_size,
-            )
-
-        if self.packet_reader.save_locally:
-            logger.debug(
-                "Files will be saved locally to disk at intervals of %s seconds.",
-                self.packet_reader.window_size,
-            )
+        logger.info("Starting data gateway.")
 
         # self.packet_reader.persist_configuration()
 

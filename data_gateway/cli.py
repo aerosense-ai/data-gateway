@@ -1,5 +1,5 @@
 import json
-import logging
+import multiprocessing
 import os
 
 import click
@@ -15,7 +15,7 @@ from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
 CREATE_INSTALLATION_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
 
-logger = logging.getLogger(__name__)
+logger = multiprocessing.get_logger()
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -40,12 +40,10 @@ def gateway_cli(logger_uri, log_level):
     """
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
-    # Apply log handler locally.
-    apply_log_handler(log_level=log_level.upper(), include_thread_name=True, include_process_name=True)
-
     # Stream logs to remote handler if required.
     if logger_uri is not None:
         apply_log_handler(
+            logger=logger,
             handler=get_remote_handler(logger_uri=logger_uri),
             log_level=log_level.upper(),
             include_thread_name=True,

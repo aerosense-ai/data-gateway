@@ -2,17 +2,18 @@ import abc
 import copy
 import csv
 import json
-import logging
+import multiprocessing
 import os
 import time
 
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
+from octue.log_handlers import apply_log_handler
 from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_directory
 
 
-logger = logging.getLogger(__name__)
-
+logger = multiprocessing.get_logger()
+apply_log_handler(logger=logger)
 
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
@@ -62,6 +63,7 @@ class TimeBatcher:
         self.output_directory = output_directory
         self.ready_window = {"sensor_time_offset": None, "sensor_data": {}}
         self._session_subdirectory = session_subdirectory
+        self._full_output_path = None
         self._start_time = time.perf_counter()
         self._window_number = 0
 
@@ -157,7 +159,9 @@ class BatchingFileWriter(TimeBatcher):
         self._save_csv_files = save_csv_files
         self.storage_limit = storage_limit
         super().__init__(sensor_names, window_size, session_subdirectory, output_directory)
+        self._full_output_path = os.path.join(self.output_directory, self._session_subdirectory)
         os.makedirs(os.path.join(self.output_directory, self._session_subdirectory), exist_ok=True)
+        logger.info(f"Windows will be saved to {self._full_output_path!r} at intervals of {self.window_size} seconds.")
 
     def _persist_window(self, window=None):
         """Write a window of serialised data to disk, deleting the oldest window first if the storage limit has been
@@ -253,9 +257,15 @@ class BatchingUploader(TimeBatcher):
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
         super().__init__(sensor_names, window_size, session_subdirectory, output_directory)
+        self._full_output_path = storage.path.join(self.output_directory, self._session_subdirectory)
+
         self._backup_directory = os.path.join(self.output_directory, ".backup")
         self._backup_writer = BatchingFileWriter(
             sensor_names, window_size, session_subdirectory, output_directory=self._backup_directory
+        )
+
+        logger.info(
+            f"Windows will be uploaded to {self._full_output_path!r} at intervals of {self.window_size} seconds."
         )
 
     def _persist_window(self):
