@@ -71,16 +71,6 @@ class PacketReader:
         try:
             logger.info("Beginning reading packets from serial port.")
 
-            previous_timestamp = {}
-            data = {}
-
-            for sensor_name in self.config.sensor_names:
-                previous_timestamp[sensor_name] = -1
-                data[sensor_name] = [
-                    ([0] * self.config.samples_per_packet[sensor_name])
-                    for _ in range(self.config.number_of_sensors[sensor_name])
-                ]
-
             while stop_signal.value == 0:
                 serial_data = serial_port.read()
 
@@ -96,11 +86,11 @@ class PacketReader:
 
                 packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
                 length = int.from_bytes(serial_port.read(), self.config.endian)
-                payload = serial_port.read(length)
+                packet = serial_port.read(length)
                 logger.debug("Read packet from serial port.")
 
                 if packet_type == str(self.config.type_handle_def):
-                    self.update_handles(payload)
+                    self.update_handles(packet)
                     continue
 
                 # Check for bytes in serial input buffer. A full buffer results in overflow.
@@ -113,14 +103,7 @@ class PacketReader:
                     serial_port.open()
                     continue
 
-                packet_queue.put(
-                    {
-                        "packet_type": packet_type,
-                        "payload": payload,
-                        "data": data,
-                        "previous_timestamp": previous_timestamp,
-                    }
-                )
+                packet_queue.put({"packet_type": packet_type, "packet": packet})
 
         except Exception as e:
             error_queue.put(e)
@@ -163,37 +146,53 @@ class PacketReader:
         else:
             self.writer = NoOperationContextManager()
 
+        previous_timestamp = {}
+        data = {}
+
+        for sensor_name in self.config.sensor_names:
+            previous_timestamp[sensor_name] = -1
+            data[sensor_name] = [
+                ([0] * self.config.samples_per_packet[sensor_name])
+                for _ in range(self.config.number_of_sensors[sensor_name])
+            ]
+
         try:
             with self.uploader:
                 with self.writer:
                     while stop_signal.value == 0:
-                        packet_type, payload, data, previous_timestamp = packet_queue.get(timeout=timeout).values()
+                        packet_type, packet = packet_queue.get(timeout=timeout).values()
                         logger.debug("Received packet for parsing.")
 
                         if packet_type not in self.handles:
                             logger.error("Received packet with unknown type: %s", packet_type)
                             continue
 
-                        if len(payload) == 244:  # If the full data payload is received, proceed parsing it
-                            timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
+                        if len(packet) == 244:  # If the full data payload is received, proceed parsing it
+                            timestamp = int.from_bytes(packet[240:244], self.config.endian, signed=False) / (2 ** 16)
 
                             data, sensor_names = self._parse_sensor_packet_data(
-                                self.handles[packet_type], payload, data
+                                packet_type=self.handles[packet_type],
+                                payload=packet,
+                                data=data,
                             )
 
                             for sensor_name in sensor_names:
                                 self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
+
                                 self._timestamp_and_persist_data(
-                                    data, sensor_name, timestamp, self.config.period[sensor_name]
+                                    data=data,
+                                    sensor_name=sensor_name,
+                                    timestamp=timestamp,
+                                    period=self.config.period[sensor_name],
                                 )
 
-                        elif len(payload) >= 1 and self.handles[packet_type] in [
+                        elif len(packet) >= 1 and self.handles[packet_type] in [
                             "Mic 1",
                             "Cmd Decline",
                             "Sleep State",
                             "Info Message",
                         ]:
-                            self._parse_info_packet(self.handles[packet_type], payload)
+                            self._parse_info_packet(self.handles[packet_type], packet)
 
         except queue.Empty:
             pass
