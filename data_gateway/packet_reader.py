@@ -99,10 +99,12 @@ class PacketReader:
 
                 packet_queue.put({"packet_type": packet_type, "packet": packet})
 
-        except Exception as e:
+        except KeyboardInterrupt:
+            pass
+
+        finally:
             logger.info("Sending stop signal.")
             stop_signal.value = 1
-            raise e
 
     def parse_packets(self, packet_queue, stop_signal, stop_when_no_more_data=False):
         """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
@@ -193,6 +195,9 @@ class PacketReader:
                             "Info Message",
                         ]:
                             self._parse_info_packet(self.handles[packet_type], packet)
+
+        except KeyboardInterrupt:
+            pass
 
         finally:
             logger.info("Sending stop signal.")
