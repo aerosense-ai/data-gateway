@@ -127,7 +127,7 @@ class PacketReader:
             logger.info("Sending stop signal.")
             stop_signal.value = 1
 
-    def parse_packets(self, packet_queue, error_queue, stop_signal):
+    def parse_packets(self, packet_queue, error_queue, stop_signal, timeout=3600):
         """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
         with the correct packet type handle, then parse the payload. After parsing/processing, upload them to Google
         Cloud storage and/or write them to disk. If any errors are raised, put them on the error queue for the main
@@ -167,7 +167,7 @@ class PacketReader:
             with self.uploader:
                 with self.writer:
                     while stop_signal.value == 0:
-                        packet_type, payload, data, previous_timestamp = packet_queue.get(timeout=1).values()
+                        packet_type, payload, data, previous_timestamp = packet_queue.get(timeout=timeout).values()
                         logger.debug("Received packet for parsing.")
 
                         if packet_type not in self.handles:
