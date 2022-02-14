@@ -78,7 +78,7 @@ class DataGateway:
         self.packet_reader = PacketReader(
             save_locally=save_locally,
             upload_to_cloud=upload_to_cloud,
-            output_directory=self._update_output_directory(output_directory_path=output_directory),
+            output_directory=output_directory,
             window_size=window_size,
             project_name=project_name,
             bucket_name=bucket_name,
@@ -218,17 +218,6 @@ class DataGateway:
             "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
             routine_path,
         )
-
-    def _update_output_directory(self, output_directory_path):
-        """Set the output directory to a path relative to the current directory if the path does not start with "/".
-
-        :param str output_directory_path: the path to the directory to write output data to
-        :return str: the updated output directory path
-        """
-        if not output_directory_path.startswith("/"):
-            output_directory_path = os.path.join(".", output_directory_path)
-
-        return output_directory_path
 
     def _send_commands_from_stdin_to_sensors(self, stop_signal):
         """Send commands from `stdin` to the sensors until the "stop" command is received or the packet reader is
