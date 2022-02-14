@@ -1,9 +1,9 @@
-import logging
+import multiprocessing
 import sched
 import time
 
 
-logger = logging.getLogger(__name__)
+logger = multiprocessing.get_logger()
 
 
 class Routine:
@@ -47,7 +47,7 @@ class Routine:
         scheduler = sched.scheduler(time.perf_counter)
         start_time = time.perf_counter()
 
-        while not stop_signal:
+        while stop_signal.value == 0:
             cycle_start_time = time.perf_counter()
 
             for command, delay in self.commands:
