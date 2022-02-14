@@ -237,16 +237,8 @@ class DataGateway:
 
         :return None:
         """
-        commands_record_file = os.path.join(
-            self.packet_reader.output_directory,
-            self.packet_reader.session_subdirectory,
-            "commands.txt",
-        )
-
-        os.makedirs(
-            os.path.join(self.packet_reader.output_directory, self.packet_reader.session_subdirectory),
-            exist_ok=True,
-        )
+        commands_record_file = os.path.join(self.packet_reader.output_directory, "commands.txt")
+        os.makedirs(os.path.join(self.packet_reader.output_directory), exist_ok=True)
 
         while stop_signal.value == 0:
             for line in sys.stdin:
