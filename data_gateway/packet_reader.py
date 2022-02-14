@@ -61,7 +61,7 @@ class PacketReader:
         self.sleep = False
         self.sensor_time_offset = None
 
-        os.makedirs(self.session_subdirectory, exist_ok=True)
+        os.makedirs(self.output_directory, exist_ok=True)
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
     def read_packets(self, serial_port, packet_queue, stop_signal):
@@ -144,6 +144,8 @@ class PacketReader:
             )
         else:
             self.writer = NoOperationContextManager()
+
+        self._persist_configuration()
 
         previous_timestamp = {}
         data = {}
@@ -243,7 +245,7 @@ class PacketReader:
 
         logger.error("Handle error: %s %s", start_handle, end_handle)
 
-    def persist_configuration(self):
+    def _persist_configuration(self):
         """Persist the configuration to disk and/or cloud storage.
 
         :return None:

@@ -97,9 +97,6 @@ class DataGateway:
         :return None:
         """
         logger.info("Starting data gateway.")
-
-        # self.packet_reader.persist_configuration()
-
         packet_queue = multiprocessing.Queue()
         stop_signal = multiprocessing.Value("i", 0)
 

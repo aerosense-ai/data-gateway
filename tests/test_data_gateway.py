@@ -49,25 +49,16 @@ class TestDataGateway(BaseTestCase):
 
             data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            configuration_path = os.path.join(
-                temporary_directory, data_gateway.packet_reader.session_subdirectory, "configuration.json"
-            )
-
             # Check configuration file is present and valid locally.
-            with open(configuration_path) as f:
+            with open(os.path.join(data_gateway.packet_reader.output_directory, "configuration.json")) as f:
                 Configuration.from_dict(json.load(f))
 
         # Check configuration file is present and valid on the cloud.
         configuration = self.storage_client.download_as_string(
             bucket_name=TEST_BUCKET_NAME,
-            path_in_bucket=storage.path.join(
-                data_gateway.packet_reader.uploader.output_directory,
-                data_gateway.packet_reader.session_subdirectory,
-                "configuration.json",
-            ),
+            path_in_bucket=storage.path.join(data_gateway.packet_reader.output_directory, "configuration.json"),
         )
 
-        # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
 
     def test_data_gateway_with_baros_p_sensor(self):
@@ -393,8 +384,9 @@ class TestDataGateway(BaseTestCase):
         window_paths = [
             blob.name
             for blob in self.storage_client.scandir(
-                cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, *output_directory.split(os.path.pathsep))
+                cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, *os.path.split(output_directory))
             )
+            if not blob.name.endswith("configuration.json")
         ]
 
         self.assertTrue(len(window_paths) >= number_of_windows_to_check)
