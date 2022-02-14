@@ -16,7 +16,7 @@ from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
 from tests.base import BaseTestCase
 
 
-CONFIGURATION_PATH = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
+CONFIGURATION_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")
 
 
 class EnvironmentVariableRemover:
