@@ -1,3 +1,6 @@
+import shutil
+
+import coolname
 import json
 import os
 import tempfile
@@ -29,6 +32,17 @@ class TestDataGateway(BaseTestCase):
         cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
+    def setUp(self):
+        """Create a uniquely-named output directory."""
+        self.output_directory = coolname.generate_slug(2)
+
+    def tearDown(self):
+        """Delete the output directory created in `setUp`."""
+        try:
+            shutil.rmtree(self.output_directory)
+        except FileNotFoundError:
+            pass
+
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""
         serial_port = DummySerial(port="test")
@@ -37,21 +51,20 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port=serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
+        data_gateway = DataGateway(
+            serial_port=serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
 
-            data_gateway.start(stop_when_no_more_data_after=0.1)
+        data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            # Check configuration file is present and valid locally.
-            with open(os.path.join(data_gateway.packet_reader.output_directory, "configuration.json")) as f:
-                Configuration.from_dict(json.load(f))
+        # Check configuration file is present and valid locally.
+        with open(os.path.join(data_gateway.packet_reader.output_directory, "configuration.json")) as f:
+            Configuration.from_dict(json.load(f))
 
         # Check configuration file is present and valid on the cloud.
         configuration = self.storage_client.download_as_string(
@@ -69,18 +82,17 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=coolname.generate_slug(2),
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
 
-            data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Baros_P"])
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Baros_P"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -96,17 +108,17 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Baros_T"])
+
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Baros_T"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -122,21 +134,21 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader.output_directory,
-                sensor_names=["Diff_Baros"],
-            )
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+
+        self._check_data_is_written_to_files(
+            data_gateway.packet_reader.output_directory,
+            sensor_names=["Diff_Baros"],
+        )
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -152,17 +164,17 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Mics"])
+
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Mics"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -178,17 +190,17 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Acc"])
+
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Acc"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -204,17 +216,17 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Gyro"])
+
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Gyro"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -230,17 +242,17 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Mag"])
+
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Mag"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -256,18 +268,18 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Constat"])
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Constat"])
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
@@ -289,22 +301,21 @@ class TestDataGateway(BaseTestCase):
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                upload_to_cloud=False,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            upload_to_cloud=False,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
 
-            with patch("data_gateway.packet_reader.logger") as mock_logger:
-                data_gateway.start(stop_when_no_more_data_after=0.1)
+        with patch("data_gateway.packet_reader.logger") as mock_logger:
+            data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Constat"])
-            self.assertEqual(0, mock_logger.warning.call_count)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Constat"])
+        self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
         """Test that the packet reader works with all sensors together."""
@@ -316,18 +327,17 @@ class TestDataGateway(BaseTestCase):
             serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
             serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            data_gateway.start(stop_when_no_more_data_after=0.1)
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            output_directory=self.output_directory,
+            window_size=self.WINDOW_SIZE,
+            project_name=TEST_PROJECT_NAME,
+            bucket_name=TEST_BUCKET_NAME,
+        )
+        data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=sensor_names)
+        self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=sensor_names)
 
         self._check_windows_are_uploaded_to_cloud(
             data_gateway.packet_reader.output_directory,
