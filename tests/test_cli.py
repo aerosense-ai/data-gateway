@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import time
 from unittest import mock
 from unittest.mock import call
 
@@ -237,6 +238,8 @@ class TestStart(BaseTestCase):
 
                 session_subdirectory = [item for item in os.scandir(temporary_directory) if item.is_dir()][0].name
 
+                # Wait for the parser process to receive stop signal and persist the window it has open.
+                time.sleep(2)
                 with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
                     data = json.loads(f.read())
 
