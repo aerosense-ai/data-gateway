@@ -1,5 +1,7 @@
+import multiprocessing
 import time
 from unittest import TestCase
+from unittest.mock import patch
 
 from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
@@ -20,7 +22,7 @@ class TestRoutine(TestCase):
         )
 
         start_time = time.perf_counter()
-        routine.run()
+        routine.run(stop_signal=multiprocessing.Value("i", 0))
 
         self.assertEqual(recorded_commands[0][0], "first-command")
         self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, delta=0.2)
@@ -51,7 +53,7 @@ class TestRoutine(TestCase):
 
     def test_warning_raised_if_stop_after_time_provided_without_a_period(self):
         """Test that a warning is raised if the `stop_after` time is provided without a period."""
-        with self.assertLogs() as logging_context:
+        with patch("data_gateway.routine.logger") as mock_logger:
             Routine(
                 commands=[("first-command", 10), ("second-command", 0.3)],
                 action=None,
@@ -60,8 +62,8 @@ class TestRoutine(TestCase):
             )
 
         self.assertEqual(
-            logging_context.output[1],
-            "WARNING:data_gateway.routine:The `stop_after` parameter is ignored unless `period` is also given.",
+            mock_logger.warning.call_args_list[0].args[0],
+            "The `stop_after` parameter is ignored unless `period` is also given.",
         )
 
     def test_routine_with_period(self):
@@ -80,7 +82,7 @@ class TestRoutine(TestCase):
         )
 
         start_time = time.perf_counter()
-        routine.run()
+        routine.run(stop_signal=multiprocessing.Value("i", 0))
 
         self.assertEqual(recorded_commands[0][0], "first-command")
         self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, delta=0.2)
