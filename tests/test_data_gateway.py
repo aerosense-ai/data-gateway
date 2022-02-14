@@ -29,28 +29,6 @@ class TestDataGateway(BaseTestCase):
         cls.WINDOW_SIZE = 10
         cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
 
-    def test_error_is_logged_if_unknown_sensor_type_packet_is_received(self):
-        """Test that an error is logged if an unknown sensor type packet is received."""
-        serial_port = DummySerial(port="test")
-        packet_type = bytes([0])
-
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port=serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-            with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data_after=0.1)
-
-        self.assertIn("Received packet with unknown type: 0", logging_context.output[1])
-
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""
         serial_port = DummySerial(port="test")
@@ -91,61 +69,6 @@ class TestDataGateway(BaseTestCase):
 
         # Test configuration is valid.
         Configuration.from_dict(json.loads(configuration))
-
-    def test_update_handles_fails_if_start_and_end_handles_are_incorrect(self):
-        """Test that an error is raised if the start and end handles are incorrect when trying to update handles."""
-        serial_port = DummySerial(port="test")
-
-        # Set packet type to handles update packet.
-        packet_type = bytes([255])
-
-        # Set first two bytes of payload to incorrect range for updating handles.
-        payload = bytearray(RANDOM_BYTES[0])
-        payload[0:1] = int(0).to_bytes(1, "little")
-        payload[2:3] = int(255).to_bytes(1, "little")
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-
-            with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data_after=0.1)
-                self.assertIn("Handle error", logging_context.output[1])
-
-    def test_update_handles(self):
-        """Test that the handles can be updated."""
-        serial_port = DummySerial(port="test")
-
-        # Set packet type to handles update packet.
-        packet_type = bytes([255])
-
-        # Set first two bytes of payload to correct range for updating handles.
-        payload = bytearray(RANDOM_BYTES[0])
-        payload[0:1] = int(0).to_bytes(1, "little")
-        payload[2:3] = int(26).to_bytes(1, "little")
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, payload)))
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                upload_to_cloud=False,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-
-            with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data_after=0.1)
-                self.assertIn("Successfully updated handles", logging_context.output[1])
 
     def test_data_gateway_with_baros_p_sensor(self):
         """Test that the packet reader works with the Baro_P sensor."""
