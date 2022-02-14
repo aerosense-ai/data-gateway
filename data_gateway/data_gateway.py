@@ -88,11 +88,12 @@ class DataGateway:
 
         self.routine = self._load_routine(routine_path=routine_path)
 
-    def start(self, stop_when_no_more_data=False):
+    def start(self, stop_when_no_more_data_after=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
         the configuration. In interactive mode, commands can be sent to the nodes/sensors via the serial port by typing
         them into `stdin` and pressing enter. These commands are: [startBaros, startMics, startIMU, getBattery, stop].
 
+        :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
         :return None:
         """
         logger.info("Starting data gateway.")
@@ -119,7 +120,7 @@ class DataGateway:
             kwargs={
                 "packet_queue": packet_queue,
                 "stop_signal": stop_signal,
-                "stop_when_no_more_data": stop_when_no_more_data,
+                "stop_when_no_more_data_after": stop_when_no_more_data_after,
             },
             daemon=True,
         )

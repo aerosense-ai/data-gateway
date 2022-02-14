@@ -106,14 +106,14 @@ class PacketReader:
             logger.info("Sending stop signal.")
             stop_signal.value = 1
 
-    def parse_packets(self, packet_queue, stop_signal, stop_when_no_more_data=False):
+    def parse_packets(self, packet_queue, stop_signal, stop_when_no_more_data_after=False):
         """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
         with the correct packet type handle, then parse the payload. After parsing/processing, upload them to Google
         Cloud storage and/or write them to disk. If any errors are raised, put them on the error queue for the main
         thread to handle.
 
         :param queue.Queue packet_queue: a thread-safe queue of packets provided by a reader thread
-        :param bool stop_when_no_more_data: if `True`, stop reading when no more data is received (for testing)
+        :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
         :return None:
         """
         logger.info("Beginning parsing packets from serial port.")
@@ -152,14 +152,19 @@ class PacketReader:
                 for _ in range(self.config.number_of_sensors[sensor_name])
             ]
 
+        if stop_when_no_more_data_after is False:
+            timeout = 5
+        else:
+            timeout = stop_when_no_more_data_after
+
         try:
             with self.uploader:
                 with self.writer:
                     while stop_signal.value == 0:
                         try:
-                            packet_type, packet = packet_queue.get(timeout=5).values()
+                            packet_type, packet = packet_queue.get(timeout=timeout).values()
                         except queue.Empty:
-                            if stop_when_no_more_data:
+                            if stop_when_no_more_data_after is not False:
                                 break
                             continue
 
