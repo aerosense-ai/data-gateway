@@ -47,7 +47,7 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data=True)
+                data_gateway.start(stop_when_no_more_data_after=0.1)
 
         self.assertIn("Received packet with unknown type: 0", logging_context.output[1])
 
@@ -69,7 +69,7 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            data_gateway.start(stop_when_no_more_data=True)
+            data_gateway.start(stop_when_no_more_data_after=0.1)
 
             configuration_path = os.path.join(
                 temporary_directory, data_gateway.packet_reader.session_subdirectory, "configuration.json"
@@ -116,7 +116,7 @@ class TestDataGateway(BaseTestCase):
             )
 
             with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data=True)
+                data_gateway.start(stop_when_no_more_data_after=0.1)
                 self.assertIn("Handle error", logging_context.output[1])
 
     def test_update_handles(self):
@@ -144,7 +144,7 @@ class TestDataGateway(BaseTestCase):
             )
 
             with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data=True)
+                data_gateway.start(stop_when_no_more_data_after=0.1)
                 self.assertIn("Successfully updated handles", logging_context.output[1])
 
     def test_data_gateway_with_baros_p_sensor(self):
@@ -165,11 +165,13 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
 
-            data_gateway.start(stop_when_no_more_data=False)
+            data_gateway.start(stop_when_no_more_data_after=0.1)
             self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros_P"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory, sensor_names=["Baros_P"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Baros_P"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_baros_t_sensor(self):
@@ -189,13 +191,13 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader, temporary_directory, sensor_names=["Baros_T"]
-            )
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros_T"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Baros_T"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Baros_T"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_diff_baros_sensor(self):
@@ -215,13 +217,11 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader, temporary_directory, sensor_names=["Diff_Baros"]
-            )
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Diff_Baros"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader,
+            temporary_directory,
             sensor_names=["Diff_Baros"],
             number_of_windows_to_check=1,
         )
@@ -243,11 +243,13 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Mics"])
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mics"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Mics"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Mics"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_acc_sensor(self):
@@ -267,11 +269,13 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Acc"])
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Acc"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Acc"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Acc"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_gyro_sensor(self):
@@ -291,11 +295,13 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Gyro"])
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Gyro"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Gyro"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Gyro"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_mag_sensor(self):
@@ -315,11 +321,13 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
-            self._check_data_is_written_to_files(data_gateway.packet_reader, temporary_directory, sensor_names=["Mag"])
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mag"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Mag"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Mag"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_connections_statistics(self):
@@ -339,14 +347,14 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
+            data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader, temporary_directory, sensor_names=["Constat"]
-            )
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Constat"])
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader, sensor_names=["Constat"], number_of_windows_to_check=1
+            temporary_directory,
+            sensor_names=["Constat"],
+            number_of_windows_to_check=1,
         )
 
     def test_data_gateway_with_connections_statistics_in_sleep_mode(self):
@@ -375,11 +383,9 @@ class TestDataGateway(BaseTestCase):
             )
 
             with patch("data_gateway.packet_reader.logger") as mock_logger:
-                data_gateway.start(stop_when_no_more_data=True)
+                data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader, temporary_directory, sensor_names=["Constat"]
-            )
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Constat"])
             self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
@@ -401,14 +407,12 @@ class TestDataGateway(BaseTestCase):
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
             )
-            data_gateway.start(stop_when_no_more_data=True)
+            data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader, temporary_directory, sensor_names=sensor_names
-            )
+            self._check_data_is_written_to_files(temporary_directory, sensor_names=sensor_names)
 
         self._check_windows_are_uploaded_to_cloud(
-            data_gateway.packet_reader,
+            temporary_directory,
             sensor_names=sensor_names,
             number_of_windows_to_check=1,
         )
@@ -442,7 +446,7 @@ class TestDataGateway(BaseTestCase):
             )
 
             with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data=True)
+                data_gateway.start(stop_when_no_more_data_after=0.1)
 
                 log_messages_combined = "\n".join(logging_context.output)
 
