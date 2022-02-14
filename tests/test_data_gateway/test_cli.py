@@ -86,32 +86,6 @@ class TestStart(BaseTestCase):
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
 
-    def test_start_with_default_output_directory(self):
-        """Ensure the gateway can be started via the CLI with a default output directory."""
-        initial_directory = os.getcwd()
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            try:
-                os.chdir(temporary_directory)
-
-                result = CliRunner().invoke(
-                    gateway_cli,
-                    [
-                        "start",
-                        "--interactive",
-                        "--save-locally",
-                        "--no-upload-to-cloud",
-                        "--use-dummy-serial-port",
-                    ],
-                    input="sleep 2\nstop\n",
-                )
-
-                self.assertIsNone(result.exception)
-                self.assertEqual(result.exit_code, 0)
-
-            finally:
-                os.chdir(initial_directory)
-
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
