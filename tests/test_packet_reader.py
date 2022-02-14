@@ -13,7 +13,11 @@ class TestPacketReader(BaseTestCase):
         queue = multiprocessing.Queue()
         queue.put({"packet_type": bytes([0]), "packet": b"".join((PACKET_KEY, bytes([0]), LENGTH, RANDOM_BYTES[0]))})
 
-        packet_reader = PacketReader(save_locally=False, upload_to_cloud=False)
+        packet_reader = PacketReader(
+            save_locally=False,
+            upload_to_cloud=False,
+            output_directory=tempfile.TemporaryDirectory().name,
+        )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
             packet_reader.parse_packets(
@@ -30,7 +34,11 @@ class TestPacketReader(BaseTestCase):
         packet[0:1] = int(0).to_bytes(1, "little")
         packet[2:3] = int(255).to_bytes(1, "little")
 
-        packet_reader = PacketReader(save_locally=False, upload_to_cloud=False)
+        packet_reader = PacketReader(
+            save_locally=False,
+            upload_to_cloud=False,
+            output_directory=tempfile.TemporaryDirectory().name,
+        )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
             packet_reader.update_handles(packet)
@@ -42,7 +50,11 @@ class TestPacketReader(BaseTestCase):
         packet = bytearray(RANDOM_BYTES[0])
         packet[0:1] = int(0).to_bytes(1, "little")
         packet[2:3] = int(26).to_bytes(1, "little")
-        packet_reader = PacketReader(save_locally=False, upload_to_cloud=False)
+        packet_reader = PacketReader(
+            save_locally=False,
+            upload_to_cloud=False,
+            output_directory=tempfile.TemporaryDirectory().name,
+        )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
             packet_reader.update_handles(packet)
