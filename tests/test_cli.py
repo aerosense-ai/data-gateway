@@ -197,26 +197,21 @@ class TestStart(BaseTestCase):
         """Ensure the gateway can be started and stopped via the CLI in interactive mode."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-                with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        [
-                            "start",
-                            "--interactive",
-                            "--save-locally",
-                            "--no-upload-to-cloud",
-                            "--use-dummy-serial-port",
-                            f"--output-dir={temporary_directory}",
-                        ],
-                        input="stop\n",
-                    )
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "start",
+                        "--interactive",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
+                        "--use-dummy-serial-port",
+                        f"--output-dir={temporary_directory}",
+                    ],
+                    input="stop\n",
+                )
 
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
-
-            self.assertTrue(
-                any(call_arg[0][0].msg == "Stopping gateway." for call_arg in mock_local_logger_emit.call_args_list)
-            )
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
 
     def test_save_locally(self):
         """Ensure `--save-locally` mode writes data to disk."""
