@@ -62,7 +62,7 @@ class TestDataGateway(BaseTestCase):
         Configuration.from_dict(json.loads(configuration))
 
     def test_data_gateway_with_baros_p_sensor(self):
-        """Test that the packet reader works with the Baro_P sensor."""
+        """Test that the packet reader works with the "Baros_P" sensor."""
         serial_port = DummySerial(port="test")
         packet_type = bytes([34])
 
@@ -80,10 +80,10 @@ class TestDataGateway(BaseTestCase):
             )
 
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros_P"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Baros_P"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Baros_P"],
             number_of_windows_to_check=1,
         )
@@ -106,10 +106,10 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Baros_T"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Baros_T"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Baros_T"],
             number_of_windows_to_check=1,
         )
@@ -132,10 +132,14 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Diff_Baros"])
+
+            self._check_data_is_written_to_files(
+                data_gateway.packet_reader.output_directory,
+                sensor_names=["Diff_Baros"],
+            )
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Diff_Baros"],
             number_of_windows_to_check=1,
         )
@@ -158,10 +162,10 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mics"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Mics"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Mics"],
             number_of_windows_to_check=1,
         )
@@ -184,10 +188,10 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Acc"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Acc"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Acc"],
             number_of_windows_to_check=1,
         )
@@ -210,10 +214,10 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Gyro"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Gyro"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Gyro"],
             number_of_windows_to_check=1,
         )
@@ -236,10 +240,10 @@ class TestDataGateway(BaseTestCase):
                 bucket_name=TEST_BUCKET_NAME,
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Mag"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Mag"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Mag"],
             number_of_windows_to_check=1,
         )
@@ -263,10 +267,10 @@ class TestDataGateway(BaseTestCase):
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Constat"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Constat"])
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=["Constat"],
             number_of_windows_to_check=1,
         )
@@ -299,7 +303,7 @@ class TestDataGateway(BaseTestCase):
             with patch("data_gateway.packet_reader.logger") as mock_logger:
                 data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=["Constat"])
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=["Constat"])
             self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
@@ -323,10 +327,10 @@ class TestDataGateway(BaseTestCase):
             )
             data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(temporary_directory, sensor_names=sensor_names)
+            self._check_data_is_written_to_files(data_gateway.packet_reader.output_directory, sensor_names=sensor_names)
 
         self._check_windows_are_uploaded_to_cloud(
-            temporary_directory,
+            data_gateway.packet_reader.output_directory,
             sensor_names=sensor_names,
             number_of_windows_to_check=1,
         )
@@ -336,7 +340,7 @@ class TestDataGateway(BaseTestCase):
         window_paths = [
             blob.name
             for blob in self.storage_client.scandir(
-                cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, *os.path.split(output_directory))
+                cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, output_directory)
             )
             if not blob.name.endswith("configuration.json")
         ]
@@ -352,13 +356,11 @@ class TestDataGateway(BaseTestCase):
 
     def _check_data_is_written_to_files(self, output_directory, sensor_names):
         """Check that non-trivial data is written to the given file."""
-        session_subdirectory = os.listdir(output_directory)[0]
-        window_directory = os.path.join(output_directory, session_subdirectory)
-        windows = [file for file in os.listdir(window_directory) if file.startswith(TimeBatcher._file_prefix)]
+        windows = [file for file in os.listdir(output_directory) if file.startswith(TimeBatcher._file_prefix)]
         self.assertTrue(len(windows) > 0)
 
         for window in windows:
-            with open(os.path.join(window_directory, window)) as f:
+            with open(os.path.join(output_directory, window)) as f:
                 data = json.load(f)
 
                 for name in sensor_names:
