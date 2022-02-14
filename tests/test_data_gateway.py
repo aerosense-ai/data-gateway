@@ -331,54 +331,6 @@ class TestDataGateway(BaseTestCase):
             number_of_windows_to_check=1,
         )
 
-    def test_data_gateway_with_info_packets(self):
-        """Test that the packet reader works with info packets."""
-        serial_port = DummySerial(port="test")
-
-        packet_types = [bytes([40]), bytes([54]), bytes([56]), bytes([58])]
-
-        payloads = [
-            [bytes([1]), bytes([2]), bytes([3])],
-            [bytes([0]), bytes([1]), bytes([2]), bytes([3])],
-            [bytes([0]), bytes([1])],
-            [bytes([0])],
-        ]
-
-        for index, packet_type in enumerate(packet_types):
-            for payload in payloads[index]:
-                serial_port.write(data=b"".join((PACKET_KEY, packet_type, bytes([1]), payload)))
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            data_gateway = DataGateway(
-                serial_port,
-                save_locally=True,
-                upload_to_cloud=False,
-                output_directory=temporary_directory,
-                window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
-                bucket_name=TEST_BUCKET_NAME,
-            )
-
-            with self.assertLogs() as logging_context:
-                data_gateway.start(stop_when_no_more_data_after=0.1)
-
-                log_messages_combined = "\n".join(logging_context.output)
-
-                for message in [
-                    "Microphone data reading done",
-                    "Microphone data erasing done",
-                    "Microphones started ",
-                    "Command declined, Bad block detection ongoing",
-                    "Command declined, Task already registered, cannot register again",
-                    "Command declined, Task is not registered, cannot de-register",
-                    "Command declined, Connection Parameter update unfinished",
-                    "\nExiting sleep\n",
-                    "\nEntering sleep\n",
-                    "Battery info",
-                    "Voltage : 0.000000V\n Cycle count: 0.000000\nState of charge: 0.000000%",
-                ]:
-                    self.assertIn(message, log_messages_combined)
-
     def _check_windows_are_uploaded_to_cloud(self, output_directory, sensor_names, number_of_windows_to_check=5):
         """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage."""
         window_paths = [
