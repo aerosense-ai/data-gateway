@@ -47,7 +47,8 @@ class PacketReader:
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
-        self.output_directory = output_directory
+        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
+        self.output_directory = os.path.join(output_directory, self.session_subdirectory)
         self.window_size = window_size
         self.project_name = project_name
         self.bucket_name = bucket_name
@@ -59,8 +60,6 @@ class PacketReader:
         self.handles = self.config.default_handles
         self.sleep = False
         self.sensor_time_offset = None
-        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
-        self.full_output_directory = os.path.join(self.output_directory, self.session_subdirectory)
 
         os.makedirs(self.session_subdirectory, exist_ok=True)
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
@@ -130,8 +129,7 @@ class PacketReader:
                 project_name=self.project_name,
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
-                session_subdirectory=self.session_subdirectory,
-                output_directory=self.full_output_directory,
+                output_directory=self.output_directory,
                 metadata={"data_gateway__configuration": self.config.to_dict()},
             )
         else:
@@ -141,8 +139,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.config.sensor_names,
                 window_size=self.window_size,
-                session_subdirectory=self.session_subdirectory,
-                output_directory=self.full_output_directory,
+                output_directory=self.output_directory,
                 save_csv_files=self.save_csv_files,
             )
         else:
@@ -254,19 +251,14 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(
-                os.path.abspath(os.path.join(self.output_directory, self.session_subdirectory, "configuration.json")),
-                "w",
-            ) as f:
+            with open(os.path.abspath(os.path.join(self.output_directory, "configuration.json")), "w") as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(
-                    self.output_directory, self.session_subdirectory, "configuration.json"
-                ),
+                path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
             )
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
