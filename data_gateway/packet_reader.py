@@ -60,8 +60,9 @@ class PacketReader:
         self.sleep = False
         self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
+        self.full_output_directory = os.path.join(self.output_directory, self.session_subdirectory)
 
-        os.makedirs(os.path.join(output_directory, self.session_subdirectory), exist_ok=True)
+        os.makedirs(self.session_subdirectory, exist_ok=True)
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
     def read_packets(self, serial_port, packet_queue, stop_signal):
@@ -130,7 +131,7 @@ class PacketReader:
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
                 session_subdirectory=self.session_subdirectory,
-                output_directory=self.output_directory,
+                output_directory=self.full_output_directory,
                 metadata={"data_gateway__configuration": self.config.to_dict()},
             )
         else:
@@ -141,7 +142,7 @@ class PacketReader:
                 sensor_names=self.config.sensor_names,
                 window_size=self.window_size,
                 session_subdirectory=self.session_subdirectory,
-                output_directory=self.output_directory,
+                output_directory=self.full_output_directory,
                 save_csv_files=self.save_csv_files,
             )
         else:
