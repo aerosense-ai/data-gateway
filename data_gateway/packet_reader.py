@@ -9,7 +9,12 @@ from octue.cloud import storage
 
 from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
 from data_gateway.configuration import Configuration
-from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
+from data_gateway.persistence import (
+    DEFAULT_OUTPUT_DIRECTORY,
+    BatchingFileWriter,
+    BatchingUploader,
+    NoOperationContextManager,
+)
 
 
 logger = multiprocessing.get_logger()
@@ -33,7 +38,7 @@ class PacketReader:
         self,
         save_locally,
         upload_to_cloud,
-        output_directory=None,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
         window_size=600,
         project_name=None,
         bucket_name=None,
