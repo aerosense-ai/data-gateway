@@ -48,7 +48,11 @@ class PacketReader:
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
-        self.output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
+
+        self.cloud_output_directory = storage.path.join(output_directory, self.session_subdirectory)
+        self.local_output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
+        os.makedirs(self.local_output_directory, exist_ok=True)
+
         self.window_size = window_size
         self.project_name = project_name
         self.bucket_name = bucket_name
@@ -61,7 +65,6 @@ class PacketReader:
         self.sleep = False
         self.sensor_time_offset = None
 
-        os.makedirs(self.output_directory, exist_ok=True)
         logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
 
     def read_packets(self, serial_port, packet_queue, stop_signal):
@@ -129,7 +132,7 @@ class PacketReader:
                 project_name=self.project_name,
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
-                output_directory=self.output_directory,
+                output_directory=self.cloud_output_directory,
                 metadata={"data_gateway__configuration": self.config.to_dict()},
             )
         else:
@@ -139,7 +142,7 @@ class PacketReader:
             self.writer = BatchingFileWriter(
                 sensor_names=self.config.sensor_names,
                 window_size=self.window_size,
-                output_directory=self.output_directory,
+                output_directory=self.local_output_directory,
                 save_csv_files=self.save_csv_files,
             )
         else:
@@ -253,14 +256,14 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(os.path.join(self.output_directory, "configuration.json"), "w") as f:
+            with open(os.path.join(self.local_output_directory, "configuration.json"), "w") as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(self.output_directory, "configuration.json"),
+                path_in_bucket=storage.path.join(self.cloud_output_directory, "configuration.json"),
             )
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
