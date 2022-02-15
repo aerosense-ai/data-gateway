@@ -21,7 +21,8 @@ logger = multiprocessing.get_logger()
 
 
 class PacketReader:
-    """A serial port packet reader.
+    """A serial port packet reader. Note that timestamp synchronisation is unavailable with the current sensor hardware
+    so the system clock is used instead.
 
     :param bool save_locally: save data windows locally
     :param bool upload_to_cloud: upload data windows to Google cloud
@@ -65,8 +66,6 @@ class PacketReader:
         self.sleep = False
         self.sensor_time_offset = None
 
-        logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
-
     def read_packets(self, serial_port, packet_queue, stop_signal):
         """Read packets from a serial port and send them to the parser thread for processing and persistence.
 
@@ -75,7 +74,7 @@ class PacketReader:
         :return None:
         """
         try:
-            logger.info("Beginning reading packets from serial port.")
+            logger.info("Packet reader process started.")
 
             while stop_signal.value == 0:
                 serial_data = serial_port.read()
@@ -89,7 +88,6 @@ class PacketReader:
                 packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
                 length = int.from_bytes(serial_port.read(), self.config.endian)
                 packet = serial_port.read(length)
-                logger.debug("Read packet from serial port.")
 
                 if packet_type == str(self.config.type_handle_def):
                     self.update_handles(packet)
@@ -97,12 +95,7 @@ class PacketReader:
 
                 # Check for bytes in serial input buffer. A full buffer results in overflow.
                 if serial_port.in_waiting == self.config.serial_buffer_rx_size:
-                    logger.warning(
-                        "Buffer is full: %d bytes waiting. Re-opening serial port, to avoid overflow",
-                        serial_port.in_waiting,
-                    )
-                    serial_port.close()
-                    serial_port.open()
+                    logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
                     continue
 
                 packet_queue.put({"packet_type": packet_type, "packet": packet})
@@ -123,7 +116,7 @@ class PacketReader:
         :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
         :return None:
         """
-        logger.info("Beginning parsing packets from serial port.")
+        logger.info("Packet parser process started.")
 
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
@@ -174,8 +167,6 @@ class PacketReader:
                             if stop_when_no_more_data_after is not False:
                                 break
                             continue
-
-                        logger.debug("Received packet for parsing.")
 
                         if packet_type not in self.handles:
                             logger.error("Received packet with unknown type: %s", packet_type)
@@ -244,7 +235,7 @@ class PacketReader:
             logger.info("Successfully updated handles.")
             return
 
-        logger.error("Handle error: %s %s", start_handle, end_handle)
+        logger.error("Handle error: start handle is %s, end handle is %s.", start_handle, end_handle)
 
     def _persist_configuration(self):
         """Persist the configuration to disk and/or cloud storage.
@@ -470,7 +461,7 @@ class PacketReader:
             return
 
         if previous_timestamp[sensor_name] == -1:
-            logger.info("Received first %s packet" % sensor_name)
+            logger.info("Received first %s packet." % sensor_name)
         else:
             expected_current_timestamp = (
                 previous_timestamp[sensor_name]
