@@ -26,7 +26,7 @@ class TestPacketReader(BaseTestCase):
                 stop_when_no_more_data_after=0.1,
             )
 
-        self.assertIn("Received packet with unknown type: ", mock_logger.method_calls[2].args[0])
+        self.assertIn("Received packet with unknown type: ", mock_logger.method_calls[1].args[0])
 
     def test_update_handles_fails_if_start_and_end_handles_are_incorrect(self):
         """Test that an error is raised if the start and end handles are incorrect when trying to update handles."""
