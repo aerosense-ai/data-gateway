@@ -210,20 +210,21 @@ class DataGateway:
             if self.interactive:
                 logger.warning("Sensor command routine files are ignored in interactive mode.")
                 return
-            else:
-                with open(routine_path) as f:
-                    routine = Routine(
-                        **json.load(f),
-                        action=lambda command: self.serial_port.write((command + "\n").encode("utf_8")),
-                    )
 
-                logger.info("Loaded routine file from %r.", routine_path)
-                return routine
+            with open(routine_path) as f:
+                routine = Routine(
+                    **json.load(f),
+                    action=lambda command: self.serial_port.write((command + "\n").encode("utf_8")),
+                )
 
-        logger.debug(
-            "No routine file found at %r - no commands will be sent to the sensors unless given in interactive mode.",
-            routine_path,
-        )
+            logger.info("Loaded routine file from %r.", routine_path)
+            return routine
+
+        if not self.interactive:
+            logger.warning(
+                "No routine was provided and interactive mode is off - no commands will be sent to the sensors in this "
+                "session."
+            )
 
     def _send_commands_from_stdin_to_sensors(self, stop_signal):
         """Send commands from `stdin` to the sensors until the "stop" command is received or the packet reader is
