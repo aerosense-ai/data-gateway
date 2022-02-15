@@ -25,8 +25,7 @@ class TestBatchingWriter(BaseTestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
-                session_subdirectory="this-session",
-                output_directory=temporary_directory,
+                output_directory=os.path.join(temporary_directory, "this-session"),
                 window_size=600,
             )
 
@@ -38,8 +37,7 @@ class TestBatchingWriter(BaseTestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             writer = BatchingFileWriter(
                 sensor_names=["test"],
-                session_subdirectory="this-session",
-                output_directory=temporary_directory,
+                output_directory=os.path.join(temporary_directory, "this-session"),
                 window_size=0.01,
             )
 
@@ -55,19 +53,19 @@ class TestBatchingWriter(BaseTestCase):
 
             self.assertEqual(len(writer.current_window["sensor_data"]["test"]), 0)
 
-            with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-0.json")) as f:
+            with open(os.path.join(writer.output_directory, "window-0.json")) as f:
                 self.assertEqual(json.load(f)["sensor_data"], {"test": ["ping", "pong"]})
 
-            with open(os.path.join(temporary_directory, writer._session_subdirectory, "window-1.json")) as f:
+            with open(os.path.join(writer.output_directory, "window-1.json")) as f:
                 self.assertEqual(json.load(f)["sensor_data"], {"test": ["ding", "dong"]})
 
     def test_oldest_window_is_deleted_when_storage_limit_reached(self):
         """Check that (only) the oldest window is deleted when the storage limit is reached."""
         with tempfile.TemporaryDirectory() as temporary_directory:
+
             writer = BatchingFileWriter(
                 sensor_names=["test"],
-                session_subdirectory="this-session",
-                output_directory=temporary_directory,
+                output_directory=os.path.join(temporary_directory, "this-session"),
                 window_size=0.01,
                 storage_limit=1,
             )
@@ -75,7 +73,7 @@ class TestBatchingWriter(BaseTestCase):
             with writer:
                 writer.add_to_current_window(sensor_name="test", data="ping,")
 
-            first_window_path = os.path.join(temporary_directory, writer._session_subdirectory, "window-0.json")
+            first_window_path = os.path.join(writer.output_directory, "window-0.json")
 
             # Check first file is written to disk.
             self.assertTrue(os.path.exists(first_window_path))
@@ -87,17 +85,15 @@ class TestBatchingWriter(BaseTestCase):
             self.assertFalse(os.path.exists(first_window_path))
 
             # Check the second file has not been deleted.
-            self.assertTrue(
-                os.path.exists(os.path.join(temporary_directory, writer._session_subdirectory, "window-1.json"))
-            )
+            self.assertTrue(os.path.exists(os.path.join(writer.output_directory, "window-1.json")))
 
     def test_that_csv_files_are_written(self):
         """Test that data is written to disk as CSV-files if the `save_csv_files` option is `True`."""
         with tempfile.TemporaryDirectory() as temporary_directory:
+
             writer = BatchingFileWriter(
                 sensor_names=["sensor1", "sensor2"],
-                session_subdirectory="this-session",
-                output_directory=temporary_directory,
+                output_directory=os.path.join(temporary_directory, "this-session"),
                 save_csv_files=True,
                 window_size=0.01,
             )
@@ -108,11 +104,11 @@ class TestBatchingWriter(BaseTestCase):
                 writer.add_to_current_window(sensor_name="sensor1", data=[4, 5, 6])
                 writer.add_to_current_window(sensor_name="sensor2", data=[4, 5, 6])
 
-            with open(os.path.join(temporary_directory, writer._session_subdirectory, "sensor1.csv")) as f:
+            with open(os.path.join(writer.output_directory, "sensor1.csv")) as f:
                 reader = csv.reader(f)
                 self.assertEqual([row for row in reader], [["1", "2", "3"], ["4", "5", "6"]])
 
-            with open(os.path.join(temporary_directory, writer._session_subdirectory, "sensor2.csv")) as f:
+            with open(os.path.join(writer.output_directory, "sensor2.csv")) as f:
                 reader = csv.reader(f)
                 self.assertEqual([row for row in reader], [["1", "2", "3"], ["4", "5", "6"]])
 
@@ -133,8 +129,7 @@ class TestBatchingUploader(BaseTestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             window_size=600,
-            session_subdirectory="this-session",
-            output_directory=tempfile.TemporaryDirectory().name,
+            output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
         )
 
         uploader.add_to_current_window(sensor_name="test", data="blah,")
@@ -147,8 +142,7 @@ class TestBatchingUploader(BaseTestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             window_size=0.01,
-            session_subdirectory="this-session",
-            output_directory=tempfile.TemporaryDirectory().name,
+            output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
         )
 
         with uploader:
@@ -170,9 +164,7 @@ class TestBatchingUploader(BaseTestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        uploader.output_directory, uploader._session_subdirectory, "window-0.json"
-                    ),
+                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
                 )
             )["sensor_data"],
             {"test": ["ping", "pong"]},
@@ -182,9 +174,7 @@ class TestBatchingUploader(BaseTestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        uploader.output_directory, uploader._session_subdirectory, "window-1.json"
-                    ),
+                    path_in_bucket=storage.path.join(uploader.output_directory, "window-1.json"),
                 )
             )["sensor_data"],
             {"test": ["ding", "dong"]},
@@ -204,8 +194,7 @@ class TestBatchingUploader(BaseTestCase):
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     window_size=0.01,
-                    session_subdirectory="this-session",
-                    output_directory=temporary_directory,
+                    output_directory=storage.path.join(temporary_directory, "this-session"),
                     upload_backup_files=False,
                 )
 
@@ -217,15 +206,11 @@ class TestBatchingUploader(BaseTestCase):
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
                     bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        uploader.output_directory, uploader._session_subdirectory, "window-0.json"
-                    ),
+                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
                 )
 
             # Check that a backup file has been written.
-            with open(
-                os.path.join(temporary_directory, ".backup", uploader._session_subdirectory, "window-0.json")
-            ) as f:
+            with open(os.path.join(uploader.output_directory, ".backup", "window-0.json")) as f:
                 self.assertEqual(json.load(f)["sensor_data"], {"test": ["ping", "pong"]})
 
     def test_backup_files_are_uploaded_on_next_upload_attempt(self):
@@ -242,8 +227,7 @@ class TestBatchingUploader(BaseTestCase):
                     project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     window_size=10,
-                    session_subdirectory="this-session",
-                    output_directory=temporary_directory,
+                    output_directory=storage.path.join(temporary_directory, "this-session"),
                     upload_backup_files=True,
                 )
 
@@ -255,12 +239,10 @@ class TestBatchingUploader(BaseTestCase):
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
                     bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        uploader.output_directory, uploader._session_subdirectory, "window-0.json"
-                    ),
+                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
                 )
 
-            backup_path = os.path.join(temporary_directory, ".backup", uploader._session_subdirectory, "window-0.json")
+            backup_path = os.path.join(uploader._backup_directory, "window-0.json")
 
             # Check that a backup file has been written.
             with open(backup_path) as f:
@@ -274,9 +256,7 @@ class TestBatchingUploader(BaseTestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        uploader.output_directory, uploader._session_subdirectory, "window-0.json"
-                    ),
+                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
                 )
             )["sensor_data"],
             {"test": ["ping", "pong"]},
@@ -286,9 +266,7 @@ class TestBatchingUploader(BaseTestCase):
             json.loads(
                 self.storage_client.download_as_string(
                     bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(
-                        uploader.output_directory, uploader._session_subdirectory, "window-1.json"
-                    ),
+                    path_in_bucket=storage.path.join(uploader.output_directory, "window-1.json"),
                 )
             )["sensor_data"],
             {"test": [["ding", "dong"]]},
@@ -304,8 +282,7 @@ class TestBatchingUploader(BaseTestCase):
             project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             window_size=0.01,
-            session_subdirectory="this-session",
-            output_directory=tempfile.TemporaryDirectory().name,
+            output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
             metadata={"big": "rock"},
         )
 
@@ -314,9 +291,7 @@ class TestBatchingUploader(BaseTestCase):
 
         metadata = self.storage_client.get_metadata(
             bucket_name=TEST_BUCKET_NAME,
-            path_in_bucket=storage.path.join(
-                uploader.output_directory, uploader._session_subdirectory, "window-0.json"
-            ),
+            path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
         )
 
         self.assertEqual(metadata["custom_metadata"], {"big": "rock"})

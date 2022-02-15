@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import sys
@@ -10,7 +11,6 @@ from octue.utils.encoders import OctueJSONEncoder
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
-from tests.test_cloud_functions.base import CredentialsEnvironmentVariableAsFile
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -22,7 +22,7 @@ from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_i
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
-class TestCleanAndUploadWindow(CredentialsEnvironmentVariableAsFile, BaseTestCase):
+class TestCleanAndUploadWindow(BaseTestCase):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
@@ -55,11 +55,12 @@ class TestCleanAndUploadWindow(CredentialsEnvironmentVariableAsFile, BaseTestCas
                 "BIG_QUERY_DATASET_NAME": "blah",
             },
         ):
-            with patch("window_handler.BigQueryDataset") as mock_dataset:
-                main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+            with patch("big_query.bigquery.Client"):
+                with patch("window_handler.BigQueryDataset") as mock_dataset:
+                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
-        expected_configuration = self.VALID_CONFIGURATION.copy()
+        expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
         del expected_configuration["session_data"]
         self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
         self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
@@ -93,7 +94,8 @@ class TestCleanAndUploadWindow(CredentialsEnvironmentVariableAsFile, BaseTestCas
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
                 with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
-                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                    with patch("big_query.bigquery.Client"):
+                        main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
