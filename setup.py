@@ -21,7 +21,7 @@ setup(
         "click>=7.1.2",
         "pyserial==3.5",
         "python-slugify==5.0.2",
-        "octue @ https://github.com/octue/octue-sdk-python/archive/enhancement/allow-apply-log-handler-to-work-on-logger-instance.zip",
+        "octue==0.10.5",
     ],
     url="https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway",
     license="MIT",
