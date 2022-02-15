@@ -62,7 +62,7 @@ class Routine:
             scheduler.run(blocking=True)
 
             if self.period is None:
-                logger.info("Routine finished.")
+                logger.info("Non-periodic routine finished.")
                 return
 
             elapsed_time = time.perf_counter() - cycle_start_time
@@ -70,7 +70,7 @@ class Routine:
 
             if self.stop_after:
                 if time.perf_counter() - start_time >= self.stop_after:
-                    stop_gateway(logger, stop_signal)
+                    logger.info("Periodic routine stopped after given timeout of %ss.", self.stop_after)
                     return
 
     def _wrap_action_with_logger(self, action):
