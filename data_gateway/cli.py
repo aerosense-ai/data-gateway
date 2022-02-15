@@ -46,7 +46,6 @@ def gateway_cli(logger_uri, log_level):
             logger=logger,
             handler=get_remote_handler(logger_uri=logger_uri),
             log_level=log_level.upper(),
-            include_thread_name=True,
             include_process_name=True,
         )
 

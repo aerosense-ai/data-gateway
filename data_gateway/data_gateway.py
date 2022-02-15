@@ -16,7 +16,7 @@ from data_gateway.routine import Routine
 
 
 logger = multiprocessing.get_logger()
-apply_log_handler(logger=logger, include_process_name=True, include_thread_name=True)
+apply_log_handler(logger=logger, include_process_name=True)
 
 
 class DataGateway:
