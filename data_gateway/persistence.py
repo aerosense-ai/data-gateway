@@ -12,7 +12,6 @@ from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_dir
 
 
 logger = multiprocessing.get_logger()
-# apply_log_handler(logger=logger)
 
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
 
@@ -159,7 +158,7 @@ class BatchingFileWriter(TimeBatcher):
         """
         self._manage_storage()
         window = window or self.ready_window
-        window_path = os.path.abspath(os.path.join(".", self._generate_window_path()))
+        window_path = self._generate_window_path()
 
         with open(window_path, "w") as f:
             json.dump(window, f)

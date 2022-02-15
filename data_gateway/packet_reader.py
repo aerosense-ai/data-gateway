@@ -48,7 +48,7 @@ class PacketReader:
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
-        self.output_directory = os.path.join(output_directory, self.session_subdirectory)
+        self.output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
         self.window_size = window_size
         self.project_name = project_name
         self.bucket_name = bucket_name
@@ -253,7 +253,7 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(os.path.abspath(os.path.join(self.output_directory, "configuration.json")), "w") as f:
+            with open(os.path.join(self.output_directory, "configuration.json"), "w") as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
