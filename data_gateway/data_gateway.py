@@ -71,6 +71,11 @@ class DataGateway:
         use_dummy_serial_port=False,
         log_level=logging.INFO,
     ):
+        # Set multiprocessed logger level.
+        logger.setLevel(log_level)
+        for handler in logger.handlers:
+            handler.setLevel(log_level)
+
         if not save_locally and not upload_to_cloud:
             raise DataMustBeSavedError(
                 "Data from the gateway must either be saved locally or uploaded to the cloud. Please adjust the "
@@ -100,10 +105,6 @@ class DataGateway:
         )
 
         self.routine = self._load_routine(routine_path=routine_path)
-
-        logger.setLevel(log_level)
-        for handler in logger.handlers:
-            handler.setLevel(log_level)
 
     def start(self, stop_when_no_more_data_after=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
