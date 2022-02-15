@@ -147,7 +147,7 @@ class BatchingFileWriter(TimeBatcher):
         self.storage_limit = storage_limit
         super().__init__(sensor_names, window_size, output_directory)
         os.makedirs(self.output_directory, exist_ok=True)
-        logger.info(f"Windows will be saved to {self.output_directory!r} at intervals of {self.window_size} seconds.")
+        logger.info("Windows will be saved to %r at intervals of %s seconds.", self.output_directory, self.window_size)
 
     def _persist_window(self, window=None):
         """Write a window of serialised data to disk, deleting the oldest window first if the storage limit has been
@@ -163,12 +163,12 @@ class BatchingFileWriter(TimeBatcher):
         with open(window_path, "w") as f:
             json.dump(window, f)
 
-        logger.info(f"{self._file_prefix.capitalize()} {self._window_number} written to disk.")
+        logger.info("%s %d written to disk.", self._file_prefix.capitalize(), self._window_number)
 
         if self._save_csv_files:
             for sensor in window["sensor_data"]:
                 csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
-                logger.info(f"Saving {sensor} data to csv file.")
+                logger.info("Saving %s data to csv file.", sensor)
 
                 with open(csv_path, "w", newline="") as f:
                     writer = csv.writer(f, delimiter=",")
@@ -244,7 +244,7 @@ class BatchingUploader(TimeBatcher):
         self._backup_writer = BatchingFileWriter(sensor_names, window_size, output_directory=self._backup_directory)
 
         logger.info(
-            f"Windows will be uploaded to {self.output_directory!r} at intervals of {self.window_size} seconds."
+            "Windows will be uploaded to %r at intervals of %s seconds.", self.output_directory, self.window_size
         )
 
     def _persist_window(self):
@@ -272,7 +272,7 @@ class BatchingUploader(TimeBatcher):
             self._backup_writer._persist_window(window=self.ready_window)
             return
 
-        logger.info(f"{self._file_prefix.capitalize()} {self._window_number} uploaded to cloud.")
+        logger.info("%s %d uploaded to cloud.", self._file_prefix.capitalize(), self._window_number)
 
         if self.upload_backup_files:
             self._attempt_to_upload_backup_files()
