@@ -60,14 +60,14 @@ def gateway_cli(logger_uri, log_level):
 )
 @click.option(
     "--config-file",
-    type=click.Path(dir_okay=False, exists=True),
+    type=click.Path(dir_okay=False),
     default="config.json",
     show_default=True,
     help="Path to your Aerosense deployment configuration JSON file.",
 )
 @click.option(
     "--routine-file",
-    type=click.Path(dir_okay=False, exists=True),
+    type=click.Path(dir_okay=False),
     default="routine.json",
     show_default=True,
     help="Path to sensor command routine JSON file.",
@@ -181,7 +181,7 @@ def start(
 @gateway_cli.command()
 @click.option(
     "--config-file",
-    type=click.Path(dir_okay=False, exists=True),
+    type=click.Path(),
     default="configuration.json",
     help="A path to a JSON configuration file.",
 )
@@ -243,7 +243,7 @@ def create_installation(config_file):
 @gateway_cli.command()
 @click.option(
     "--config-file",
-    type=click.Path(dir_okay=False, exists=True),
+    type=click.Path(),
     default="config.json",
     show_default=True,
     help="Path to your Aerosense deployment configuration file.",
