@@ -101,7 +101,7 @@ class DataGateway:
         stop_signal = multiprocessing.Value("i", 0)
 
         reader_process = multiprocessing.Process(
-            name="ReaderProcess",
+            name="Reader",
             target=self.packet_reader.read_packets,
             kwargs={
                 "serial_port": self.serial_port,
@@ -112,7 +112,7 @@ class DataGateway:
         )
 
         parser_process = multiprocessing.Process(
-            name="ParserProcess",
+            name="Parser",
             target=self.packet_reader.parse_packets,
             kwargs={
                 "packet_queue": packet_queue,
