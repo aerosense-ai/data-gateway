@@ -141,7 +141,7 @@ class TestStart(BaseTestCase):
     def test_log_level_can_be_set(self):
         """Test that the log level can be set."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            with self.assertLogs(level="DEBUG") as mock_logger:
+            with mock.patch("octue.log_handlers.logging.StreamHandler.emit") as mock_emit:
                 result = CliRunner().invoke(
                     gateway_cli,
                     [
@@ -161,8 +161,8 @@ class TestStart(BaseTestCase):
 
                 debug_message_found = False
 
-                for message in mock_logger.output:
-                    if "DEBUG" in message:
+                for record in mock_emit.call_args_list:
+                    if record.args[0].levelname == "DEBUG":
                         debug_message_found = True
                         break
 

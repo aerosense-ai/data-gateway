@@ -1,4 +1,5 @@
 import json
+import logging
 import multiprocessing
 import os
 import sys
@@ -18,6 +19,9 @@ from data_gateway.routine import Routine
 
 logger = multiprocessing.get_logger()
 apply_log_handler(logger=logger, include_process_name=True)
+
+# Ignore logs from the dummy serial port.
+logging.getLogger("data_gateway.dummy_serial.dummy_serial").setLevel(logging.WARNING)
 
 
 class DataGateway:
@@ -65,6 +69,7 @@ class DataGateway:
         label=None,
         save_csv_files=False,
         use_dummy_serial_port=False,
+        log_level=logging.INFO,
     ):
         if not save_locally and not upload_to_cloud:
             raise DataMustBeSavedError(
@@ -95,6 +100,10 @@ class DataGateway:
         )
 
         self.routine = self._load_routine(routine_path=routine_path)
+
+        logger.setLevel(log_level)
+        for handler in logger.handlers:
+            handler.setLevel(log_level)
 
     def start(self, stop_when_no_more_data_after=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in

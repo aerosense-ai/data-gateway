@@ -15,6 +15,8 @@ from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
 CREATE_INSTALLATION_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
 
+global_cli_context = {}
+
 logger = multiprocessing.get_logger()
 
 
@@ -40,12 +42,15 @@ def gateway_cli(logger_uri, log_level):
     """
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
+    # Store log level to apply to multi-processed logger in `DataGateway` in the `start` command.
+    global_cli_context["log_level"] = log_level.upper()
+
     # Stream logs to remote handler if required.
     if logger_uri is not None:
         apply_log_handler(
             logger=logger,
             handler=get_remote_handler(logger_uri=logger_uri),
-            log_level=log_level.upper(),
+            log_level=global_cli_context["log_level"],
             include_process_name=True,
         )
 
@@ -173,6 +178,7 @@ def start(
         label=label,
         save_csv_files=save_csv_files,
         use_dummy_serial_port=use_dummy_serial_port,
+        log_level=global_cli_context["log_level"],
     )
 
     data_gateway.start()
