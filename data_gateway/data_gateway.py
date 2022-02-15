@@ -21,19 +21,26 @@ apply_log_handler(logger=logger, include_process_name=True)
 
 
 class DataGateway:
-    """A class for running the data gateway for collecting wind turbine sensor data. The gateway is run with multiple
-    threads reading from the serial port which put the packets they read into a queue for a single parser thread to
-    process and persist. An additional thread is run for sending commands to the sensors either interactively or via a
-    routine. If a "stop" signal is sent as a command, all threads are stopped and any data in the current window is
-    persisted.
+    """A class for running the data gateway to collect wind turbine sensor data. The gateway is run as three processes:
+    1. The `MainProcess` process, which starts the other two processes and sends commands to the serial port (via a
+       separate thread) interactively or through a routine
+    2. The `Reader` process, which reads packets from the serial port and puts them on a queue
+    3. The `Parser` process, which takes packets off the queue, parses them, and persists them
 
-    :param str|serial.Serial serial_port: the name of the serial port to use or a `serial.Serial` instance
-    :param str configuration_path: the path to a JSON configuration file for reading and parsing data
+    All processes and threads are stopped and any data in the current window is persisted if:
+    - A "stop" signal is sent as a command interactively or in a routine
+    - An error is raised in any process or thread
+    - A `KeyboardInterrupt` is raised (i.e. the user presses `Ctrl + C`)
+    - No more data is received by the `Parser` process after `stop_when_no_more_data_after` seconds (if it is set in the
+      `DataGateway.run` method)
+
+    :param str|serial.Serial serial_port: the name of the serial port or a `serial.Serial` instance to read from
+    :param str configuration_path: the path to a JSON configuration file for the packet reader
     :param str routine_path: the path to a JSON routine file containing sensor commands to be run automatically
-    :param bool save_locally: if `True`, save data windows locally
+    :param bool save_locally: if `True`, save data windows to disk locally
     :param bool upload_to_cloud: if `True`, upload data windows to Google Cloud Storage
     :param bool interactive: if `True`, allow commands entered into `stdin` to be sent to the sensors in real time
-    :param str output_directory: the directory in which to save data in the cloud bucket or local file system
+    :param str output_directory: the name of the directory in which to save data in the cloud bucket or local file system
     :param float window_size: the period in seconds at which data is persisted
     :param str|None project_name: the name of the Google Cloud project to upload to
     :param str|None bucket_name: the name of the Google Cloud bucket to upload to
@@ -61,8 +68,8 @@ class DataGateway:
     ):
         if not save_locally and not upload_to_cloud:
             raise DataMustBeSavedError(
-                "Data from the gateway must either be saved locally or uploaded to the cloud. Please adjust the CLI "
-                "options provided."
+                "Data from the gateway must either be saved locally or uploaded to the cloud. Please adjust the "
+                "parameters provided."
             )
 
         self.interactive = interactive
@@ -97,7 +104,6 @@ class DataGateway:
         :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
         :return None:
         """
-        logger.info("Starting data gateway.")
         packet_queue = multiprocessing.Queue()
         stop_signal = multiprocessing.Value("i", 0)
 
@@ -150,7 +156,7 @@ class DataGateway:
             time.sleep(5)
 
     def _load_configuration(self, configuration_path):
-        """Load a configuration from the path if it exists, otherwise load the default configuration.
+        """Load a configuration from the path if it exists; otherwise load the default configuration.
 
         :param str configuration_path: path to the configuration JSON file
         :return data_gateway.configuration.Configuration:
@@ -159,11 +165,11 @@ class DataGateway:
             with open(configuration_path) as f:
                 configuration = Configuration.from_dict(json.load(f))
 
-            logger.debug("Loaded configuration file from %r.", configuration_path)
+            logger.info("Loaded configuration file from %r.", configuration_path)
             return configuration
 
         configuration = Configuration()
-        logger.debug("No configuration file provided - using default configuration.")
+        logger.info("No configuration file provided - using default configuration.")
         return configuration
 
     def _get_serial_port(self, serial_port, configuration, use_dummy_serial_port):
@@ -211,7 +217,7 @@ class DataGateway:
                         action=lambda command: self.serial_port.write((command + "\n").encode("utf_8")),
                     )
 
-                logger.debug("Loaded routine file from %r.", routine_path)
+                logger.info("Loaded routine file from %r.", routine_path)
                 return routine
 
         logger.debug(
@@ -228,17 +234,25 @@ class DataGateway:
         """
         commands_record_file = os.path.join(self.packet_reader.local_output_directory, "commands.txt")
 
-        while stop_signal.value == 0:
-            for line in sys.stdin:
-                with open(commands_record_file, "a") as f:
-                    f.write(line)
+        try:
+            while stop_signal.value == 0:
+                for line in sys.stdin:
+                    with open(commands_record_file, "a") as f:
+                        f.write(line)
 
-                if line.startswith("sleep") and line.endswith("\n"):
-                    time.sleep(int(line.split(" ")[-1].strip()))
-                elif line == "stop\n":
+                    # The `sleep` command is mainly for facilitating testing.
+                    if line.startswith("sleep") and line.endswith("\n"):
+                        time.sleep(int(line.split(" ")[-1].strip()))
+                        continue
+
+                    if line == "stop\n":
+                        self.serial_port.write(line.encode("utf_8"))
+                        stop_gateway(logger, stop_signal)
+                        break
+
+                    # Send the command to the node.
                     self.serial_port.write(line.encode("utf_8"))
-                    stop_gateway(logger, stop_signal)
-                    break
 
-                # Send the command to the node
-                self.serial_port.write(line.encode("utf_8"))
+        except Exception as e:
+            stop_gateway(logger, stop_signal)
+            raise e
