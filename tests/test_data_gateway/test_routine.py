@@ -7,7 +7,7 @@ from data_gateway.routine import Routine
 
 
 def create_record_commands_action():
-    """Create a list in which commands will be recorded when the `recorded_command` function is given as an action to
+    """Create a list in which commands will be recorded when the `record_commands` function is given as an action to
     the routine.
 
     :return (list, callable): the list that actions are recorded in, and the function that causes them to be recorded
@@ -112,6 +112,7 @@ class TestRoutine(TestCase):
 
         routine.run(stop_signal=stop_signal)
 
+        # Check that only the first two commands (i.e. up until the `stop` command) are scheduled and carried out.
         self.assertEqual(len(recorded_commands), 2)
 
         self.assertEqual(recorded_commands[0][0], "first-command")
@@ -120,4 +121,5 @@ class TestRoutine(TestCase):
         self.assertEqual(recorded_commands[1][0], "stop")
         self.assertAlmostEqual(recorded_commands[1][1], start_time + 0.3, delta=0.2)
 
+        # Check that the stop signal has been sent.
         self.assertEqual(stop_signal.value, 1)
