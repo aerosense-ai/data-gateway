@@ -3,7 +3,6 @@ import time
 from unittest import TestCase
 from unittest.mock import patch
 
-from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
 
 
@@ -18,7 +17,6 @@ class TestRoutine(TestCase):
         routine = Routine(
             commands=[("first-command", 0.1), ("second-command", 0.3)],
             action=record_commands,
-            packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
         )
 
         start_time = time.perf_counter()
@@ -36,7 +34,6 @@ class TestRoutine(TestCase):
             Routine(
                 commands=[("first-command", 10), ("second-command", 0.3)],
                 action=None,
-                packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
                 period=1,
             )
 
@@ -46,7 +43,6 @@ class TestRoutine(TestCase):
             Routine(
                 commands=[("first-command", 0.1), ("second-command", 0.3)],
                 action=None,
-                packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
                 period=1,
                 stop_after=0.5,
             )
@@ -57,7 +53,6 @@ class TestRoutine(TestCase):
             Routine(
                 commands=[("first-command", 10), ("second-command", 0.3)],
                 action=None,
-                packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
                 stop_after=0.5,
             )
 
@@ -76,7 +71,6 @@ class TestRoutine(TestCase):
         routine = Routine(
             commands=[("first-command", 0.1), ("second-command", 0.3)],
             action=record_commands,
-            packet_reader=PacketReader(save_locally=False, upload_to_cloud=False),
             period=0.4,
             stop_after=1,
         )

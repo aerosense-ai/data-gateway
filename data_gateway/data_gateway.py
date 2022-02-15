@@ -208,7 +208,6 @@ class DataGateway:
                     routine = Routine(
                         **json.load(f),
                         action=lambda command: self.serial_port.write((command + "\n").encode("utf_8")),
-                        packet_reader=self.packet_reader,
                     )
 
                 logger.debug("Loaded routine file from %r.", routine_path)

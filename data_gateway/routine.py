@@ -19,10 +19,9 @@ class Routine:
     :return None:
     """
 
-    def __init__(self, commands, action, packet_reader, period=None, stop_after=None):
+    def __init__(self, commands, action, period=None, stop_after=None):
         self.commands = commands
         self.action = self._wrap_action_with_logger(action)
-        self.packet_reader = packet_reader
         self.period = period
         self.stop_after = stop_after
 
