@@ -54,6 +54,11 @@ class Routine:
             for command, delay in self.commands:
                 scheduler.enter(delay=delay, priority=1, action=self.action, argument=(command,))
 
+                # If a command is "stop", schedule stopping the gateway and then schedule no further commands.
+                if command == "stop":
+                    scheduler.enter(delay=delay, priority=1, action=stop_gateway, argument=(logger, stop_signal))
+                    break
+
             scheduler.run(blocking=True)
 
             if self.period is None:

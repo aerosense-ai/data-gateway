@@ -6,13 +6,24 @@ from unittest.mock import patch
 from data_gateway.routine import Routine
 
 
+def create_record_commands_action():
+    """Create a list in which commands will be recorded when the `recorded_command` function is given as an action to
+    the routine.
+
+    :return (list, callable): the list that actions are recorded in, and the function that causes them to be recorded
+    """
+    recorded_commands = []
+
+    def record_commands(command):
+        recorded_commands.append((command, time.perf_counter()))
+
+    return recorded_commands, record_commands
+
+
 class TestRoutine(TestCase):
     def test_routine_with_no_period_runs_commands_once(self):
         """Test that commands can be scheduled to run once when a period isn't given."""
-        recorded_commands = []
-
-        def record_commands(command):
-            recorded_commands.append((command, time.perf_counter()))
+        recorded_commands, record_commands = create_record_commands_action()
 
         routine = Routine(
             commands=[("first-command", 0.1), ("second-command", 0.3)],
@@ -63,10 +74,7 @@ class TestRoutine(TestCase):
 
     def test_routine_with_period(self):
         """Test that commands can be scheduled to repeat at the given period and then stop after a certain time."""
-        recorded_commands = []
-
-        def record_commands(command):
-            recorded_commands.append((command, time.perf_counter()))
+        recorded_commands, record_commands = create_record_commands_action()
 
         routine = Routine(
             commands=[("first-command", 0.1), ("second-command", 0.3)],
@@ -89,3 +97,27 @@ class TestRoutine(TestCase):
 
         self.assertEqual(recorded_commands[3][0], "second-command")
         self.assertAlmostEqual(recorded_commands[3][1], start_time + 0.3 + routine.period, delta=0.2)
+
+    def test_routine_only_runs_until_stop_command(self):
+        """Test that a routine only runs until the "stop" command is received."""
+        recorded_commands, record_commands = create_record_commands_action()
+
+        routine = Routine(
+            commands=[("first-command", 0.1), ("stop", 0.3), ("command-after-stop", 0.5)],
+            action=record_commands,
+        )
+
+        stop_signal = multiprocessing.Value("i", 0)
+        start_time = time.perf_counter()
+
+        routine.run(stop_signal=stop_signal)
+
+        self.assertEqual(len(recorded_commands), 2)
+
+        self.assertEqual(recorded_commands[0][0], "first-command")
+        self.assertAlmostEqual(recorded_commands[0][1], start_time + 0.1, delta=0.2)
+
+        self.assertEqual(recorded_commands[1][0], "stop")
+        self.assertAlmostEqual(recorded_commands[1][1], start_time + 0.3, delta=0.2)
+
+        self.assertEqual(stop_signal.value, 1)
