@@ -2,6 +2,8 @@ import multiprocessing
 import sched
 import time
 
+from data_gateway import stop_gateway
+
 
 logger = multiprocessing.get_logger()
 
@@ -55,8 +57,7 @@ class Routine:
             scheduler.run(blocking=True)
 
             if self.period is None:
-                logger.info("Sending stop signal.")
-                stop_signal.value = 1
+                logger.info("Routine finished.")
                 return
 
             elapsed_time = time.perf_counter() - cycle_start_time
@@ -64,8 +65,7 @@ class Routine:
 
             if self.stop_after:
                 if time.perf_counter() - start_time >= self.stop_after:
-                    logger.info("Sending stop signal.")
-                    stop_signal.value = 1
+                    stop_gateway(logger, stop_signal)
                     return
 
     def _wrap_action_with_logger(self, action):

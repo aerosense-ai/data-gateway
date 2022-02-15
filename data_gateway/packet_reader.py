@@ -7,7 +7,7 @@ import struct
 
 from octue.cloud import storage
 
-from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
+from data_gateway import MICROPHONE_SENSOR_NAME, exceptions, stop_gateway
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
@@ -111,8 +111,7 @@ class PacketReader:
             pass
 
         finally:
-            logger.info("Sending stop signal.")
-            stop_signal.value = 1
+            stop_gateway(logger, stop_signal)
 
     def parse_packets(self, packet_queue, stop_signal, stop_when_no_more_data_after=False):
         """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
@@ -213,8 +212,7 @@ class PacketReader:
             pass
 
         finally:
-            logger.info("Sending stop signal.")
-            stop_signal.value = 1
+            stop_gateway(logger, stop_signal)
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is

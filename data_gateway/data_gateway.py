@@ -8,6 +8,7 @@ import time
 import serial
 from octue.log_handlers import apply_log_handler
 
+from data_gateway import stop_gateway
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
@@ -236,8 +237,7 @@ class DataGateway:
                     time.sleep(int(line.split(" ")[-1].strip()))
                 elif line == "stop\n":
                     self.serial_port.write(line.encode("utf_8"))
-                    logger.info("Sending stop signal.")
-                    stop_signal.value = 1
+                    stop_gateway(logger, stop_signal)
                     break
 
                 # Send the command to the node
