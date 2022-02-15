@@ -10,3 +10,6 @@ omit =
     venv/*
     tests/*
     */tests/*
+
+concurrency = multiprocessing
+parallel = True
