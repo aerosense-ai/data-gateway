@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 import logging
@@ -37,6 +38,14 @@ class BigQueryDataset:
         self.client = bigquery.Client()
         self.dataset_id = f"{project_name}.{dataset_name}"
 
+        self.table_names = {
+            "configuration": f"{self.dataset_id}.configuration",
+            "installation": f"{self.dataset_id}.installation",
+            "sensor_type": f"{self.dataset_id}.sensor_type",
+            "sensor_data": f"{self.dataset_id}.sensor_data",
+            "microphone_data": f"{self.dataset_id}.microphone_data",
+        }
+
     def add_sensor_data(self, data, configuration_id, installation_reference, label=None):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
@@ -48,7 +57,6 @@ class BigQueryDataset:
         :return None:
         """
         rows = []
-        table_name = f"{self.dataset_id}.sensor_data"
 
         for sensor_name, samples in data.items():
             sensor_type_reference = SENSOR_NAME_MAPPING[sensor_name]
@@ -65,7 +73,7 @@ class BigQueryDataset:
                     }
                 )
 
-        errors = self.client.insert_rows(table=self.client.get_table(table_name), rows=rows)
+        errors = self.client.insert_rows(table=self.client.get_table(self.table_names["sensor_data"]), rows=rows)
 
         if errors:
             raise ValueError(errors)
@@ -91,7 +99,7 @@ class BigQueryDataset:
         :return None:
         """
         errors = self.client.insert_rows(
-            table=self.client.get_table(f"{self.dataset_id}.microphone_data"),
+            table=self.client.get_table(self.table_names["microphone_data"]),
             rows=[
                 {
                     "path": path,
@@ -122,7 +130,7 @@ class BigQueryDataset:
         metadata = json.dumps(metadata or {})
 
         errors = self.client.insert_rows(
-            table=self.client.get_table(f"{self.dataset_id}.sensor_type"),
+            table=self.client.get_table(self.table_names["sensor_type"]),
             rows=[
                 {
                     "reference": reference,
@@ -152,12 +160,12 @@ class BigQueryDataset:
         :raise ValueError: if the addition fails
         :return None:
         """
-        table_name = f"{self.dataset_id}.installation"
-
         installation_already_exists = (
             len(
                 list(
-                    self.client.query(f"SELECT 1 FROM `{table_name}` WHERE `reference`='{reference}' LIMIT 1").result()
+                    self.client.query(
+                        f"SELECT 1 FROM `{self.table_names['installation']}` WHERE `reference`='{reference}' LIMIT 1"
+                    ).result()
                 )
             )
             > 0
@@ -169,7 +177,7 @@ class BigQueryDataset:
             )
 
         errors = self.client.insert_rows(
-            table=self.client.get_table(table_name),
+            table=self.client.get_table(self.table_names["installation"]),
             rows=[
                 {
                     "reference": reference,
@@ -195,7 +203,7 @@ class BigQueryDataset:
         :raise ValueError: if the addition fails
         :return str: UUID of the configuration
         """
-        table_name = f"{self.dataset_id}.configuration"
+        configuration = copy.deepcopy(configuration)
 
         # Installation data is stored in a separate column, so pop it before the next step.
         installation_data = configuration.pop("installation_data")
@@ -205,7 +213,7 @@ class BigQueryDataset:
 
         configurations = list(
             self.client.query(
-                f"SELECT id FROM `{table_name}` WHERE `software_configuration_hash`='{software_configuration_hash}' "
+                f"SELECT id FROM `{self.table_names['configuration']}` WHERE `software_configuration_hash`='{software_configuration_hash}' "
                 f"LIMIT 1"
             ).result()
         )
@@ -221,7 +229,7 @@ class BigQueryDataset:
         installation_data_hash = blake3(installation_data_json.encode()).hexdigest()
 
         errors = self.client.insert_rows(
-            table=self.client.get_table(table_name),
+            table=self.client.get_table(self.table_names["configuration"]),
             rows=[
                 {
                     "id": configuration_id,

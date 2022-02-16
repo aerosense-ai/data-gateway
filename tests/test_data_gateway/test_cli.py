@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import time
 from unittest import mock
 from unittest.mock import call
 
@@ -8,13 +9,14 @@ import requests
 from click.testing import CliRunner
 
 from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
+from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
 from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
 from tests.base import BaseTestCase
 
 
-CONFIGURATION_PATH = os.path.join(os.path.dirname(__file__), "valid_configuration.json")
+CONFIGURATION_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "valid_configuration.json")
 
 
 class EnvironmentVariableRemover:
@@ -74,6 +76,7 @@ class TestStart(BaseTestCase):
                     "start",
                     "--interactive",
                     "--save-locally",
+                    "--no-upload-to-cloud",
                     "--use-dummy-serial-port",
                     f"--output-dir={temporary_directory}",
                 ],
@@ -82,28 +85,6 @@ class TestStart(BaseTestCase):
 
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
-
-    def test_start_with_default_output_directory(self):
-        """Ensure the gateway can be started via the CLI with a default output directory."""
-        initial_directory = os.getcwd()
-
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            os.chdir(temporary_directory)
-
-            result = CliRunner().invoke(
-                gateway_cli,
-                [
-                    "start",
-                    "--interactive",
-                    "--save-locally",
-                    "--use-dummy-serial-port",
-                ],
-                input="sleep 2\nstop\n",
-            )
-
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
-            os.chdir(initial_directory)
 
     def test_commands_are_recorded_in_interactive_mode(self):
         """Ensure commands given in interactive mode are recorded."""
@@ -160,7 +141,7 @@ class TestStart(BaseTestCase):
     def test_log_level_can_be_set(self):
         """Test that the log level can be set."""
         with tempfile.TemporaryDirectory() as temporary_directory:
-            with self.assertLogs(level="DEBUG") as mock_logger:
+            with mock.patch("octue.log_handlers.logging.StreamHandler.emit") as mock_emit:
                 result = CliRunner().invoke(
                     gateway_cli,
                     [
@@ -180,8 +161,8 @@ class TestStart(BaseTestCase):
 
                 debug_message_found = False
 
-                for message in mock_logger.output:
-                    if "DEBUG" in message:
+                for record in mock_emit.call_args_list:
+                    if record.args[0].levelname == "DEBUG":
                         debug_message_found = True
                         break
 
@@ -191,26 +172,21 @@ class TestStart(BaseTestCase):
         """Ensure the gateway can be started and stopped via the CLI in interactive mode."""
         with tempfile.TemporaryDirectory() as temporary_directory:
             with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-                with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        [
-                            "start",
-                            "--interactive",
-                            "--save-locally",
-                            "--no-upload-to-cloud",
-                            "--use-dummy-serial-port",
-                            f"--output-dir={temporary_directory}",
-                        ],
-                        input="stop\n",
-                    )
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "start",
+                        "--interactive",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
+                        "--use-dummy-serial-port",
+                        f"--output-dir={temporary_directory}",
+                    ],
+                    input="stop\n",
+                )
 
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
-
-            self.assertTrue(
-                any(call_arg[0][0].msg == "Stopping gateway." for call_arg in mock_local_logger_emit.call_args_list)
-            )
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
 
     def test_save_locally(self):
         """Ensure `--save-locally` mode writes data to disk."""
@@ -236,6 +212,8 @@ class TestStart(BaseTestCase):
 
                 session_subdirectory = [item for item in os.scandir(temporary_directory) if item.is_dir()][0].name
 
+                # Wait for the parser process to receive stop signal and persist the window it has open.
+                time.sleep(2)
                 with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
                     data = json.loads(f.read())
 
@@ -248,26 +226,27 @@ class TestStart(BaseTestCase):
 
     def test_start_with_config_file(self):
         """Ensure a configuration file can be provided via the CLI."""
-        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
-            with mock.patch("logging.StreamHandler.emit") as mock_local_logger_emit:
-                with tempfile.TemporaryDirectory() as temporary_directory:
-                    result = CliRunner().invoke(
-                        gateway_cli,
-                        [
-                            "start",
-                            "--interactive",
-                            "--save-locally",
-                            "--no-upload-to-cloud",
-                            "--use-dummy-serial-port",
-                            f"--config-file={CONFIGURATION_PATH}",
-                            f"--output-dir={temporary_directory}",
-                        ],
-                        input="stop\n",
-                    )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with mock.patch(
+                "data_gateway.data_gateway.Configuration.from_dict", return_value=Configuration()
+            ) as mock_configuration_from_dict:
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "start",
+                        "--interactive",
+                        "--save-locally",
+                        "--no-upload-to-cloud",
+                        "--use-dummy-serial-port",
+                        f"--config-file={CONFIGURATION_PATH}",
+                        f"--output-dir={temporary_directory}",
+                    ],
+                    input="stop\n",
+                )
 
-            self.assertIsNone(result.exception)
-            self.assertEqual(result.exit_code, 0)
-            self.assertIn("Loaded configuration file", mock_local_logger_emit.call_args_list[0][0][0].msg)
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+        mock_configuration_from_dict.assert_called()
 
 
 class TestCreateInstallation(BaseTestCase):

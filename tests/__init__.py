@@ -1,10 +1,9 @@
 from octue.log_handlers import apply_log_handler
 
-from data_gateway import LOG_FORMATTER
 from data_gateway.configuration import Configuration
 
 
-apply_log_handler(formatter=LOG_FORMATTER)
+apply_log_handler(include_process_name=True)
 
 
 TEST_PROJECT_NAME = "a-project-name"

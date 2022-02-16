@@ -1,31 +1,36 @@
-import datetime
+Startimport datetime
 import json
-import logging
+import multiprocessing
 import os
 import queue
 import struct
-import threading
 
 from octue.cloud import storage
 
-from data_gateway import MICROPHONE_SENSOR_NAME, exceptions
+from data_gateway import MICROPHONE_SENSOR_NAME, exceptions, stop_gateway
 from data_gateway.configuration import Configuration
-from data_gateway.persistence import BatchingFileWriter, BatchingUploader, NoOperationContextManager
+from data_gateway.persistence import (
+    DEFAULT_OUTPUT_DIRECTORY,
+    BatchingFileWriter,
+    BatchingUploader,
+    NoOperationContextManager,
+)
 
 
-logger = logging.getLogger(__name__)
+logger = multiprocessing.get_logger()
 
 
 class PacketReader:
-    """A serial port packet reader.
+    """A serial port packet reader. Note that timestamp synchronisation is unavailable with the current sensor hardware
+    so the system clock is used instead.
 
     :param bool save_locally: save data windows locally
     :param bool upload_to_cloud: upload data windows to Google cloud
-    :param str|None output_directory:
-    :param float window_size: length of time window in seconds
+    :param str|None output_directory: the directory in which to save data in the cloud bucket or local file system
+    :param float window_size: the period in seconds at which data is persisted.
     :param str|None project_name: name of Google Cloud project to upload to
-    :param str|None bucket_name: name of Google Cloud project to upload to
-    :param data_gateway.configuration.Configuration|None configuration:
+    :param str|None bucket_name: name of Google Cloud bucket to upload to
+    :param data_gateway.configuration.Configuration|None configuration: the configuration for reading and parsing data
     :param bool save_csv_files: save sensor data to .csv when in interactive mode
     :return None:
     """
@@ -34,7 +39,7 @@ class PacketReader:
         self,
         save_locally,
         upload_to_cloud,
-        output_directory=None,
+        output_directory=DEFAULT_OUTPUT_DIRECTORY,
         window_size=600,
         project_name=None,
         bucket_name=None,
@@ -43,48 +48,98 @@ class PacketReader:
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
-        self.output_directory = output_directory
-        self.config = configuration or Configuration()
-        self.handles = self.config.default_handles
-        self.sleep = False
-        self.stop = False
-        self.sensor_time_offset = None
         self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
 
-        logger.warning("Timestamp synchronisation unavailable with current hardware; defaulting to using system clock.")
+        self.cloud_output_directory = storage.path.join(output_directory, self.session_subdirectory)
+        self.local_output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
+        os.makedirs(self.local_output_directory, exist_ok=True)
 
-        if upload_to_cloud:
+        self.window_size = window_size
+        self.project_name = project_name
+        self.bucket_name = bucket_name
+        self.config = configuration or Configuration()
+        self.save_csv_files = save_csv_files
+
+        self.uploader = None
+        self.writer = None
+        self.handles = self.config.default_handles
+        self.sleep = False
+        self.sensor_time_offset = None
+
+    def read_packets(self, serial_port, packet_queue, stop_signal):
+        """Read packets from a serial port and send them to the parser thread for processing and persistence.
+
+        :param serial.Serial serial_port: name of serial port to read from
+        :param queue.Queue packet_queue: a thread-safe queue to put packets on to for the parser thread to pick up
+        :return None:
+        """
+        try:
+            logger.info("Packet reader process started.")
+
+            while stop_signal.value == 0:
+                serial_data = serial_port.read()
+
+                if len(serial_data) == 0:
+                    continue
+
+                if serial_data[0] != self.config.packet_key:
+                    continue
+
+                packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
+                length = int.from_bytes(serial_port.read(), self.config.endian)
+                packet = serial_port.read(length)
+
+                if packet_type == str(self.config.type_handle_def):
+                    self.update_handles(packet)
+                    continue
+
+                # Check for bytes in serial input buffer. A full buffer results in overflow.
+                if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                    logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
+                    continue
+
+                packet_queue.put({"packet_type": packet_type, "packet": packet})
+
+        except KeyboardInterrupt:
+            pass
+
+        finally:
+            stop_gateway(logger, stop_signal)
+
+    def parse_packets(self, packet_queue, stop_signal, stop_when_no_more_data_after=False):
+        """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
+        with the correct packet type handle, then parse the payload. After parsing/processing, upload them to Google
+        Cloud storage and/or write them to disk. If any errors are raised, put them on the error queue for the main
+        thread to handle.
+
+        :param queue.Queue packet_queue: a thread-safe queue of packets provided by a reader thread
+        :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
+        :return None:
+        """
+        logger.info("Packet parser process started.")
+
+        if self.upload_to_cloud:
             self.uploader = BatchingUploader(
                 sensor_names=self.config.sensor_names,
-                project_name=project_name,
-                bucket_name=bucket_name,
-                window_size=window_size,
-                session_subdirectory=self.session_subdirectory,
-                output_directory=output_directory,
+                project_name=self.project_name,
+                bucket_name=self.bucket_name,
+                window_size=self.window_size,
+                output_directory=self.cloud_output_directory,
                 metadata={"data_gateway__configuration": self.config.to_dict()},
             )
         else:
             self.uploader = NoOperationContextManager()
 
-        if save_locally:
+        if self.save_locally:
             self.writer = BatchingFileWriter(
                 sensor_names=self.config.sensor_names,
-                window_size=window_size,
-                session_subdirectory=self.session_subdirectory,
-                output_directory=output_directory,
-                save_csv_files=save_csv_files,
+                window_size=self.window_size,
+                output_directory=self.local_output_directory,
+                save_csv_files=self.save_csv_files,
             )
         else:
             self.writer = NoOperationContextManager()
 
-    def read_packets(self, serial_port, stop_when_no_more_data=False):
-        """Read packets from a serial port and send them to a separate parser thread that will also upload them to
-        Google Cloud storage and/or write them to disk.
-
-        :param serial.Serial serial_port: name of serial port to read from
-        :param bool stop_when_no_more_data: stop reading when no more data is received from the port (for testing)
-        :return None:
-        """
         self._persist_configuration()
 
         previous_timestamp = {}
@@ -97,54 +152,58 @@ class PacketReader:
                 for _ in range(self.config.number_of_sensors[sensor_name])
             ]
 
-        with self.uploader:
-            with self.writer:
-                packet_queue = queue.Queue()
-                error_queue = queue.Queue()
+        if stop_when_no_more_data_after is False:
+            timeout = 5
+        else:
+            timeout = stop_when_no_more_data_after
 
-                parser_thread = threading.Thread(
-                    target=self._parse_payload,
-                    kwargs={"packet_queue": packet_queue, "error_queue": error_queue},
-                    daemon=True,
-                )
+        try:
+            with self.uploader:
+                with self.writer:
+                    while stop_signal.value == 0:
+                        try:
+                            packet_type, packet = packet_queue.get(timeout=timeout).values()
+                        except queue.Empty:
+                            if stop_when_no_more_data_after is not False:
+                                break
+                            continue
 
-                parser_thread.setName("ParserThread")
-                parser_thread.start()
+                        if packet_type not in self.handles:
+                            logger.error("Received packet with unknown type: %s", packet_type)
+                            continue
 
-                while not self.stop:
-                    if not error_queue.empty():
-                        raise error_queue.get()
+                        if len(packet) == 244:  # If the full data payload is received, proceed parsing it
+                            timestamp = int.from_bytes(packet[240:244], self.config.endian, signed=False) / (2 ** 16)
 
-                    # Check for bytes in serial input buffer. A full buffer may result in overflow.
-                    # if serial_port.in_waiting == self.config.serial_buffer_rx_size:
-                    #     logger.warning("Buffer is full. Some data may be lost.")
+                            data, sensor_names = self._parse_sensor_packet_data(
+                                packet_type=self.handles[packet_type],
+                                payload=packet,
+                                data=data,
+                            )
 
-                    serial_data = serial_port.read()
+                            for sensor_name in sensor_names:
+                                self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
 
-                    if len(serial_data) == 0:
-                        if stop_when_no_more_data:
-                            break
-                        continue
+                                self._timestamp_and_persist_data(
+                                    data=data,
+                                    sensor_name=sensor_name,
+                                    timestamp=timestamp,
+                                    period=self.config.period[sensor_name],
+                                )
 
-                    if serial_data[0] != self.config.packet_key:
-                        continue
+                        elif len(packet) >= 1 and self.handles[packet_type] in [
+                            "Mic 1",
+                            "Cmd Decline",
+                            "Sleep State",
+                            "Info Message",
+                        ]:
+                            self._parse_info_packet(self.handles[packet_type], packet)
 
-                    packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
-                    length = int.from_bytes(serial_port.read(), self.config.endian)
-                    payload = serial_port.read(length)
+        except KeyboardInterrupt:
+            pass
 
-                    if packet_type == str(self.config.type_handle_def):
-                        self.update_handles(payload)
-                        continue
-
-                    packet_queue.put(
-                        {
-                            "packet_type": packet_type,
-                            "payload": payload,
-                            "data": data,
-                            "previous_timestamp": previous_timestamp,
-                        }
-                    )
+        finally:
+            stop_gateway(logger, stop_signal)
 
     def update_handles(self, payload):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
@@ -176,7 +235,7 @@ class PacketReader:
             logger.info("Successfully updated handles.")
             return
 
-        logger.error("Handle error: %s %s", start_handle, end_handle)
+        logger.error("Handle error: start handle is %s, end handle is %s.", start_handle, end_handle)
 
     def _persist_configuration(self):
         """Persist the configuration to disk and/or cloud storage.
@@ -186,60 +245,15 @@ class PacketReader:
         configuration_dictionary = self.config.to_dict()
 
         if self.save_locally:
-            with open(
-                os.path.abspath(os.path.join(self.output_directory, self.session_subdirectory, "configuration.json")),
-                "w",
-            ) as f:
+            with open(os.path.join(self.local_output_directory, "configuration.json"), "w") as f:
                 json.dump(configuration_dictionary, f)
 
         if self.upload_to_cloud:
             self.uploader.client.upload_from_string(
                 string=json.dumps(configuration_dictionary),
                 bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(
-                    self.output_directory, self.session_subdirectory, "configuration.json"
-                ),
+                path_in_bucket=storage.path.join(self.cloud_output_directory, "configuration.json"),
             )
-
-    def _parse_payload(self, packet_queue, error_queue):
-        """Get packets from a thread-safe packet queue, check if a full payload has been received (i.e. correct length)
-        with the correct packet type handle, then parse the payload. After parsing/processing, upload them to Google
-        Cloud storage and/or write them to disk. If any errors are raised, put them on the error queue for the reader
-        thread to handle.
-
-        :param queue.Queue packet_queue: a thread-safe queue of packets provided by the reader thread
-        :param queue.Queue error_queue: a thread-safe queue to put any exceptions on to for th reader thread to handle
-        :return None:
-        """
-        try:
-            while not self.stop:
-                packet_type, payload, data, previous_timestamp = packet_queue.get().values()
-
-                if packet_type not in self.handles:
-                    logger.warning("Received packet with unknown type: %s", packet_type)
-                    continue
-
-                if len(payload) == 244:  # If the full data payload is received, proceed parsing it
-                    timestamp = int.from_bytes(payload[240:244], self.config.endian, signed=False) / (2 ** 16)
-
-                    data, sensor_names = self._parse_sensor_packet_data(self.handles[packet_type], payload, data)
-
-                    for sensor_name in sensor_names:
-                        self._check_for_packet_loss(sensor_name, timestamp, previous_timestamp)
-                        self._timestamp_and_persist_data(data, sensor_name, timestamp, self.config.period[sensor_name])
-
-                    continue
-
-                if self.handles[packet_type] in [
-                    "Mic 1",
-                    "Cmd Decline",
-                    "Sleep State",
-                    "Info Message",
-                ]:
-                    self._parse_info_packet(self.handles[packet_type], payload, previous_timestamp)
-
-        except Exception as e:
-            error_queue.put(e)
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.
@@ -453,7 +467,7 @@ class PacketReader:
         :return None:
         """
         if previous_timestamp[sensor_name] == -1:
-            logger.info("Received first %s packet" % sensor_name)
+            logger.info("Received first %s packet." % sensor_name)
         else:
             expected_current_timestamp = (
                 previous_timestamp[sensor_name]
