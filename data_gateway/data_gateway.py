@@ -18,7 +18,6 @@ from data_gateway.routine import Routine
 
 
 logger = multiprocessing.get_logger()
-apply_log_handler(logger=logger, include_process_name=True)
 
 # Ignore logs from the dummy serial port.
 logging.getLogger("data_gateway.dummy_serial.dummy_serial").setLevel(logging.WARNING)
@@ -73,8 +72,11 @@ class DataGateway:
         save_csv_files=False,
         use_dummy_serial_port=False,
         log_level=logging.INFO,
+        stop_sensors_on_exit=True,
     ):
-        # Set multiprocessed logger level.
+        # Add the Octue log handler and set the log level for the `multiprocessing` logger.
+        apply_log_handler(logger=logger, include_process_name=True)
+
         logger.setLevel(log_level)
         for handler in logger.handlers:
             handler.setLevel(log_level)
@@ -108,6 +110,7 @@ class DataGateway:
         )
 
         self.routine = self._load_routine(routine_path=routine_path)
+        self.stop_sensors_on_exit = stop_sensors_on_exit
 
     def start(self, stop_when_no_more_data_after=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
@@ -170,6 +173,9 @@ class DataGateway:
                 time.sleep(5)
 
         finally:
+            if not self.stop_sensors_on_exit:
+                return
+
             for command in STOP_COMMANDS:
                 self.serial_port.write(command.encode("utf_8"))
                 logger.info("Sent %r command.", command)
