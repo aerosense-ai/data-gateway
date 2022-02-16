@@ -451,7 +451,6 @@ class PacketReader:
                     cycle,
                     state_of_charge,
                 )
-                self._add_data_to_current_window("Battery State", {"Battery State": [voltage, cycle, state_of_charge]})
 
             return
 
