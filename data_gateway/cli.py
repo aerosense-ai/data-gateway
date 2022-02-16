@@ -244,7 +244,7 @@ def create_installation(config_file):
     if not response.status_code == 200:
         raise HTTPError(f"{response.status_code}: {response.text}")
 
-    logger.info("Installation created: %r", parameters)
+    print(f"Installation created: {parameters!r}")
 
 
 @gateway_cli.command()
@@ -298,7 +298,7 @@ def add_sensor_type(name, description, measuring_unit, metadata):
     if not response.status_code == 200:
         raise HTTPError(f"{response.status_code}: {response.text}")
 
-    logger.info("New sensor type added: %r", parameters)
+    print(f"New sensor type added: {parameters!r}")
 
 
 @gateway_cli.command()
