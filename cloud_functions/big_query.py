@@ -18,6 +18,7 @@ SENSOR_NAME_MAPPING = {
     "Mics": "microphone",
     "Baros_P": "barometer",
     "Baros_T": "barometer_thermometer",
+    "Diff_Baros": "differential_barometer",
     "Acc": "accelerometer",
     "Gyro": "gyroscope",
     "Mag": "magnetometer",
