@@ -1,4 +1,4 @@
-Startimport datetime
+import datetime
 import json
 import multiprocessing
 import os
@@ -191,13 +191,15 @@ class PacketReader:
                                     period=self.config.period[sensor_name],
                                 )
 
-                        elif len(packet) >= 1 and self.handles[packet_type] in [
+                            continue
+
+                        if self.handles[packet_type] in [
                             "Mic 1",
                             "Cmd Decline",
                             "Sleep State",
                             "Info Message",
                         ]:
-                            self._parse_info_packet(self.handles[packet_type], packet)
+                            self._parse_info_packet(self.handles[packet_type], packet, previous_timestamp)
 
         except KeyboardInterrupt:
             pass
