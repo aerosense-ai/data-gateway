@@ -130,6 +130,7 @@ class TestStart(BaseTestCase):
                             "--use-dummy-serial-port",
                             f"--routine-file={routine_path}",
                             f"--output-dir={temporary_directory}",
+                            "--no-stop-sensors-on-exit",
                         ],
                     )
 
