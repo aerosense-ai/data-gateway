@@ -15,6 +15,7 @@ steps:
   - --region=europe-west6
   - --set-env-vars=SOURCE_PROJECT_NAME=aerosense-twined,DESTINATION_PROJECT_NAME=aerosense-twined,DESTINATION_BUCKET_NAME=test-data-gateway-processed-data,BIG_QUERY_DATASET_NAME=test_greta
   - --timeout=540
+
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   id: Deploy create-installation cloud function
   args:
@@ -29,6 +30,22 @@ steps:
   - --security-level=secure-always
   - --region=europe-west6
   - --set-env-vars=DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
+
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  id: Deploy add-sensor-type cloud function
+  args:
+  - gcloud
+  - functions
+  - deploy
+  - add-sensor-type
+  - --source=cloud_functions
+  - --entry-point=add_sensor_type
+  - --runtime=python39
+  - --trigger-http
+  - --security-level=secure-always
+  - --region=europe-west6
+  - --set-env-vars=DESTINATION_PROJECT_NAME=aerosense-twined,BIG_QUERY_DATASET_NAME=greta
+
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   id: Deploy ingress-eu cloud function
   args:
