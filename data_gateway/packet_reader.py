@@ -441,16 +441,17 @@ class PacketReader:
             logger.info(self.config.info_type[info_index])
 
             if self.config.info_type[info_index] == "Battery info":
-                voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
-                cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
-                state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
+                voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False) / 1000000
+                cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False) / 100
+                state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False) / 256
 
                 logger.info(
                     "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
-                    voltage / 1000000,
-                    cycle / 100,
-                    state_of_charge / 256,
+                    voltage,
+                    cycle,
+                    state_of_charge,
                 )
+                self._add_data_to_current_window("Battery State", [voltage, cycle, state_of_charge])
 
             return
 
