@@ -451,7 +451,7 @@ class PacketReader:
                     cycle,
                     state_of_charge,
                 )
-                self._add_data_to_current_window("Battery State", [voltage, cycle, state_of_charge])
+                self._add_data_to_current_window("Battery State", {"Battery State": [voltage, cycle, state_of_charge]})
 
             return
 
@@ -481,8 +481,7 @@ class PacketReader:
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
 
                 if self.sleep:
-                    # Only Constat comes during sleep
-                    # TODO add different period for constat during sleep
+                    # Only Constat (Connections statistics) comes during sleep
                     return
 
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
