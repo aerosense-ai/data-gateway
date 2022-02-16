@@ -2,6 +2,7 @@ import copy
 import json
 import os
 import sys
+import types
 from unittest.mock import MagicMock, patch
 
 from flask import Flask, request
@@ -11,6 +12,7 @@ from octue.utils.encoders import OctueJSONEncoder
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
+from tests.test_cloud_functions.mocks import MockBigQueryClient
 
 
 # Manually add the cloud_functions package to the path (its imports have to be done in a certain way for Google Cloud
@@ -18,7 +20,12 @@ from tests.test_cloud_functions import REPOSITORY_ROOT
 sys.path.insert(0, os.path.abspath(os.path.join(REPOSITORY_ROOT, "cloud_functions")))
 
 from cloud_functions import main  # noqa
-from cloud_functions.main import InstallationWithSameNameAlreadyExists, create_installation  # noqa
+from cloud_functions.main import (  # noqa
+    InstallationWithSameNameAlreadyExists,
+    SensorTypeWithSameReferenceAlreadyExists,
+    add_sensor_type,
+    create_installation,
+)
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
@@ -108,6 +115,117 @@ class TestCleanAndUploadWindow(BaseTestCase):
         context.event_type = "google.storage.object.finalize"
 
 
+class TestAddSensorType(BaseTestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Create a test Flask app.
+
+        :return None:
+        """
+        app = Flask(__name__)
+        cls.app = app
+
+        @app.route("/", methods=["POST"])
+        def test_add_sensor_type():
+            return add_sensor_type(request)
+
+    def test_error_raised_if_non_post_method_used(self):
+        """Test that a 405 error is raised if a method other than `POST` is used on the endpoint."""
+        with self.app.test_client() as client:
+            response = client.get("/")
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_add_sensor_type_with_invalid_data(self):
+        """Test that invalid data sent to the creation endpoint results in a 400 status code and a relevant error."""
+        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
+            with patch("cloud_functions.main.BigQueryDataset"):
+                with self.app.test_client() as client:
+
+                    for expected_error_field, data in (
+                        ("reference", {"reference": "not slugified", "name": "not slugified"}),
+                        ("reference", {"reference": None, "name": "no name"}),
+                        ("name", {"reference": "my-sensor-type", "name": None}),
+                    ):
+                        with self.subTest(expected_error_field=expected_error_field, data=data):
+                            response = client.post(json=data)
+                            self.assertEqual(response.status_code, 400)
+                            self.assertIn(expected_error_field, response.json["fieldErrors"])
+
+    def test_error_raised_if_sensor_type_already_exists(self):
+        """Test that a 409 error is returned if the sensor type reference sent to the endpoint already exists in the
+        BigQuery dataset.
+        """
+        mock_big_query_client = MockBigQueryClient(
+            expected_query_result=[types.SimpleNamespace(reference="my-sensor_type")]
+        )
+
+        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
+            with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
+                with self.app.test_client() as client:
+                    response = client.post(
+                        json={
+                            "reference": "my-sensor-type",
+                            "name": "My sensor type",
+                        }
+                    )
+
+        self.assertEqual(response.status_code, 409)
+
+    def test_error_raised_if_internal_server_error_occurs(self):
+        """Test that a 500 error is returned if an unspecified error occurs in the endpoint."""
+        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
+            with patch("cloud_functions.main.BigQueryDataset.add_sensor_type", side_effect=Exception()):
+                with self.app.test_client() as client:
+                    response = client.post(
+                        json={
+                            "reference": "my-sensor-type",
+                            "name": "My sensor type",
+                        }
+                    )
+
+        self.assertEqual(response.status_code, 500)
+
+    def test_add_sensor_type_with_valid_data_for_all_fields(self):
+        """Test sending valid data for all fields to the sensor type creation endpoint works and returns a 200 status
+        code.
+        """
+        data = {
+            "reference": "my-sensor-type",
+            "name": "My sensor type",
+            "description": "This is a sensor of a type.",
+            "measuring_unit": "m/s",
+            "metadata": {"something": ["blah", "blah"]},
+        }
+
+        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
+            with patch("cloud_functions.main.BigQueryDataset"):
+                with self.app.test_client() as client:
+                    response = client.post(json=data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, data)
+
+    def test_add_sensor_type_with_only_required_inputs(self):
+        """Test sending valid data for only required fields to the sensor type creation endpoint works and returns a
+        200 status code.
+        """
+        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
+            with patch("cloud_functions.main.BigQueryDataset"):
+                with self.app.test_client() as client:
+                    response = client.post(
+                        json={
+                            "reference": "my-sensor-type",
+                            "name": "My sensor type",
+                        }
+                    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["description"], None)
+        self.assertEqual(response.json["measuring_unit"], None)
+        self.assertEqual(response.json["metadata"], None)
+
+
 class TestCreateInstallation(BaseTestCase):
     @classmethod
     def setUpClass(cls):
@@ -150,10 +268,10 @@ class TestCreateInstallation(BaseTestCase):
                             {"reference": "is-slugified", "hardware_version": "0.0.1", "latitude": "not-a-number"},
                         ),
                     ):
-                        response = client.post(json=data)
-
-                        self.assertEqual(response.status_code, 400)
-                        self.assertIn(expected_error_field, response.json["fieldErrors"])
+                        with self.subTest(expected_error_field=expected_error_field, data=data):
+                            response = client.post(json=data)
+                            self.assertEqual(response.status_code, 400)
+                            self.assertIn(expected_error_field, response.json["fieldErrors"])
 
     def test_error_raised_if_installation_reference_already_exists(self):
         """Test that a 409 error is returned if the installation reference sent to the endpoint already exists in the
