@@ -24,6 +24,9 @@ apply_log_handler(logger=logger, include_process_name=True)
 logging.getLogger("data_gateway.dummy_serial.dummy_serial").setLevel(logging.WARNING)
 
 
+STOP_COMMANDS = ("stopBaros", "stopIMU", "stopMics")
+
+
 class DataGateway:
     """A class for running the data gateway to collect wind turbine sensor data. The gateway is run as three processes:
     1. The `MainProcess` process, which starts the other two processes and sends commands to the serial port (via a
@@ -142,28 +145,34 @@ class DataGateway:
         reader_process.start()
         parser_process.start()
 
-        if self.interactive:
-            interactive_commands_thread = threading.Thread(
-                name="InteractiveCommandsThread",
-                target=self._send_commands_from_stdin_to_sensors,
-                kwargs={"stop_signal": stop_signal},
-                daemon=True,
-            )
+        try:
+            if self.interactive:
+                interactive_commands_thread = threading.Thread(
+                    name="InteractiveCommandsThread",
+                    target=self._send_commands_from_stdin_to_sensors,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
 
-            interactive_commands_thread.start()
+                interactive_commands_thread.start()
 
-        elif self.routine is not None:
-            routine_thread = threading.Thread(
-                name="RoutineCommandsThread",
-                target=self.routine.run,
-                kwargs={"stop_signal": stop_signal},
-                daemon=True,
-            )
-            routine_thread.start()
+            elif self.routine is not None:
+                routine_thread = threading.Thread(
+                    name="RoutineCommandsThread",
+                    target=self.routine.run,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
+                routine_thread.start()
 
-        # Wait for the stop signal before exiting.
-        while stop_signal.value == 0:
-            time.sleep(5)
+            # Wait for the stop signal before exiting.
+            while stop_signal.value == 0:
+                time.sleep(5)
+
+        finally:
+            for command in STOP_COMMANDS:
+                self.serial_port.write(command.encode("utf_8"))
+                logger.info("Sent %r command.", command)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.
