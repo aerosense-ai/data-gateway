@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+import types
 from unittest.mock import Mock, patch
 
 from tests.base import BaseTestCase
@@ -15,6 +16,7 @@ from cloud_functions.big_query import (  # noqa
     BigQueryDataset,
     ConfigurationAlreadyExists,
     InstallationWithSameNameAlreadyExists,
+    SensorTypeWithSameReferenceAlreadyExists,
 )
 
 
@@ -114,11 +116,14 @@ class TestBigQueryDataset(BaseTestCase):
         self.assertEqual(mock_big_query_client.rows, expected_rows)
 
     def test_add_new_sensor_type(self):
-        """Test that new sensor types can be added and that their references are their names slugified."""
-        mock_big_query_client = MockBigQueryClient()
+        """Test that new sensor types can be added."""
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
-            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(name="My sensor_Name")
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(
+                name="My sensor_Name",
+                reference="my-sensor-name",
+            )
 
         self.assertEqual(
             mock_big_query_client.rows[0],
@@ -130,6 +135,18 @@ class TestBigQueryDataset(BaseTestCase):
                 "metadata": "{}",
             },
         )
+
+    def test_add_new_sensor_type_raises_error_if_sensor_type_already_exists(self):
+        """Test that an error is raised if attempting to add a new sensor type that already exists."""
+        mock_big_query_client = MockBigQueryClient(
+            expected_query_result=[types.SimpleNamespace(reference="my-sensor-type")]
+        )
+
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
+
+            with self.assertRaises(SensorTypeWithSameReferenceAlreadyExists):
+                dataset.add_sensor_type(name="My sensor_Type", reference="my-sensor-type")
 
     def test_add_installation(self):
         """Test that installations can be added."""
@@ -158,7 +175,9 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation_raises_error_if_installation_already_exists(self):
         """Test that an error is raised if attempting to add an installation that already exists."""
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[1])
+        mock_big_query_client = MockBigQueryClient(
+            expected_query_result=[types.SimpleNamespace(reference="my-installation")]
+        )
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")

@@ -6,9 +6,12 @@ import uuid
 
 from blake3 import blake3
 from google.cloud import bigquery
-from slugify import slugify
 
-from exceptions import ConfigurationAlreadyExists, InstallationWithSameNameAlreadyExists
+from exceptions import (
+    ConfigurationAlreadyExists,
+    InstallationWithSameNameAlreadyExists,
+    SensorTypeWithSameReferenceAlreadyExists,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +21,7 @@ SENSOR_NAME_MAPPING = {
     "Mics": "microphone",
     "Baros_P": "barometer",
     "Baros_T": "barometer_thermometer",
+    "Diff_Baros": "differential_barometer",
     "Acc": "accelerometer",
     "Gyro": "gyroscope",
     "Mag": "magnetometer",
@@ -116,18 +120,31 @@ class BigQueryDataset:
 
         logger.info("Added microphone data location and metadata to BigQuery dataset %r.", self.dataset_id)
 
-    def add_sensor_type(self, name, description=None, measuring_unit=None, metadata=None):
+    def add_sensor_type(self, name, reference, description=None, measuring_unit=None, metadata=None):
         """Add a new sensor type to the BigQuery dataset. The sensor name is slugified on receipt.
 
         :param str name: the name of the new sensor
+        :param str reference: the reference name for the sensor (usually slugified)
         :param str|None description: a description of what the sensor is and does
         :param str|None measuring_unit: the unit the sensor measures its relevant quantity in
         :param dict|None metadata: any useful metadata about the sensor e.g. sensitivities
         :raise ValueError: if the addition fails
         :return None:
         """
-        reference = slugify(name)
-        metadata = json.dumps(metadata or {})
+        sensor_type_already_exists = self._get_field_if_exists(
+            table_name=self.table_names["sensor_type"],
+            field_name="reference",
+            comparison_field_name="reference",
+            value=reference,
+        )
+
+        if sensor_type_already_exists:
+            raise SensorTypeWithSameReferenceAlreadyExists(
+                f"A sensor type with the reference {reference!r} already exists."
+            )
+
+        if not isinstance(metadata, str):
+            metadata = json.dumps(metadata or {})
 
         errors = self.client.insert_rows(
             table=self.client.get_table(self.table_names["sensor_type"]),
@@ -160,15 +177,11 @@ class BigQueryDataset:
         :raise ValueError: if the addition fails
         :return None:
         """
-        installation_already_exists = (
-            len(
-                list(
-                    self.client.query(
-                        f"SELECT 1 FROM `{self.table_names['installation']}` WHERE `reference`='{reference}' LIMIT 1"
-                    ).result()
-                )
-            )
-            > 0
+        installation_already_exists = self._get_field_if_exists(
+            table_name=self.table_names["installation"],
+            field_name="reference",
+            comparison_field_name="reference",
+            value=reference,
         )
 
         if installation_already_exists:
@@ -211,17 +224,17 @@ class BigQueryDataset:
         software_configuration_json = json.dumps(configuration)
         software_configuration_hash = blake3(software_configuration_json.encode()).hexdigest()
 
-        configurations = list(
-            self.client.query(
-                f"SELECT id FROM `{self.table_names['configuration']}` WHERE `software_configuration_hash`='{software_configuration_hash}' "
-                f"LIMIT 1"
-            ).result()
+        configuration_id = self._get_field_if_exists(
+            table_name=self.table_names["configuration"],
+            field_name="id",
+            comparison_field_name="software_configuration_hash",
+            value=software_configuration_hash,
         )
 
-        if len(configurations) > 0:
+        if configuration_id:
             raise ConfigurationAlreadyExists(
-                f"An identical configuration already exists in the database with UUID {configurations[0].id}.",
-                configurations[0].id,
+                f"An identical configuration already exists in the database with UUID {configuration_id}.",
+                configuration_id,
             )
 
         configuration_id = str(uuid.uuid4())
@@ -246,3 +259,22 @@ class BigQueryDataset:
 
         logger.info("Added configuration %r to BigQuery dataset %r.", configuration_id, self.dataset_id)
         return configuration_id
+
+    def _get_field_if_exists(self, table_name, field_name, comparison_field_name, value):
+        """Get the value of the given field for the row of the given table for which the comparison field has the
+        given value.
+
+        :param str table_name:
+        :param str field_name:
+        :param str comparison_field_name:
+        :param any value:
+        :return str|None:
+        """
+        result = list(
+            self.client.query(
+                f"SELECT {field_name} FROM `{table_name}` WHERE `{comparison_field_name}`='{value}' LIMIT 1"
+            ).result()
+        )
+
+        if result:
+            return getattr(result[0], field_name)

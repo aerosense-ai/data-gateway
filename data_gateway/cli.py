@@ -14,6 +14,7 @@ from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
 CREATE_INSTALLATION_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/create-installation"
+ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL = "https://europe-west6-aerosense-twined.cloudfunctions.net/add-sensor-type"
 
 global_cli_context = {}
 
@@ -251,7 +252,61 @@ def create_installation(config_file):
     if not response.status_code == 200:
         raise HTTPError(f"{response.status_code}: {response.text}")
 
-    logger.info("Installation created: %r", parameters)
+    print(f"Installation created: {parameters!r}")
+
+
+@gateway_cli.command()
+@click.argument("name", type=str)
+@click.option(
+    "--description",
+    type=str,
+    default=None,
+    help="A description of the sensor type.",
+)
+@click.option(
+    "--measuring-unit",
+    type=str,
+    default=None,
+    help="The SI unit that the sensor type measures the relevant quantity in.",
+)
+@click.option(
+    "--metadata",
+    type=str,
+    default=None,
+    help="Other metadata about the sensor type in JSON format.",
+)
+def add_sensor_type(name, description, measuring_unit, metadata):
+    """Add a sensor type to the BigQuery dataset.
+
+    NAME: The name of the sensor type
+    """
+    reference = slugify(name)
+
+    while True:
+        user_confirmation = input(f"Add sensor type with reference {reference!r}? [Y/n]\n")
+
+        if user_confirmation.upper() == "N":
+            return
+
+        if user_confirmation.upper() in {"Y", ""}:
+            break
+
+    # Required parameters:
+    parameters = {"name": name, "reference": reference}
+
+    # Optional parameters:
+    for name, parameter in (("description", description), ("measuring_unit", measuring_unit), ("metadata", metadata)):
+        if parameter:
+            parameters[name] = parameter
+
+    print("Creating...")
+
+    response = requests.post(url=ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL, json=parameters)
+
+    if not response.status_code == 200:
+        raise HTTPError(f"{response.status_code}: {response.text}")
+
+    print(f"New sensor type added: {parameters!r}")
 
 
 @gateway_cli.command()

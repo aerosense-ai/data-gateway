@@ -25,3 +25,11 @@ class CreateInstallationForm(FlaskForm):
     sensor_coordinates = StringField("Sensor coordinates", [validators.DataRequired()])
     longitude = FloatField("Longitude", [validators.Optional()])
     latitude = FloatField("Latitude", [validators.Optional()])
+
+
+class AddSensorTypeForm(FlaskForm):
+    name = StringField("Name", [validators.DataRequired()])
+    reference = StringField("Reference", [validators.DataRequired(), SlugifiedValidator()])
+    description = StringField("Description", [validators.Optional()])
+    measuring_unit = StringField("Measuring unit", [validators.Optional()])
+    metadata = StringField("Metadata", [validators.Optional()])

@@ -26,7 +26,7 @@ class MockBigQueryClient:
         :param str query:
         :return MockQueryResult:
         """
-        self.query = query
+        self._query = query
         return MockQueryResult(result=self.expected_query_result)
 
 
