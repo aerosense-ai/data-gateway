@@ -129,6 +129,17 @@ class TestAddSensorType(BaseTestCase):
         def test_add_sensor_type():
             return add_sensor_type(request)
 
+        os.environ = {**os.environ, "DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove the test environment variables from the environment.
+
+        :return None:
+        """
+        del os.environ["DESTINATION_PROJECT_NAME"]
+        del os.environ["BIG_QUERY_DATASET_NAME"]
+
     def test_error_raised_if_non_post_method_used(self):
         """Test that a 405 error is raised if a method other than `POST` is used on the endpoint."""
         with self.app.test_client() as client:
@@ -138,19 +149,17 @@ class TestAddSensorType(BaseTestCase):
 
     def test_add_sensor_type_with_invalid_data(self):
         """Test that invalid data sent to the creation endpoint results in a 400 status code and a relevant error."""
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset"):
-                with self.app.test_client() as client:
-
-                    for expected_error_field, data in (
-                        ("reference", {"reference": "not slugified", "name": "not slugified"}),
-                        ("reference", {"reference": None, "name": "no name"}),
-                        ("name", {"reference": "my-sensor-type", "name": None}),
-                    ):
-                        with self.subTest(expected_error_field=expected_error_field, data=data):
-                            response = client.post(json=data)
-                            self.assertEqual(response.status_code, 400)
-                            self.assertIn(expected_error_field, response.json["fieldErrors"])
+        with patch("cloud_functions.main.BigQueryDataset"):
+            with self.app.test_client() as client:
+                for expected_error_field, data in (
+                    ("reference", {"reference": "not slugified", "name": "not slugified"}),
+                    ("reference", {"reference": None, "name": "no name"}),
+                    ("name", {"reference": "my-sensor-type", "name": None}),
+                ):
+                    with self.subTest(expected_error_field=expected_error_field, data=data):
+                        response = client.post(json=data)
+                        self.assertEqual(response.status_code, 400)
+                        self.assertIn(expected_error_field, response.json["fieldErrors"])
 
     def test_error_raised_if_sensor_type_already_exists(self):
         """Test that a 409 error is returned if the sensor type reference sent to the endpoint already exists in the
@@ -160,29 +169,30 @@ class TestAddSensorType(BaseTestCase):
             expected_query_result=[types.SimpleNamespace(reference="my-sensor_type")]
         )
 
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
-                with self.app.test_client() as client:
-                    response = client.post(
-                        json={
-                            "reference": "my-sensor-type",
-                            "name": "My sensor type",
-                        }
-                    )
+        with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
+            with self.app.test_client() as client:
+                response = client.post(
+                    json={
+                        "reference": "my-sensor-type",
+                        "name": "My sensor type",
+                    }
+                )
 
         self.assertEqual(response.status_code, 409)
 
     def test_error_raised_if_internal_server_error_occurs(self):
         """Test that a 500 error is returned if an unspecified error occurs in the endpoint."""
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset.add_sensor_type", side_effect=Exception()):
-                with self.app.test_client() as client:
-                    response = client.post(
-                        json={
-                            "reference": "my-sensor-type",
-                            "name": "My sensor type",
-                        }
-                    )
+        with patch(
+            "cloud_functions.main.BigQueryDataset.add_sensor_type",
+            side_effect=Exception("Deliberately raised for test"),
+        ):
+            with self.app.test_client() as client:
+                response = client.post(
+                    json={
+                        "reference": "my-sensor-type",
+                        "name": "My sensor type",
+                    }
+                )
 
         self.assertEqual(response.status_code, 500)
 
@@ -198,10 +208,9 @@ class TestAddSensorType(BaseTestCase):
             "metadata": {"something": ["blah", "blah"]},
         }
 
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset"):
-                with self.app.test_client() as client:
-                    response = client.post(json=data)
+        with patch("cloud_functions.main.BigQueryDataset"):
+            with self.app.test_client() as client:
+                response = client.post(json=data)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, data)
@@ -210,15 +219,14 @@ class TestAddSensorType(BaseTestCase):
         """Test sending valid data for only required fields to the sensor type creation endpoint works and returns a
         200 status code.
         """
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset"):
-                with self.app.test_client() as client:
-                    response = client.post(
-                        json={
-                            "reference": "my-sensor-type",
-                            "name": "My sensor type",
-                        }
-                    )
+        with patch("cloud_functions.main.BigQueryDataset"):
+            with self.app.test_client() as client:
+                response = client.post(
+                    json={
+                        "reference": "my-sensor-type",
+                        "name": "My sensor type",
+                    }
+                )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["description"], None)
@@ -240,6 +248,17 @@ class TestCreateInstallation(BaseTestCase):
         def test_create_installation():
             return create_installation(request)
 
+        os.environ = {**os.environ, "DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}
+
+    @classmethod
+    def tearDownClass(cls):
+        """Remove the test environment variables from the environment.
+
+        :return None:
+        """
+        del os.environ["DESTINATION_PROJECT_NAME"]
+        del os.environ["BIG_QUERY_DATASET_NAME"]
+
     def test_error_raised_if_non_post_method_used(self):
         """Test that a 405 error is raised if a method other than `POST` is used on the endpoint."""
         with self.app.test_client() as client:
@@ -251,55 +270,36 @@ class TestCreateInstallation(BaseTestCase):
         """Test that invalid data sent to the installation creation endpoint results in a 400 status code and a relevant
         error.
         """
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset"):
-                with self.app.test_client() as client:
+        with patch("cloud_functions.main.BigQueryDataset"):
+            with self.app.test_client() as client:
 
-                    for expected_error_field, data in (
-                        ("reference", {"reference": "not slugified", "hardware_version": "0.0.1"}),
-                        ("reference", {"reference": None, "hardware_version": "0.0.1"}),
-                        ("hardware_version", {"reference": "is-slugified", "hardware_version": None}),
-                        (
-                            "longitude",
-                            {"reference": "is-slugified", "hardware_version": "0.0.1", "longitude": "not-a-number"},
-                        ),
-                        (
-                            "latitude",
-                            {"reference": "is-slugified", "hardware_version": "0.0.1", "latitude": "not-a-number"},
-                        ),
-                    ):
-                        with self.subTest(expected_error_field=expected_error_field, data=data):
-                            response = client.post(json=data)
-                            self.assertEqual(response.status_code, 400)
-                            self.assertIn(expected_error_field, response.json["fieldErrors"])
+                for expected_error_field, data in (
+                    ("reference", {"reference": "not slugified", "hardware_version": "0.0.1"}),
+                    ("reference", {"reference": None, "hardware_version": "0.0.1"}),
+                    ("hardware_version", {"reference": "is-slugified", "hardware_version": None}),
+                    (
+                        "longitude",
+                        {"reference": "is-slugified", "hardware_version": "0.0.1", "longitude": "not-a-number"},
+                    ),
+                    (
+                        "latitude",
+                        {"reference": "is-slugified", "hardware_version": "0.0.1", "latitude": "not-a-number"},
+                    ),
+                ):
+                    with self.subTest(expected_error_field=expected_error_field, data=data):
+                        response = client.post(json=data)
+                        self.assertEqual(response.status_code, 400)
+                        self.assertIn(expected_error_field, response.json["fieldErrors"])
 
     def test_error_raised_if_installation_reference_already_exists(self):
         """Test that a 409 error is returned if the installation reference sent to the endpoint already exists in the
         BigQuery dataset.
         """
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.big_query.bigquery.Client"):
-                with patch(
-                    "cloud_functions.main.BigQueryDataset.add_installation",
-                    side_effect=InstallationWithSameNameAlreadyExists(),
-                ):
-                    with self.app.test_client() as client:
-                        response = client.post(
-                            json={
-                                "reference": "hello",
-                                "hardware_version": "0.0.1",
-                                "turbine_id": "0",
-                                "blade_id": "0",
-                                "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
-                            }
-                        )
-
-        self.assertEqual(response.status_code, 409)
-
-    def test_error_raised_if_internal_server_error_occurs(self):
-        """Test that a 500 error is returned if an unspecified error occurs in the endpoint."""
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset.add_installation", side_effect=Exception()):
+        with patch("cloud_functions.big_query.bigquery.Client"):
+            with patch(
+                "cloud_functions.main.BigQueryDataset.add_installation",
+                side_effect=InstallationWithSameNameAlreadyExists(),
+            ):
                 with self.app.test_client() as client:
                     response = client.post(
                         json={
@@ -310,6 +310,25 @@ class TestCreateInstallation(BaseTestCase):
                             "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                         }
                     )
+
+        self.assertEqual(response.status_code, 409)
+
+    def test_error_raised_if_internal_server_error_occurs(self):
+        """Test that a 500 error is returned if an unspecified error occurs in the endpoint."""
+        with patch(
+            "cloud_functions.main.BigQueryDataset.add_installation",
+            side_effect=Exception("Deliberately raised for test"),
+        ):
+            with self.app.test_client() as client:
+                response = client.post(
+                    json={
+                        "reference": "hello",
+                        "hardware_version": "0.0.1",
+                        "turbine_id": "0",
+                        "blade_id": "0",
+                        "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                    }
+                )
 
         self.assertEqual(response.status_code, 500)
 
@@ -327,10 +346,9 @@ class TestCreateInstallation(BaseTestCase):
             "longitude": 1,
         }
 
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset"):
-                with self.app.test_client() as client:
-                    response = client.post(json=data)
+        with patch("cloud_functions.main.BigQueryDataset"):
+            with self.app.test_client() as client:
+                response = client.post(json=data)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, data)
@@ -339,18 +357,17 @@ class TestCreateInstallation(BaseTestCase):
         """Test sending valid data for only required fields to the installation creation endpoint works and returns a
         200 status code.
         """
-        with patch.dict(os.environ, values={"DESTINATION_PROJECT_NAME": "blah", "BIG_QUERY_DATASET_NAME": "blah"}):
-            with patch("cloud_functions.main.BigQueryDataset"):
-                with self.app.test_client() as client:
-                    response = client.post(
-                        json={
-                            "reference": "hello",
-                            "hardware_version": "0.0.1",
-                            "turbine_id": "0",
-                            "blade_id": "0",
-                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
-                        }
-                    )
+        with patch("cloud_functions.main.BigQueryDataset"):
+            with self.app.test_client() as client:
+                response = client.post(
+                    json={
+                        "reference": "hello",
+                        "hardware_version": "0.0.1",
+                        "turbine_id": "0",
+                        "blade_id": "0",
+                        "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                    }
+                )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["latitude"], None)
