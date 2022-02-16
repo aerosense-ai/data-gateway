@@ -8,7 +8,7 @@ from unittest.mock import call
 import requests
 from click.testing import CliRunner
 
-from data_gateway.cli import CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
+from data_gateway.cli import ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL, CREATE_INSTALLATION_CLOUD_FUNCTION_URL, gateway_cli
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
@@ -353,6 +353,75 @@ class TestCreateInstallation(BaseTestCase):
             with mock.patch("requests.post", return_value=mock.Mock(status_code=403)):
                 result = CliRunner().invoke(
                     gateway_cli, ["create-installation", f"--config-file={temporary_file.name}"], input="Y"
+                )
+
+        self.assertEqual(result.exit_code, 1)
+        self.assertIsInstance(result.exception, requests.HTTPError)
+
+
+class TestAddSensorType(BaseTestCase):
+    def test_add_sensor_type_slugifies_and_lowercases_names(self):
+        """Test that names given to the `add-sensor-type` command are lower-cased and slugified."""
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    ["add-sensor-type", "My sensor_Type"],
+                    input="Y",
+                )
+
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+
+        mock_post.assert_called_with(
+            url=ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL,
+            json={
+                "reference": "my-sensor-type",
+                "name": "My sensor_Type",
+            },
+        )
+
+    def test_add_sensor_type_with_optional_arguments(self):
+        """Test adding a sensor type with optional arguments works."""
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
+
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    [
+                        "add-sensor-type",
+                        "My sensor_Type",
+                        "--description=This is a sensor of a type.",
+                        "--measuring-unit=m/s",
+                        '--metadata={"something": ["blah", "blah"]}',
+                    ],
+                    input="Y",
+                )
+
+        self.assertIsNone(result.exception)
+        self.assertEqual(result.exit_code, 0)
+
+        mock_post.assert_called_with(
+            url=ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL,
+            json={
+                "reference": "my-sensor-type",
+                "name": "My sensor_Type",
+                "description": "This is a sensor of a type.",
+                "measuring_unit": "m/s",
+                "metadata": json.dumps({"something": ["blah", "blah"]}),
+            },
+        )
+
+    def test_add_sensor_type_raises_error_if_status_code_is_not_200(self):
+        """Test that an `HTTPError` is raised if the status code of the response received by the `add-sensor-type`
+        command is not 200.
+        """
+        with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
+            with mock.patch("requests.post", return_value=mock.Mock(status_code=403)):
+                result = CliRunner().invoke(
+                    gateway_cli,
+                    ["add-sensor-type", "my sensor name"],
+                    input="Y",
                 )
 
         self.assertEqual(result.exit_code, 1)

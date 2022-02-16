@@ -4,3 +4,7 @@ class ConfigurationAlreadyExists(BaseException):
 
 class InstallationWithSameNameAlreadyExists(BaseException):
     pass
+
+
+class SensorTypeWithSameReferenceAlreadyExists(BaseException):
+    pass
