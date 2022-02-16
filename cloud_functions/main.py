@@ -7,8 +7,8 @@ import shapely.wkt
 from octue.log_handlers import apply_log_handler
 
 from big_query import BigQueryDataset
-from exceptions import InstallationWithSameNameAlreadyExists
-from forms import CreateInstallationForm
+from exceptions import InstallationWithSameNameAlreadyExists, SensorTypeWithSameReferenceAlreadyExists
+from forms import AddSensorTypeForm, CreateInstallationForm
 from window_handler import WindowHandler
 
 
@@ -38,6 +38,50 @@ def clean_and_upload_window(event, context):
     window, window_metadata = window_handler.get_window()
     cleaned_window = window_handler.clean_window(window, window_metadata)
     window_handler.persist_window(cleaned_window, window_metadata)
+
+
+def add_sensor_type(request):
+    """Add a new sensor type to the BigQuery dataset. This is the entrypoint for the `add-sensor-type` cloud function."""
+    form = AddSensorTypeForm(meta={"csrf": False})
+
+    if request.method != "POST":
+        return {"nonFieldErrors": "Method Not Allowed. Try 'POST'."}, 405
+
+    if form.validate_on_submit():
+        try:
+            dataset = BigQueryDataset(
+                project_name=os.environ["DESTINATION_PROJECT_NAME"],
+                dataset_name=os.environ["BIG_QUERY_DATASET_NAME"],
+            )
+
+            dataset.add_sensor_type(
+                reference=form.reference.data,
+                name=form.name.data,
+                description=form.description.data,
+                measuring_unit=form.measuring_unit.data,
+                metadata=form.metadata.data,
+            )
+
+        except SensorTypeWithSameReferenceAlreadyExists:
+            return {
+                "fieldErrors": {
+                    "reference": f"A sensor type with the reference {form.reference.data!r} already exists."
+                }
+            }, 409
+
+        except Exception as e:
+            logger.exception(e)
+            return {"nonFieldErrors": f"An error occurred. Form data was: {form.data}"}, 500
+
+        return form.data, 200
+
+    logger.error(json.dumps(form.errors))
+
+    # Reduce lists of form field errors to single items.
+    for field, error_messages in form.errors.items():
+        form.errors[field] = error_messages[0] if len(error_messages) > 0 else "Unknown field error"
+
+    return {"fieldErrors": form.errors}, 400
 
 
 def create_installation(request):
@@ -83,7 +127,7 @@ def create_installation(request):
 
         return form.data, 200
 
-    logger.info(json.dumps(form.errors))
+    logger.error(json.dumps(form.errors))
 
     # Reduce lists of form field errors to single items.
     for field, error_messages in form.errors.items():
