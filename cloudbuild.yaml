@@ -7,7 +7,7 @@ steps:
   - deploy
   - test-ingress-eu
   - --source=cloud_functions
-  - --entry-point=clean_and_upload_window
+  - --entry-point=upload_window
   - --runtime=python38
   - --trigger-resource=test-aerosense-ingress-eu
   - --trigger-event=google.storage.object.finalize
@@ -54,7 +54,7 @@ steps:
   - deploy
   - ingress-eu
   - --source=cloud_functions
-  - --entry-point=clean_and_upload_window
+  - --entry-point=upload_window
   - --runtime=python38
   - --trigger-resource=aerosense-ingress-eu
   - --trigger-event=google.storage.object.finalize

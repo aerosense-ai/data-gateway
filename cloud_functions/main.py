@@ -18,8 +18,8 @@ apply_log_handler()
 logger = logging.getLogger(__name__)
 
 
-def clean_and_upload_window(event, context):
-    """Clean a data window received from the gateway and upload it to Google BigQuery for long-term storage. This is
+def upload_window(event, context):
+    """Upload data window received from the gateway to Google BigQuery for long-term storage. This is
     the entrypoint for the `ingress-eu` cloud function.
 
     :param dict event: Google Cloud event
@@ -36,8 +36,7 @@ def clean_and_upload_window(event, context):
     )
 
     window, window_metadata = window_handler.get_window()
-    cleaned_window = window_handler.clean_window(window, window_metadata)
-    window_handler.persist_window(cleaned_window, window_metadata)
+    window_handler.persist_window(window, window_metadata)
 
 
 def add_sensor_type(request):

@@ -8,7 +8,6 @@ from octue.resources.datafile import Datafile
 
 from big_query import BigQueryDataset
 from exceptions import ConfigurationAlreadyExists
-from preprocessing import preprocess
 
 
 logger = logging.getLogger(__name__)
@@ -18,16 +17,16 @@ MICROPHONE_SENSOR_NAME = "Mics"
 
 
 class WindowHandler:
-    """A handler for data windows that gets them from a source bucket, cleans them, sends any microphone data to a
+    """A handler for data windows that gets them from a source bucket, sends any microphone data to a
     cloud storage bucket, and sends all other data into a Google BigQuery dataset. Metadata about the microphone data,
     including its location in cloud storage, is also added to the BigQuery dataset.
 
     :param str window_cloud_path: the Google Cloud Storage path to the window file
     :param str source_project: name of the project the source bucket belongs to
-    :param str source_bucket: name of the bucket the files to be cleaned are stored in
+    :param str source_bucket: name of the bucket the files to be processed are stored in
     :param str destination_project: name of the project the BigQuery dataset belongs to
-    :param str destination_bucket: name of the bucket to store cleaned microphone data in
-    :param str destination_biq_query_dataset: name of the BigQuery dataset to store the cleaned data in
+    :param str destination_bucket: name of the bucket to store raw microphone data in
+    :param str destination_biq_query_dataset: name of the BigQuery dataset to store the raw data in
     :return None:
     """
 
@@ -74,17 +73,6 @@ class WindowHandler:
         logger.info("Downloaded metadata for window %r from bucket %r.", self.window_cloud_path, self.source_bucket)
 
         return window, window_metadata
-
-    def clean_window(self, window, window_metadata):
-        """Clean and return the given window.
-
-        :param dict window: the window of data to clean
-        :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
-        :return dict:
-        """
-        window = preprocess.run(window, window_metadata)
-        logger.info("Cleaned window.")
-        return window
 
     def persist_window(self, window, window_metadata):
         """Persist the window to the Google BigQuery dataset.
