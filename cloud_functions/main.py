@@ -39,8 +39,8 @@ def upload_window(event, context):
 
     # Correct timestamps with the sensor node time offset
     for sensor in window["sensor_data"].keys():
-        for row in window["sensor_data"][sensor]:
-            row[0] += window["sensor_time_offset"]
+        for sample in window["sensor_data"][sensor]:
+            sample[0] += window["sensor_time_offset"]
 
     window_handler.persist_window(window["sensor_data"], window_metadata)
 
