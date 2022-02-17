@@ -510,7 +510,7 @@ class PacketReader:
             self._add_data_to_current_window(sensor_name, data=sample)
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
-        # UTC time now. Store it as the `start_timestamp` metadata in the windows.
+        # UTC time now. Store it as the `sensor_time_offset` metadata in the windows.
         if sensor_name == "Constat":
             logger.debug("Constat packet: %d" % timestamp)
             if time and self.sensor_time_offset is None:
