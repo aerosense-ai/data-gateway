@@ -21,7 +21,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         # The client must be instantiated here to avoid the storage emulator.
         storage_client = GoogleCloudStorageClient(os.environ["TEST_PROJECT_NAME"])
 
-    def test_clean_and_upload_window(self):
+    def test_upload_window(self):
         """Test that a window can be uploaded to a cloud bucket, its data processed by the test cloud function, and the
         results uploaded to a test BigQuery instance.
         """

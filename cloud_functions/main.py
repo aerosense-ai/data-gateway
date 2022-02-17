@@ -36,7 +36,7 @@ def upload_window(event, context):
     )
 
     window, window_metadata = window_handler.get_window()
-    window_handler.persist_window(window, window_metadata)
+    window_handler.persist_window(window["sensor_data"], window_metadata)
 
 
 def add_sensor_type(request):
