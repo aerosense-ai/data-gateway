@@ -234,6 +234,8 @@ class PacketReader:
                 str(start_handle + 26): "Info message",
             }
 
+            self.sensor_time_offset = None
+
             logger.info("Successfully updated handles.")
             return
 
