@@ -2,6 +2,7 @@ import json
 import logging
 import multiprocessing
 import os
+import re
 import sys
 import threading
 import time
@@ -182,7 +183,7 @@ class DataGateway:
 
             # This should ensure that the `stopMics` command is run last.
             for command in sensor_stop_commands:
-                self.serial_port.write(command.encode("utf_8"))
+                self._send_command_to_sensors(command)
                 logger.info("Sent %r command.", command)
                 time.sleep(5)
 
@@ -243,10 +244,7 @@ class DataGateway:
                 return
 
             with open(routine_path) as f:
-                routine = Routine(
-                    **json.load(f),
-                    action=lambda command: self.serial_port.write((command + "\n").encode("utf_8")),
-                )
+                routine = Routine(**json.load(f), action=self._send_command_to_sensors)
 
             logger.info("Loaded routine file from %r.", routine_path)
             return routine
@@ -256,6 +254,15 @@ class DataGateway:
                 "No routine was provided and interactive mode is off - no commands will be sent to the sensors in this "
                 "session."
             )
+
+    def _send_command_to_sensors(self, command):
+        """Send a textual command to the sensors.
+
+        :param str command: the command to send
+        :return None:
+        """
+        self.serial_port.write((command + "\n").encode("utf_8"))
+        logger.info("Sent %r command to sensors.", command)
 
     def _send_commands_from_stdin_to_sensors(self, stop_signal):
         """Send commands from `stdin` to the sensors until the "stop" command is received or the packet reader is
@@ -272,18 +279,18 @@ class DataGateway:
                     with open(commands_record_file, "a") as f:
                         f.write(line)
 
+                    line = line.strip()
+
                     # The `sleep` command is mainly for facilitating testing.
-                    if line.startswith("sleep") and line.endswith("\n"):
+                    if re.match(r"sleep\s\d+", line):
                         time.sleep(int(line.split(" ")[-1].strip()))
                         continue
 
-                    if line == "stop\n":
-                        self.serial_port.write(line.encode("utf_8"))
+                    self._send_command_to_sensors(line)
+
+                    if line == "stop":
                         stop_gateway(logger, stop_signal)
                         break
-
-                    # Send the command to the node.
-                    self.serial_port.write(line.encode("utf_8"))
 
         except Exception as e:
             stop_gateway(logger, stop_signal)
