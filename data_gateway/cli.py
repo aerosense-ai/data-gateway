@@ -133,6 +133,12 @@ def gateway_cli(logger_uri, log_level):
     help="An optional label to associate with data persisted in this run of the gateway.",
 )
 @click.option(
+    "--no-stop-sensors-on-exit",
+    is_flag=True,
+    default=False,
+    help="Don't stop the sensors on gateway exit.",
+)
+@click.option(
     "--save-csv-files",
     is_flag=True,
     default=False,
@@ -157,6 +163,7 @@ def start(
     gcp_project_name,
     gcp_bucket_name,
     label,
+    no_stop_sensors_on_exit,
     save_csv_files,
     use_dummy_serial_port,
 ):
@@ -180,6 +187,7 @@ def start(
         save_csv_files=save_csv_files,
         use_dummy_serial_port=use_dummy_serial_port,
         log_level=global_cli_context["log_level"],
+        stop_sensors_on_exit=not no_stop_sensors_on_exit,
     )
 
     data_gateway.start()

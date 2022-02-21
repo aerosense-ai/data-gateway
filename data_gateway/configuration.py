@@ -32,7 +32,8 @@ class Configuration:
     :param dict|None default_handles: Each handle identifies packet type, i.e. expected contents of packet payload
     :param dict|None samples_per_packet: TODO
     :param dict|None number_of_sensors: TODO
-    :param dict|None period: TODO
+    :param dict|None period:
+    :param dict|None sensor_commands:
     :param dict|None installation_data: metadata about the current session of the gateway provided by the user
     :return None:
     """
@@ -74,6 +75,7 @@ class Configuration:
         number_of_sensors=None,
         sensor_conversion_constants=None,
         period=None,
+        sensor_commands=None,
         installation_data=None,
         session_data=None,
     ):
@@ -189,6 +191,21 @@ class Configuration:
             "Mag": 1 / self.mag_freq,
             "Analog Vbat": 1 / self.analog_freq,
             "Constat": self.constat_period / 1000,
+        }
+
+        self.sensor_commands = sensor_commands or {
+            "start": ["startBaros", "startDiffBaros", "startIMU", "startMics"],
+            "stop": ["stopBaros", "stopDiffBaros", "stopIMU", "stopMics"],
+            "configuration": ["configBaros", "configAccel", "configGyro", "configMics"],
+            "utilities": [
+                "getBattery",
+                "setConnInterval",
+                "tpcBoostIncrease",
+                "tpcBoostDecrease",
+                "tpcBoostHeapMemThr1",
+                "tpcBoostHeapMemThr2",
+                "tpcBoostHeapMemThr4",
+            ],
         }
 
         self.installation_data = installation_data or {

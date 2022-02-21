@@ -70,8 +70,9 @@ class DataGateway:
         save_csv_files=False,
         use_dummy_serial_port=False,
         log_level=logging.INFO,
+        stop_sensors_on_exit=True,
     ):
-        # Set multiprocessed logger level.
+        # Set `multiprocessing` logger level.
         logger.setLevel(log_level)
         for handler in logger.handlers:
             handler.setLevel(log_level)
@@ -105,6 +106,7 @@ class DataGateway:
         )
 
         self.routine = self._load_routine(routine_path=routine_path)
+        self.stop_sensors_on_exit = stop_sensors_on_exit
 
     def start(self, stop_when_no_more_data_after=False):
         """Begin reading and persisting data from the serial port for the sensors at the installation defined in
@@ -142,28 +144,47 @@ class DataGateway:
         reader_process.start()
         parser_process.start()
 
-        if self.interactive:
-            interactive_commands_thread = threading.Thread(
-                name="InteractiveCommandsThread",
-                target=self._send_commands_from_stdin_to_sensors,
-                kwargs={"stop_signal": stop_signal},
-                daemon=True,
-            )
+        try:
+            if self.interactive:
+                interactive_commands_thread = threading.Thread(
+                    name="InteractiveCommandsThread",
+                    target=self._send_commands_from_stdin_to_sensors,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
 
-            interactive_commands_thread.start()
+                interactive_commands_thread.start()
 
-        elif self.routine is not None:
-            routine_thread = threading.Thread(
-                name="RoutineCommandsThread",
-                target=self.routine.run,
-                kwargs={"stop_signal": stop_signal},
-                daemon=True,
-            )
-            routine_thread.start()
+            elif self.routine is not None:
+                routine_thread = threading.Thread(
+                    name="RoutineCommandsThread",
+                    target=self.routine.run,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
+                routine_thread.start()
 
-        # Wait for the stop signal before exiting.
-        while stop_signal.value == 0:
-            time.sleep(5)
+            # Wait for the stop signal before exiting.
+            while stop_signal.value == 0:
+                time.sleep(5)
+
+        finally:
+            if not self.stop_sensors_on_exit:
+                return
+
+            sensor_stop_commands = self.packet_reader.config.sensor_commands.get("stop")
+
+            if not sensor_stop_commands:
+                logger.warning(
+                    "No sensor stop commands defined in configuration file - sensors cannot be automatically stopped."
+                )
+                return
+
+            # This should ensure that the `stopMics` command is run last.
+            for command in sensor_stop_commands:
+                self.serial_port.write(command.encode("utf_8"))
+                logger.info("Sent %r command.", command)
+                time.sleep(5)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.

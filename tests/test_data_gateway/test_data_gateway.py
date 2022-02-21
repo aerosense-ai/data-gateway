@@ -50,6 +50,7 @@ class TestDataGateway(BaseTestCase):
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
+                stop_sensors_on_exit=False,
             )
 
             data_gateway.start(stop_when_no_more_data_after=0.1)
@@ -97,6 +98,7 @@ class TestDataGateway(BaseTestCase):
                         window_size=self.WINDOW_SIZE,
                         project_name=TEST_PROJECT_NAME,
                         bucket_name=TEST_BUCKET_NAME,
+                        stop_sensors_on_exit=False,
                     )
 
                     data_gateway.start(stop_when_no_more_data_after=0.1)
@@ -137,6 +139,7 @@ class TestDataGateway(BaseTestCase):
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
+                stop_sensors_on_exit=False,
             )
 
             with patch("data_gateway.packet_reader.logger") as mock_logger:
@@ -165,6 +168,7 @@ class TestDataGateway(BaseTestCase):
                 window_size=self.WINDOW_SIZE,
                 project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
+                stop_sensors_on_exit=False,
             )
 
             data_gateway.start(stop_when_no_more_data_after=0.1)
