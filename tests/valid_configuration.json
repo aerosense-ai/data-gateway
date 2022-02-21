@@ -108,6 +108,20 @@
     "Analog Vbat": 6.103515625e-05,
     "Constat": 0.045
   },
+  "sensor_commands": {
+    "start": ["startBaros", "startDiffBaros", "startIMU", "startMics"],
+    "stop": ["stopBaros", "stopDiffBaros", "stopIMU", "stopMics"],
+    "configuration": ["configBaros", "configAccel", "configGyro", "configMics"],
+    "utilities": [
+      "getBattery",
+      "setConnInterval",
+      "tpcBoostIncrease",
+      "tpcBoostDecrease",
+      "tpcBoostHeapMemThr1",
+      "tpcBoostHeapMemThr2",
+      "tpcBoostHeapMemThr4"
+    ]
+  },
   "installation_data": {
     "installation_reference": "aventa_turbine",
     "turbine_id": "0",

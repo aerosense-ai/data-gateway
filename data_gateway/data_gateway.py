@@ -24,9 +24,6 @@ apply_log_handler(logger=logger, include_process_name=True)
 logging.getLogger("data_gateway.dummy_serial.dummy_serial").setLevel(logging.WARNING)
 
 
-STOP_COMMANDS = ("stopBaros", "stopIMU", "stopMics")
-
-
 class DataGateway:
     """A class for running the data gateway to collect wind turbine sensor data. The gateway is run as three processes:
     1. The `MainProcess` process, which starts the other two processes and sends commands to the serial port (via a
@@ -175,7 +172,16 @@ class DataGateway:
             if not self.stop_sensors_on_exit:
                 return
 
-            for command in STOP_COMMANDS:
+            sensor_stop_commands = self.packet_reader.config.sensor_commands.get("stop")
+
+            if not sensor_stop_commands:
+                logger.warning(
+                    "No sensor stop commands defined in configuration file - sensors cannot be automatically stopped."
+                )
+                return
+
+            # This should ensure that the `stopMics` command is run last.
+            for command in sensor_stop_commands:
                 self.serial_port.write(command.encode("utf_8"))
                 logger.info("Sent %r command.", command)
                 time.sleep(5)
