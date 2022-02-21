@@ -191,13 +191,15 @@ class PacketReader:
                                     period=self.config.period[sensor_name],
                                 )
 
-                        elif len(packet) >= 1 and self.handles[packet_type] in [
+                            continue
+
+                        if self.handles[packet_type] in [
                             "Mic 1",
                             "Cmd Decline",
                             "Sleep State",
                             "Info Message",
                         ]:
-                            self._parse_info_packet(self.handles[packet_type], packet)
+                            self._parse_info_packet(self.handles[packet_type], packet, previous_timestamp)
 
         except KeyboardInterrupt:
             pass
@@ -231,6 +233,8 @@ class PacketReader:
                 str(start_handle + 24): "Sleep State",
                 str(start_handle + 26): "Info message",
             }
+
+            self.sensor_time_offset = None
 
             logger.info("Successfully updated handles.")
             return
@@ -399,7 +403,7 @@ class PacketReader:
             logger.error("Sensor of type %r is unknown.", packet_type)
             raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
 
-    def _parse_info_packet(self, information_type, payload):
+    def _parse_info_packet(self, information_type, payload, previous_timestamp):
         """Parse information type packet and send the information to logger.
 
         :param str information_type: From packet handles, defines what information is stored in payload.
@@ -413,31 +417,44 @@ class PacketReader:
                 logger.info("Microphone data erasing done")
             elif payload[0] == 3:
                 logger.info("Microphones started ")
+            return
 
-        elif information_type == "Cmd Decline":
+        if information_type == "Cmd Decline":
             reason_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("Command declined, %s", self.config.decline_reason[reason_index])
+            return
 
-        elif information_type == "Sleep State":
+        if information_type == "Sleep State":
             state_index = str(int.from_bytes(payload, self.config.endian, signed=False))
             logger.info("\n%s\n", self.config.sleep_state[state_index])
-            self.sleep = bool(int(state_index))
 
-        elif information_type == "Info Message":
+            if bool(int(state_index)):
+                self.sleep = True
+            else:
+                self.sleep = False
+                # Reset previous timestamp on wake up
+                for sensor_name in self.config.sensor_names:
+                    previous_timestamp[sensor_name] = -1
+
+            return
+
+        if information_type == "Info Message":
             info_index = str(int.from_bytes(payload[0:1], self.config.endian, signed=False))
             logger.info(self.config.info_type[info_index])
 
             if self.config.info_type[info_index] == "Battery info":
-                voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False)
-                cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False)
-                state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False)
+                voltage = int.from_bytes(payload[1:5], self.config.endian, signed=False) / 1000000
+                cycle = int.from_bytes(payload[5:9], self.config.endian, signed=False) / 100
+                state_of_charge = int.from_bytes(payload[9:13], self.config.endian, signed=False) / 256
 
                 logger.info(
                     "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
-                    voltage / 1000000,
-                    cycle / 100,
-                    state_of_charge / 256,
+                    voltage,
+                    cycle,
+                    state_of_charge,
                 )
+
+            return
 
     def _check_for_packet_loss(self, sensor_name, timestamp, previous_timestamp):
         """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for
@@ -453,13 +470,6 @@ class PacketReader:
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
-        if self.sleep:
-            # During sleep, there are no new packets coming in.
-            # TODO Make previous_timestamp an attribute, move this to information packet parser and perform on wake-up
-            for sensor_name in self.config.sensor_names:
-                previous_timestamp[sensor_name] = -1
-            return
-
         if previous_timestamp[sensor_name] == -1:
             logger.info("Received first %s packet." % sensor_name)
         else:
@@ -470,11 +480,10 @@ class PacketReader:
             timestamp_deviation = timestamp - expected_current_timestamp
 
             if abs(timestamp_deviation) > self.config.max_timestamp_slack:
-                logger.warning(
-                    "Possible packet loss. %s sensor packet is timestamped %d ms later than expected",
-                    sensor_name,
-                    timestamp_deviation * 1000,
-                )
+
+                if self.sleep:
+                    # Only Constat (Connections statistics) comes during sleep
+                    return
 
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
                     # IMU sensors are not synchronised to CPU, so their actual periods might differ
@@ -482,6 +491,12 @@ class PacketReader:
                         timestamp - previous_timestamp[sensor_name]
                     ) / self.config.samples_per_packet[sensor_name]
                     logger.debug("Updated %s period to %f ms.", sensor_name, self.config.period[sensor_name] * 1000)
+                else:
+                    logger.warning(
+                        "Possible packet loss. %s sensor packet is timestamped %d ms later than expected",
+                        sensor_name,
+                        timestamp_deviation * 1000,
+                    )
 
         previous_timestamp[sensor_name] = timestamp
 
@@ -510,7 +525,7 @@ class PacketReader:
             self._add_data_to_current_window(sensor_name, data=sample)
 
         # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
-        # UTC time now. Store it as the `start_timestamp` metadata in the windows.
+        # UTC time now. Store it as the `sensor_time_offset` metadata in the windows.
         if sensor_name == "Constat":
             logger.debug("Constat packet: %d" % timestamp)
             if time and self.sensor_time_offset is None:

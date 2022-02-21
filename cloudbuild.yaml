@@ -7,7 +7,7 @@ steps:
   - deploy
   - test-ingress-eu
   - --source=cloud_functions
-  - --entry-point=clean_and_upload_window
+  - --entry-point=upload_window
   - --runtime=python38
   - --trigger-resource=test-aerosense-ingress-eu
   - --trigger-event=google.storage.object.finalize
@@ -54,7 +54,7 @@ steps:
   - deploy
   - ingress-eu
   - --source=cloud_functions
-  - --entry-point=clean_and_upload_window
+  - --entry-point=upload_window
   - --runtime=python38
   - --trigger-resource=aerosense-ingress-eu
   - --trigger-event=google.storage.object.finalize
@@ -62,3 +62,5 @@ steps:
   - --region=europe-west6
   - --set-env-vars=SOURCE_PROJECT_NAME=aerosense-twined,DESTINATION_PROJECT_NAME=aerosense-twined,DESTINATION_BUCKET_NAME=data-gateway-processed-data,BIG_QUERY_DATASET_NAME=greta
   - --timeout=540
+
+timeout: 1200s
