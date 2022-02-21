@@ -29,7 +29,7 @@ from cloud_functions.main import (  # noqa
 from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
-class TestCleanAndUploadWindow(BaseTestCase):
+class TestUploadWindow(BaseTestCase):
     SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
@@ -42,8 +42,8 @@ class TestCleanAndUploadWindow(BaseTestCase):
         "updated": "0",
     }
 
-    def test_clean_and_upload_window(self):
-        """Test that a window file is cleaned and uploaded to its destination bucket following the relevant Google Cloud
+    def test_upload_window(self):
+        """Test that a window file is uploaded to its destination bucket following the relevant Google Cloud
         storage trigger.
         """
         GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
@@ -64,7 +64,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
         ):
             with patch("big_query.bigquery.Client"):
                 with patch("window_handler.BigQueryDataset") as mock_dataset:
-                    main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                    main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
@@ -78,7 +78,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my_test_1")
 
-    def test_clean_and_upload_window_for_existing_configuration(self):
+    def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
         GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
             string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
@@ -102,7 +102,7 @@ class TestCleanAndUploadWindow(BaseTestCase):
             ):
                 with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
                     with patch("big_query.bigquery.Client"):
-                        main.clean_and_upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                        main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
