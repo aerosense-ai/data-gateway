@@ -79,6 +79,7 @@ class TestStart(BaseTestCase):
                     "--no-upload-to-cloud",
                     "--use-dummy-serial-port",
                     f"--output-dir={temporary_directory}",
+                    "--no-stop-sensors-on-exit",
                 ],
                 input="stop\n",
             )
@@ -101,6 +102,7 @@ class TestStart(BaseTestCase):
                         "--no-upload-to-cloud",
                         "--use-dummy-serial-port",
                         f"--output-dir={temporary_directory}",
+                        "--no-stop-sensors-on-exit",
                     ],
                     input=commands,
                 )
@@ -153,6 +155,7 @@ class TestStart(BaseTestCase):
                         "--no-upload-to-cloud",
                         "--use-dummy-serial-port",
                         f"--output-dir={temporary_directory}",
+                        "--no-stop-sensors-on-exit",
                     ],
                     input="stop\n",
                 )
@@ -182,6 +185,7 @@ class TestStart(BaseTestCase):
                         "--no-upload-to-cloud",
                         "--use-dummy-serial-port",
                         f"--output-dir={temporary_directory}",
+                        "--no-stop-sensors-on-exit",
                     ],
                     input="stop\n",
                 )
@@ -207,6 +211,7 @@ class TestStart(BaseTestCase):
                             "--save-locally",
                             "--no-upload-to-cloud",
                             f"--output-dir={temporary_directory}",
+                            "--no-stop-sensors-on-exit",
                         ],
                         input="sleep 2\nstop\n",
                     )
@@ -241,6 +246,7 @@ class TestStart(BaseTestCase):
                         "--use-dummy-serial-port",
                         f"--config-file={CONFIGURATION_PATH}",
                         f"--output-dir={temporary_directory}",
+                        "--no-stop-sensors-on-exit",
                     ],
                     input="stop\n",
                 )
