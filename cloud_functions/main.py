@@ -37,8 +37,7 @@ def upload_window(event, context):
 
     window, window_metadata = window_handler.get_window()
 
-    unix_timestamped_window = _convert_window_timestamps_to_unix_time(window)
-
+    unix_timestamped_window = window_handler.convert_window_timestamps_to_unix_time(window)
     window_handler.persist_window(unix_timestamped_window["sensor_data"], window_metadata)
 
 
@@ -136,12 +135,3 @@ def create_installation(request):
         form.errors[field] = error_messages[0] if len(error_messages) > 0 else "Unknown field error"
 
     return {"fieldErrors": form.errors}, 400
-
-
-def _convert_window_timestamps_to_unix_time(window):
-    """Use sensor_time_offset, to convert sensor node internal clock timestamps into UNIX time for the window samples"""
-    for sensor in window["sensor_data"].keys():
-        for sample in window["sensor_data"][sensor]:
-            sample[0] += window["sensor_time_offset"]
-
-    return window

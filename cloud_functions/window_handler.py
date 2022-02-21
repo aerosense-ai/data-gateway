@@ -105,6 +105,14 @@ class WindowHandler:
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
+    def convert_window_timestamps_to_unix_time(self, window):
+        """Use sensor_time_offset, to convert sensor node internal clock timestamps into UNIX time for the window samples"""
+        for sensor in window["sensor_data"].keys():
+            for sample in window["sensor_data"][sensor]:
+                sample[0] += window["sensor_time_offset"]
+
+        return window
+
     def _store_microphone_data(self, data, configuration_id, installation_reference, label):
         """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
         metadata in a BigQuery table.
