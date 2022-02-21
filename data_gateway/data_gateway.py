@@ -178,6 +178,7 @@ class DataGateway:
             for command in STOP_COMMANDS:
                 self.serial_port.write(command.encode("utf_8"))
                 logger.info("Sent %r command.", command)
+                time.sleep(5)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.
