@@ -256,6 +256,11 @@ class DataGateway:
             )
 
     def _send_command_to_sensors(self, command):
+        """Send a textual command to the sensors.
+
+        :param str command: the command to send
+        :return None:
+        """
         self.serial_port.write((command + "\n").encode("utf_8"))
         logger.info("Sent %r command to sensors.", command)
 
