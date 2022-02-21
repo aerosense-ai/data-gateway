@@ -2,6 +2,7 @@ import json
 import logging
 import multiprocessing
 import os
+import re
 import sys
 import threading
 import time
@@ -276,7 +277,7 @@ class DataGateway:
                     line = line.strip()
 
                     # The `sleep` command is mainly for facilitating testing.
-                    if line.startswith("sleep"):
+                    if re.match(r"sleep\s\d+", line):
                         time.sleep(int(line.split(" ")[-1].strip()))
                         continue
 
