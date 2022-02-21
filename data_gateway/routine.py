@@ -23,7 +23,7 @@ class Routine:
 
     def __init__(self, commands, action, period=None, stop_after=None):
         self.commands = commands
-        self.action = self._wrap_action_with_logger(action)
+        self.action = action
         self.period = period
         self.stop_after = stop_after
 
@@ -80,21 +80,3 @@ class Routine:
         except Exception as e:
             stop_gateway(logger, stop_signal)
             raise e
-
-    def _wrap_action_with_logger(self, action):
-        """Wrap the given action so that when it's run on a command, the command is logged.
-
-        :param callable action: action for handling command
-        :return callable: action with logging included
-        """
-
-        def action_with_logging(command):
-            """Run the action on the command and log that it was run.
-
-            :param str command:
-            :return None:
-            """
-            action(command)
-            logger.info("Routine ran %r command.", command)
-
-        return action_with_logging
