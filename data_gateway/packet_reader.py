@@ -137,10 +137,11 @@ class PacketReader:
                 output_directory=self.local_output_directory,
                 save_csv_files=self.save_csv_files,
             )
+
+            self._save_configuration_to_disk()
+
         else:
             self.writer = NoOperationContextManager()
-
-        self._persist_configuration()
 
         previous_timestamp = {}
         data = {}
@@ -241,23 +242,13 @@ class PacketReader:
 
         logger.error("Handle error: start handle is %s, end handle is %s.", start_handle, end_handle)
 
-    def _persist_configuration(self):
-        """Persist the configuration to disk and/or cloud storage.
+    def _save_configuration_to_disk(self):
+        """Save the configuration to disk as a JSON file.
 
         :return None:
         """
-        configuration_dictionary = self.config.to_dict()
-
-        if self.save_locally:
-            with open(os.path.join(self.local_output_directory, "configuration.json"), "w") as f:
-                json.dump(configuration_dictionary, f)
-
-        if self.upload_to_cloud:
-            self.uploader.client.upload_from_string(
-                string=json.dumps(configuration_dictionary),
-                bucket_name=self.uploader.bucket_name,
-                path_in_bucket=storage.path.join(self.cloud_output_directory, "configuration.json"),
-            )
+        with open(os.path.join(self.local_output_directory, "configuration.json"), "w") as f:
+            json.dump(self.config.to_dict(), f)
 
     def _parse_sensor_packet_data(self, packet_type, payload, data):
         """Parse sensor data type payloads.

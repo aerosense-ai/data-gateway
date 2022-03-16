@@ -59,16 +59,6 @@ class TestDataGateway(BaseTestCase):
             with open(os.path.join(data_gateway.packet_reader.local_output_directory, "configuration.json")) as f:
                 Configuration.from_dict(json.load(f))
 
-            # Check configuration file is present and valid on the cloud.
-            configuration = self.storage_client.download_as_string(
-                bucket_name=TEST_BUCKET_NAME,
-                path_in_bucket=storage.path.join(
-                    data_gateway.packet_reader.cloud_output_directory, "configuration.json"
-                ),
-            )
-
-            Configuration.from_dict(json.loads(configuration))
-
         finally:
             self._delete_temporary_output_directories()
 
