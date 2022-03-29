@@ -30,7 +30,6 @@ from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
 
 
 class TestUploadWindow(BaseTestCase):
-    SOURCE_PROJECT_NAME = "source-project"
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
     WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
 
@@ -46,7 +45,7 @@ class TestUploadWindow(BaseTestCase):
         """Test that a window file is uploaded to its destination bucket following the relevant Google Cloud
         storage trigger.
         """
-        GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
+        GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
             bucket_name=self.SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
@@ -56,7 +55,6 @@ class TestUploadWindow(BaseTestCase):
         with patch.dict(
             os.environ,
             {
-                "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
                 "DESTINATION_PROJECT_NAME": "destination-project",
                 "DESTINATION_BUCKET_NAME": "destination-bucket",
                 "BIG_QUERY_DATASET_NAME": "blah",
@@ -80,7 +78,7 @@ class TestUploadWindow(BaseTestCase):
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
-        GoogleCloudStorageClient(self.SOURCE_PROJECT_NAME).upload_from_string(
+        GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
             bucket_name=self.SOURCE_BUCKET_NAME,
             path_in_bucket="window-0.json",
@@ -90,7 +88,6 @@ class TestUploadWindow(BaseTestCase):
         with patch.dict(
             os.environ,
             {
-                "SOURCE_PROJECT_NAME": self.SOURCE_PROJECT_NAME,
                 "DESTINATION_PROJECT_NAME": "destination-project",
                 "DESTINATION_BUCKET_NAME": "destination-bucket",
                 "BIG_QUERY_DATASET_NAME": "blah",

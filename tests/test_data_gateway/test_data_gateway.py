@@ -32,7 +32,7 @@ class TestDataGateway(BaseTestCase):
         :return None:
         """
         cls.WINDOW_SIZE = 10
-        cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
+        cls.storage_client = GoogleCloudStorageClient()
 
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""

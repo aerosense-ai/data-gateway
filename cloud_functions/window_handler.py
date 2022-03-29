@@ -22,7 +22,6 @@ class WindowHandler:
     including its location in cloud storage, is also added to the BigQuery dataset.
 
     :param str window_cloud_path: the Google Cloud Storage path to the window file
-    :param str source_project: name of the project the source bucket belongs to
     :param str source_bucket: name of the bucket the files to be processed are stored in
     :param str destination_project: name of the project the BigQuery dataset belongs to
     :param str destination_bucket: name of the bucket to store raw microphone data in
@@ -33,16 +32,14 @@ class WindowHandler:
     def __init__(
         self,
         window_cloud_path,
-        source_project,
         source_bucket,
         destination_project,
         destination_bucket,
         destination_biq_query_dataset,
     ):
         self.window_cloud_path = window_cloud_path
-        self.source_project = source_project
         self.source_bucket = source_bucket
-        self.source_client = GoogleCloudStorageClient(project_name=source_project, credentials=None)
+        self.source_client = GoogleCloudStorageClient()
 
         self.destination_project = destination_project
         self.destination_bucket = destination_bucket
@@ -131,14 +128,12 @@ class WindowHandler:
         else:
             labels = None
 
-        datafile = Datafile(
+        with Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
-            project_name=self.destination_project,
             tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
             labels=labels,
-        )
-
-        with datafile.open("w") as f:
+            mode="w",
+        ) as (datafile, f):
             json.dump(data, f)
 
         self.dataset.record_microphone_data_location_and_metadata(

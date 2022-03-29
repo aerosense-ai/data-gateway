@@ -1,7 +1,7 @@
 blake3==0.2.1
 flask_wtf
 google-cloud-bigquery==2.29.0
-octue[hdf5]==0.6.5
+octue[hdf5]==0.16.0
 pandas>=1.2.3
 python-slugify==5.0.2
 scipy>=1.6.1

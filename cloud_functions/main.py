@@ -28,7 +28,6 @@ def upload_window(event, context):
     """
     window_handler = WindowHandler(
         window_cloud_path=event["name"],
-        source_project=os.environ["SOURCE_PROJECT_NAME"],
         source_bucket=event["bucket"],
         destination_project=os.environ["DESTINATION_PROJECT_NAME"],
         destination_bucket=os.environ["DESTINATION_BUCKET_NAME"],

@@ -120,7 +120,7 @@ class TestBatchingUploader(BaseTestCase):
 
         :return None:
         """
-        cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
+        cls.storage_client = GoogleCloudStorageClient()
 
     def test_data_is_batched(self):
         """Test that data is batched as expected."""

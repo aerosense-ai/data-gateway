@@ -233,7 +233,7 @@ class BatchingUploader(TimeBatcher):
         upload_backup_files=True,
     ):
         self.project_name = project_name
-        self.client = GoogleCloudStorageClient(project_name=project_name)
+        self.client = GoogleCloudStorageClient()
         self.bucket_name = bucket_name
         self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
