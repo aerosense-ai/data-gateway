@@ -89,10 +89,6 @@ class PacketReader:
                 length = int.from_bytes(serial_port.read(), self.config.endian)
                 packet = serial_port.read(length)
 
-                if packet_type == str(self.config.type_handle_def):
-                    self.update_handles(packet)
-                    continue
-
                 # Check for bytes in serial input buffer. A full buffer results in overflow.
                 if serial_port.in_waiting == self.config.serial_buffer_rx_size:
                     logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
@@ -171,6 +167,10 @@ class PacketReader:
 
                         if packet_type not in self.handles:
                             logger.error("Received packet with unknown type: %s", packet_type)
+                            continue
+
+                        if packet_type == str(self.config.type_handle_def):
+                            self.update_handles(packet)
                             continue
 
                         if len(packet) == 244:  # If the full data payload is received, proceed parsing it
