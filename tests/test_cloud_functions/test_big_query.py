@@ -44,7 +44,7 @@ class TestBigQueryDataset(BaseTestCase):
                 label="my-test",
             )
 
-        self.assertEqual(len(mock_big_query_client.rows), 8)
+        self.assertEqual(len(mock_big_query_client.rows[0]), 8)
 
         expected_rows = [
             {
@@ -113,7 +113,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
         ]
 
-        self.assertEqual(mock_big_query_client.rows, expected_rows)
+        self.assertEqual(mock_big_query_client.rows[0], expected_rows)
 
     def test_add_new_sensor_type(self):
         """Test that new sensor types can be added."""
@@ -126,7 +126,7 @@ class TestBigQueryDataset(BaseTestCase):
             )
 
         self.assertEqual(
-            mock_big_query_client.rows[0],
+            mock_big_query_client.rows[0][0],
             {
                 "reference": "my-sensor-name",
                 "name": "My sensor_Name",
@@ -162,7 +162,7 @@ class TestBigQueryDataset(BaseTestCase):
             )
 
         self.assertEqual(
-            mock_big_query_client.rows[0],
+            mock_big_query_client.rows[0][0],
             {
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
@@ -200,10 +200,10 @@ class TestBigQueryDataset(BaseTestCase):
                 configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
             )
 
-        del mock_big_query_client.rows[0]["id"]
+        del mock_big_query_client.rows[0][0]["id"]
 
         self.assertEqual(
-            mock_big_query_client.rows[0],
+            mock_big_query_client.rows[0][0],
             {
                 "software_configuration": '{"blah": "blah"}',
                 "software_configuration_hash": "a9a553b17102e3f08a1ca32486086cdb8699f8f50c358b0fed8071b1d4c11bb2",
