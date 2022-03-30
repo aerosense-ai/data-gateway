@@ -89,10 +89,6 @@ class PacketReader:
                 length = int.from_bytes(serial_port.read(), self.config.endian)
                 packet = serial_port.read(length)
 
-                if packet_type == str(self.config.type_handle_def):
-                    self.update_handles(packet)
-                    continue
-
                 # Check for bytes in serial input buffer. A full buffer results in overflow.
                 if serial_port.in_waiting == self.config.serial_buffer_rx_size:
                     logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
@@ -167,6 +163,10 @@ class PacketReader:
                         except queue.Empty:
                             if stop_when_no_more_data_after is not False:
                                 break
+                            continue
+
+                        if packet_type == str(self.config.type_handle_def):
+                            self.update_handles(packet)
                             continue
 
                         if packet_type not in self.handles:
