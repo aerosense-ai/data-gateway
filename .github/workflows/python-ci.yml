@@ -16,7 +16,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, 'skipci')"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           # Set fetch-depth to 0 to fetch all tags (necessary for git-mkver to determine the correct semantic version).
           fetch-depth: 0
@@ -29,7 +29,7 @@ jobs:
       - name: Install semantic version checker
         run: pip install git+https://github.com/octue/conventional-commits
       - name: Check version
-        run: check-semantic-version setup.py
+        run: check-semantic-version pyproject.toml
 
   run-tests:
     if: "!contains(github.event.head_commit.message, 'skipci')"
@@ -42,18 +42,29 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Check pyproject.toml file
+        run: poetry check
+
       - name: Install tox
         run: pip install tox
+
       - name: Run tests
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           TEST_PROJECT_NAME: ${{ secrets.TEST_PROJECT_NAME }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.TEST_PROJECT_NAME }}
         run: tox
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
