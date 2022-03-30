@@ -56,14 +56,15 @@ class WindowHandler:
         :return (dict, dict):
         """
         window = json.loads(
-            self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=self.window_cloud_path)
+            self.source_client.download_as_string(
+                cloud_path=storage.path.generate_gs_path(self.source_bucket, self.window_cloud_path)
+            )
         )
 
         logger.info("Downloaded window %r from bucket %r.", self.window_cloud_path, self.source_bucket)
 
         cloud_metadata = self.source_client.get_metadata(
-            bucket_name=self.source_bucket,
-            path_in_bucket=self.window_cloud_path,
+            cloud_path=storage.path.generate_gs_path(self.source_bucket, self.window_cloud_path)
         )
 
         window_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]

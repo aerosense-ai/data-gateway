@@ -255,8 +255,7 @@ class BatchingUploader(TimeBatcher):
         try:
             self.client.upload_from_string(
                 string=json.dumps(self.ready_window),
-                bucket_name=self.bucket_name,
-                path_in_bucket=self._generate_window_path(),
+                cloud_path=storage.path.generate_gs_path(self.bucket_name, self._generate_window_path()),
                 metadata=self.metadata,
                 timeout=self.upload_timeout,
             )
@@ -301,8 +300,7 @@ class BatchingUploader(TimeBatcher):
             try:
                 self.client.upload_file(
                     local_path=local_path,
-                    bucket_name=self.bucket_name,
-                    path_in_bucket=path_in_bucket,
+                    cloud_path=storage.path.generate_gs_path(self.bucket_name, path_in_bucket),
                     timeout=self.upload_timeout,
                     metadata=self.metadata,
                 )

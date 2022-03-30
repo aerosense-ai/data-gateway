@@ -163,8 +163,9 @@ class TestBatchingUploader(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
+                    cloud_path=storage.path.generate_gs_path(
+                        TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
+                    ),
                 )
             )["sensor_data"],
             {"test": ["ping", "pong"]},
@@ -173,8 +174,9 @@ class TestBatchingUploader(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(uploader.output_directory, "window-1.json"),
+                    cloud_path=storage.path.generate_gs_path(
+                        TEST_BUCKET_NAME, uploader.output_directory, "window-1.json"
+                    ),
                 )
             )["sensor_data"],
             {"test": ["ding", "dong"]},
@@ -205,8 +207,9 @@ class TestBatchingUploader(BaseTestCase):
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
+                    cloud_path=storage.path.generate_gs_path(
+                        TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
+                    ),
                 )
 
             # Check that a backup file has been written.
@@ -238,8 +241,9 @@ class TestBatchingUploader(BaseTestCase):
             # Check that the upload has failed.
             with self.assertRaises(google.api_core.exceptions.NotFound):
                 self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
+                    cloud_path=storage.path.generate_gs_path(
+                        TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
+                    ),
                 )
 
             backup_path = os.path.join(uploader._backup_directory, "window-0.json")
@@ -255,8 +259,9 @@ class TestBatchingUploader(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
+                    cloud_path=storage.path.generate_gs_path(
+                        TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
+                    ),
                 )
             )["sensor_data"],
             {"test": ["ping", "pong"]},
@@ -265,8 +270,9 @@ class TestBatchingUploader(BaseTestCase):
         self.assertEqual(
             json.loads(
                 self.storage_client.download_as_string(
-                    bucket_name=TEST_BUCKET_NAME,
-                    path_in_bucket=storage.path.join(uploader.output_directory, "window-1.json"),
+                    cloud_path=storage.path.generate_gs_path(
+                        TEST_BUCKET_NAME, uploader.output_directory, "window-1.json"
+                    ),
                 )
             )["sensor_data"],
             {"test": [["ding", "dong"]]},
@@ -290,8 +296,7 @@ class TestBatchingUploader(BaseTestCase):
             uploader.add_to_current_window(sensor_name="test", data="ping,")
 
         metadata = self.storage_client.get_metadata(
-            bucket_name=TEST_BUCKET_NAME,
-            path_in_bucket=storage.path.join(uploader.output_directory, "window-0.json"),
+            cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"),
         )
 
         self.assertEqual(metadata["custom_metadata"], {"big": "rock"})

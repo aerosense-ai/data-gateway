@@ -211,7 +211,9 @@ class TestDataGateway(BaseTestCase):
         self.assertTrue(len(window_paths) >= number_of_windows_to_check)
 
         for path in window_paths:
-            data = json.loads(self.storage_client.download_as_string(bucket_name=TEST_BUCKET_NAME, path_in_bucket=path))
+            data = json.loads(
+                self.storage_client.download_as_string(cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, path))
+            )
 
             for name in sensor_names:
                 lines = data["sensor_data"][name]

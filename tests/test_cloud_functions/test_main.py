@@ -6,6 +6,7 @@ import types
 from unittest.mock import MagicMock, patch
 
 from flask import Flask, request
+from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
@@ -47,8 +48,7 @@ class TestUploadWindow(BaseTestCase):
         """
         GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
-            bucket_name=self.SOURCE_BUCKET_NAME,
-            path_in_bucket="window-0.json",
+            cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
         )
 
@@ -80,8 +80,7 @@ class TestUploadWindow(BaseTestCase):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
         GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
-            bucket_name=self.SOURCE_BUCKET_NAME,
-            path_in_bucket="window-0.json",
+            cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
         )
 
