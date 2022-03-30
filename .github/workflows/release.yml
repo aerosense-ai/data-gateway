@@ -50,7 +50,6 @@ jobs:
 
       - name: Run tests
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           TEST_PROJECT_NAME: ${{ secrets.TEST_PROJECT_NAME }}
           GOOGLE_CLOUD_PROJECT: ${{ secrets.TEST_PROJECT_NAME }}
         run: tox
