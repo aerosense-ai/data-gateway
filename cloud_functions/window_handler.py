@@ -126,7 +126,7 @@ class WindowHandler:
             labels=labels,
             mode="w",
         ) as (datafile, f):
-            f["dataset"] = json.dumps(data)
+            f["dataset"] = data
 
         self.dataset.record_microphone_data_location_and_metadata(
             path=datafile.cloud_path,
