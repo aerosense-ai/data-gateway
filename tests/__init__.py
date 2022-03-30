@@ -6,7 +6,6 @@ from data_gateway.configuration import Configuration
 apply_log_handler(include_process_name=True)
 
 
-TEST_PROJECT_NAME = "a-project-name"
 TEST_BUCKET_NAME = "a-bucket-name"
 
 PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")

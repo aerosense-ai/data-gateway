@@ -12,7 +12,7 @@ from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 
 from data_gateway.persistence import BatchingFileWriter, BatchingUploader
-from tests import TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests import TEST_BUCKET_NAME
 from tests.base import BaseTestCase
 
 
@@ -126,7 +126,6 @@ class TestBatchingUploader(BaseTestCase):
         """Test that data is batched as expected."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             window_size=600,
             output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
@@ -139,7 +138,6 @@ class TestBatchingUploader(BaseTestCase):
         """Test that data is uploaded in time windows that can be retrieved from cloud storage."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             window_size=0.01,
             output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
@@ -193,7 +191,6 @@ class TestBatchingUploader(BaseTestCase):
             ):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
-                    project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     window_size=0.01,
                     output_directory=storage.path.join(temporary_directory, "this-session"),
@@ -227,7 +224,6 @@ class TestBatchingUploader(BaseTestCase):
             ):
                 uploader = BatchingUploader(
                     sensor_names=["test"],
-                    project_name=TEST_PROJECT_NAME,
                     bucket_name=TEST_BUCKET_NAME,
                     window_size=10,
                     output_directory=storage.path.join(temporary_directory, "this-session"),
@@ -285,7 +281,6 @@ class TestBatchingUploader(BaseTestCase):
         """Test that metadata is added to uploaded files and can be retrieved."""
         uploader = BatchingUploader(
             sensor_names=["test"],
-            project_name=TEST_PROJECT_NAME,
             bucket_name=TEST_BUCKET_NAME,
             window_size=0.01,
             output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),

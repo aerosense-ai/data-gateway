@@ -112,13 +112,6 @@ def gateway_cli(logger_uri, log_level):
     help="The window length in seconds that data is grouped into before being persisted locally or to the cloud.",
 )
 @click.option(
-    "--gcp-project-name",
-    type=click.STRING,
-    default=None,
-    show_default=True,
-    help="The name of the Google Cloud Platform (GCP) project to use.",
-)
-@click.option(
     "--gcp-bucket-name",
     type=click.STRING,
     default=None,
@@ -160,7 +153,6 @@ def start(
     interactive,
     output_dir,
     window_size,
-    gcp_project_name,
     gcp_bucket_name,
     label,
     no_stop_sensors_on_exit,
@@ -181,7 +173,6 @@ def start(
         interactive=interactive,
         output_directory=output_dir,
         window_size=window_size,
-        project_name=gcp_project_name,
         bucket_name=gcp_bucket_name,
         label=label,
         save_csv_files=save_csv_files,

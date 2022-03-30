@@ -212,7 +212,6 @@ class BatchingUploader(TimeBatcher):
     flag is `True`, its upload will then be reattempted after the upload of each subsequent window.
 
     :param iter(str) sensor_names: names of sensors to group data for
-    :param str project_name: name of Google Cloud project to upload to
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float window_size: length of time window in seconds
     :param str output_directory: directory to write windows to
@@ -224,7 +223,6 @@ class BatchingUploader(TimeBatcher):
     def __init__(
         self,
         sensor_names,
-        project_name,
         bucket_name,
         window_size,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
@@ -232,7 +230,6 @@ class BatchingUploader(TimeBatcher):
         upload_timeout=60,
         upload_backup_files=True,
     ):
-        self.project_name = project_name
         self.client = GoogleCloudStorageClient()
         self.bucket_name = bucket_name
         self.metadata = metadata or {}
