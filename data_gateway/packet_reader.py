@@ -165,12 +165,12 @@ class PacketReader:
                                 break
                             continue
 
-                        if packet_type not in self.handles:
-                            logger.error("Received packet with unknown type: %s", packet_type)
-                            continue
-
                         if packet_type == str(self.config.type_handle_def):
                             self.update_handles(packet)
+                            continue
+
+                        if packet_type not in self.handles:
+                            logger.error("Received packet with unknown type: %s", packet_type)
                             continue
 
                         if len(packet) == 244:  # If the full data payload is received, proceed parsing it
