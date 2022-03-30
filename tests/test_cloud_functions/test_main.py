@@ -110,13 +110,12 @@ class TestUploadWindow(BaseTestCase):
                 "BIG_QUERY_DATASET_NAME": "blah",
             },
         ):
-            with patch("big_query.bigquery.Client"):
-                with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
-                    main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+            with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
+                main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         expected_microphone_cloud_path = "gs://destination-bucket/microphone/window-0.hdf5"
 
-        # Check location of microphone data has been recorded.
+        # Check location of microphone data has been recorded in BigQuery.
         self.assertEqual(
             mock_big_query_client.rows[0][0],
             {
@@ -128,10 +127,9 @@ class TestUploadWindow(BaseTestCase):
             },
         )
 
-        # Check the microphone data has been uploaded to cloud storage.
+        # Check the microphone data has been uploaded to cloud storage. Check from column 1 of the data onwards because
+        # the timestamps in column 0 are changed by the cloud function.
         with Datafile(expected_microphone_cloud_path) as (datafile, f):
-
-            # Check from column 1 of the data onwards as the timestamps are adjusted by the cloud function.
             self.assertTrue(
                 np.equal(
                     np.array(f["dataset"])[:, 1:],
