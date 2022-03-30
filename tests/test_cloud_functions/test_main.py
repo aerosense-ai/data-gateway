@@ -5,9 +5,11 @@ import sys
 import types
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 from flask import Flask, request
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
+from octue.resources import Datafile
 from octue.utils.encoders import OctueJSONEncoder
 
 from tests import TEST_BUCKET_NAME  # noqa
@@ -27,12 +29,11 @@ from cloud_functions.main import (  # noqa
     add_sensor_type,
     create_installation,
 )
-from cloud_functions.window_handler import ConfigurationAlreadyExists  # noqa
+from cloud_functions.window_handler import MICROPHONE_SENSOR_NAME, ConfigurationAlreadyExists  # noqa
 
 
 class TestUploadWindow(BaseTestCase):
     SOURCE_BUCKET_NAME = TEST_BUCKET_NAME
-    WINDOW = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
 
     MOCK_EVENT = {
         "bucket": SOURCE_BUCKET_NAME,
@@ -42,12 +43,22 @@ class TestUploadWindow(BaseTestCase):
         "updated": "0",
     }
 
+    @classmethod
+    def setUpClass(cls):
+        """Create the destination bucket for the tests.
+
+        :return None:
+        """
+        GoogleCloudStorageClient().create_bucket("destination-bucket")
+
     def test_upload_window(self):
         """Test that a window file is uploaded to its destination bucket following the relevant Google Cloud
         storage trigger.
         """
+        window = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
+
         GoogleCloudStorageClient().upload_from_string(
-            string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
+            string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
         )
@@ -74,12 +85,71 @@ class TestUploadWindow(BaseTestCase):
         self.assertIn("add_sensor_data", mock_dataset.mock_calls[2][0])
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my_test_1")
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my-test-1")
+
+    def test_upload_window_with_microphone_data(self):
+        """Test that, if present, microphone data is uploaded to cloud storage and its location is recorded in BigQuery."""
+        window = BaseTestCase().random_window(sensors=["Constat", MICROPHONE_SENSOR_NAME], window_duration=1)
+
+        storage_client = GoogleCloudStorageClient()
+
+        storage_client.upload_from_string(
+            string=json.dumps(window, cls=OctueJSONEncoder),
+            cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
+            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+        )
+
+        configuration_id = "0ee0f88e-166f-4b9b-9bf1-43f6ff84063a"
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[types.SimpleNamespace(id=configuration_id)])
+
+        with patch.dict(
+            os.environ,
+            {
+                "DESTINATION_PROJECT_NAME": "destination-project",
+                "DESTINATION_BUCKET_NAME": "destination-bucket",
+                "BIG_QUERY_DATASET_NAME": "blah",
+            },
+        ):
+            with patch("big_query.bigquery.Client"):
+                with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
+                    main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+
+        expected_microphone_cloud_path = "gs://destination-bucket/microphone/window-0.hdf5"
+
+        # Check location of microphone data has been recorded.
+        self.assertEqual(
+            mock_big_query_client.rows[0][0],
+            {
+                "path": expected_microphone_cloud_path,
+                "project_name": "destination-project",
+                "configuration_id": configuration_id,
+                "installation_reference": "aventa_turbine",
+                "label": "my-test-1",
+            },
+        )
+
+        # Check the microphone data has been uploaded to cloud storage.
+        with Datafile(expected_microphone_cloud_path) as (datafile, f):
+
+            # Check from column 1 of the data onwards as the timestamps are adjusted by the cloud function.
+            self.assertTrue(
+                np.equal(
+                    np.array(f["dataset"])[:, 1:],
+                    window["sensor_data"][MICROPHONE_SENSOR_NAME][:, 1:],
+                ).all()
+            )
+
+        # Check non-microphone sensor data was added to BigQuery.
+        self.assertEqual(mock_big_query_client.rows[1][0]["sensor_type_reference"], "connection_statistics")
+        self.assertEqual(mock_big_query_client.rows[1][0]["configuration_id"], configuration_id)
+        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["sensor_data"]["Constat"]))
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
+        window = BaseTestCase().random_window(sensors=["Constat"], window_duration=1)
+
         GoogleCloudStorageClient().upload_from_string(
-            string=json.dumps(self.WINDOW, cls=OctueJSONEncoder),
+            string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
             metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
         )
