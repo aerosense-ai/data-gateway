@@ -37,8 +37,7 @@ class WindowHandler:
         destination_bucket,
         destination_biq_query_dataset,
     ):
-        self.window_cloud_path = window_cloud_path
-        self.source_bucket = source_bucket
+        self.window_cloud_path = storage.path.generate_gs_path(source_bucket, window_cloud_path)
         self.source_client = GoogleCloudStorageClient()
 
         self.destination_project = destination_project
@@ -55,21 +54,13 @@ class WindowHandler:
 
         :return (dict, dict):
         """
-        window = json.loads(
-            self.source_client.download_as_string(
-                cloud_path=storage.path.generate_gs_path(self.source_bucket, self.window_cloud_path)
-            )
-        )
+        window = json.loads(self.source_client.download_as_string(cloud_path=self.window_cloud_path))
+        logger.info("Downloaded window %r.", self.window_cloud_path)
 
-        logger.info("Downloaded window %r from bucket %r.", self.window_cloud_path, self.source_bucket)
-
-        cloud_metadata = self.source_client.get_metadata(
-            cloud_path=storage.path.generate_gs_path(self.source_bucket, self.window_cloud_path)
-        )
-
+        cloud_metadata = self.source_client.get_metadata(self.window_cloud_path)
         window_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
-        logger.info("Downloaded metadata for window %r from bucket %r.", self.window_cloud_path, self.source_bucket)
 
+        logger.info("Downloaded metadata for window %r.", self.window_cloud_path)
         return window, window_metadata
 
     def persist_window(self, window, window_metadata):
@@ -135,7 +126,7 @@ class WindowHandler:
             labels=labels,
             mode="w",
         ) as (datafile, f):
-            json.dump(data, f)
+            f["dataset"] = json.dumps(data)
 
         self.dataset.record_microphone_data_location_and_metadata(
             path=datafile.cloud_path,
