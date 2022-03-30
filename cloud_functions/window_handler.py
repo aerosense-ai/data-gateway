@@ -128,6 +128,8 @@ class WindowHandler:
         ) as (datafile, f):
             f["dataset"] = data
 
+        logger.info(f"Uploaded {len(data)} microphone data entries to {datafile.cloud_path!r}.")
+
         self.dataset.record_microphone_data_location_and_metadata(
             path=datafile.cloud_path,
             project_name=self.destination_project,
