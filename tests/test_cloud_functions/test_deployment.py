@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import time
@@ -29,12 +30,13 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         upload_path = storage.path.join(os.environ["TEST_BUCKET_NAME"], "window-0.json")
 
         test_label = f"test-{uuid.uuid4()}"
-        self.VALID_CONFIGURATION["session_data"]["label"] = test_label
+        configuration = copy.deepcopy(self.VALID_CONFIGURATION)
+        configuration["session_data"]["label"] = test_label
 
         self.storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=upload_path,
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={"data_gateway__configuration": configuration},
         )
 
         bigquery_client = bigquery.Client()
