@@ -4,7 +4,7 @@ version = "0.11.7"
 repository = "https://github.com/aerosense-ai/data-gateway"
 description = "A data gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud."
 readme = "README.md"
-authors = ["OST Aerosense", "cortadocodes <cortado.codes@protonmail.com>"]
+authors = ["OST Aerosense"]
 license = "MIT"
 keywords=["aerosense", "wind", "energy", "blades"]
 classifiers = [
@@ -25,7 +25,6 @@ google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
 octue = { extras = ["hdf5"], version = "0.16.0" }
-black = "21.6b0"
 
 [tool.poetry.dev-dependencies]
 # Testing.
@@ -43,6 +42,7 @@ wtforms = { extras = ["email"], version = "^3" }
 flake8 = "^4"
 pre-commit = "^2.17"
 coverage = "^6.3"
+black = "21.6b0"
 
 [tool.poetry.scripts]
 gateway = "data_gateway.cli:gateway_cli"
