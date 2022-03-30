@@ -30,7 +30,8 @@ octue = { extras = ["hdf5"], version = "0.16.0" }
 # Testing.
 gcp-storage-emulator = "2021.6.2"
 tox = "^3.23"
-# Packages for testing the cloud functions, excluding octue.
+# Packages for testing the cloud functions, excluding octue (the requirements for the cloud function are specified in
+# `cloud_functions/requirements.txt`).
 blake3 = "0.2.1"
 flask_wtf = "^1"
 google-cloud-bigquery = "^2.29"
