@@ -2,8 +2,10 @@ import csv
 import datetime
 import json
 import os
+import shutil
 import tempfile
 import time
+import uuid
 from unittest import mock
 
 import google.api_core.exceptions
@@ -182,8 +184,7 @@ class TestBatchingUploader(BaseTestCase):
 
     def test_window_is_written_to_disk_if_upload_fails(self):
         """Test that a window is written to disk if it fails to upload to the cloud."""
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
+        try:
             with mock.patch.object(
                 Blob,
                 "upload_from_string",
@@ -193,7 +194,7 @@ class TestBatchingUploader(BaseTestCase):
                     sensor_names=["test"],
                     bucket_name=TEST_BUCKET_NAME,
                     window_size=0.01,
-                    output_directory=storage.path.join(temporary_directory, "this-session"),
+                    output_directory=f"this-session-{uuid.uuid4()}",
                     upload_backup_files=False,
                 )
 
@@ -213,10 +214,12 @@ class TestBatchingUploader(BaseTestCase):
             with open(os.path.join(uploader.output_directory, ".backup", "window-0.json")) as f:
                 self.assertEqual(json.load(f)["sensor_data"], {"test": ["ping", "pong"]})
 
+        finally:
+            shutil.rmtree(uploader.output_directory)
+
     def test_backup_files_are_uploaded_on_next_upload_attempt(self):
         """Test that backup files from a failed upload are uploaded on the next upload attempt."""
-        with tempfile.TemporaryDirectory() as temporary_directory:
-
+        try:
             with mock.patch.object(
                 Blob,
                 "upload_from_string",
@@ -226,7 +229,7 @@ class TestBatchingUploader(BaseTestCase):
                     sensor_names=["test"],
                     bucket_name=TEST_BUCKET_NAME,
                     window_size=10,
-                    output_directory=storage.path.join(temporary_directory, "this-session"),
+                    output_directory=f"this-session-{uuid.uuid4()}",
                     upload_backup_files=True,
                 )
 
@@ -251,31 +254,34 @@ class TestBatchingUploader(BaseTestCase):
             with uploader:
                 uploader.add_to_current_window(sensor_name="test", data=["ding", "dong"])
 
-        # Check that both windows are now in cloud storage.
-        self.assertEqual(
-            json.loads(
-                self.storage_client.download_as_string(
-                    cloud_path=storage.path.generate_gs_path(
-                        TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
-                    ),
-                )
-            )["sensor_data"],
-            {"test": ["ping", "pong"]},
-        )
+            # Check that both windows are now in cloud storage.
+            self.assertEqual(
+                json.loads(
+                    self.storage_client.download_as_string(
+                        cloud_path=storage.path.generate_gs_path(
+                            TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
+                        ),
+                    )
+                )["sensor_data"],
+                {"test": ["ping", "pong"]},
+            )
 
-        self.assertEqual(
-            json.loads(
-                self.storage_client.download_as_string(
-                    cloud_path=storage.path.generate_gs_path(
-                        TEST_BUCKET_NAME, uploader.output_directory, "window-1.json"
-                    ),
-                )
-            )["sensor_data"],
-            {"test": [["ding", "dong"]]},
-        )
+            self.assertEqual(
+                json.loads(
+                    self.storage_client.download_as_string(
+                        cloud_path=storage.path.generate_gs_path(
+                            TEST_BUCKET_NAME, uploader.output_directory, "window-1.json"
+                        ),
+                    )
+                )["sensor_data"],
+                {"test": [["ding", "dong"]]},
+            )
 
-        # Check that the backup file has been removed now it's been uploaded to cloud storage.
-        self.assertFalse(os.path.exists(backup_path))
+            # Check that the backup file has been removed now it's been uploaded to cloud storage.
+            self.assertFalse(os.path.exists(backup_path))
+
+        finally:
+            shutil.rmtree(uploader.output_directory)
 
     def test_metadata_is_added_to_uploaded_files(self):
         """Test that metadata is added to uploaded files and can be retrieved."""
@@ -283,7 +289,7 @@ class TestBatchingUploader(BaseTestCase):
             sensor_names=["test"],
             bucket_name=TEST_BUCKET_NAME,
             window_size=0.01,
-            output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
+            output_directory=f"this-session-{uuid.uuid4()}",
             metadata={"big": "rock"},
         )
 
