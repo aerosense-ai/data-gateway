@@ -138,49 +138,53 @@ class TestBatchingUploader(BaseTestCase):
 
     def test_data_is_uploaded_in_windows_and_can_be_retrieved_from_cloud_storage(self):
         """Test that data is uploaded in time windows that can be retrieved from cloud storage."""
-        uploader = BatchingUploader(
-            sensor_names=["test"],
-            bucket_name=TEST_BUCKET_NAME,
-            window_size=0.01,
-            output_directory=storage.path.join(tempfile.TemporaryDirectory().name, "this-session"),
-        )
+        try:
+            uploader = BatchingUploader(
+                sensor_names=["test"],
+                bucket_name=TEST_BUCKET_NAME,
+                window_size=0.01,
+                output_directory=f"this-session-{uuid.uuid4()}",
+            )
 
-        with uploader:
-            uploader.add_to_current_window(sensor_name="test", data="ping")
-            uploader.add_to_current_window(sensor_name="test", data="pong")
-            self.assertEqual(len(uploader.current_window["sensor_data"]["test"]), 2)
+            with uploader:
+                uploader.add_to_current_window(sensor_name="test", data="ping")
+                uploader.add_to_current_window(sensor_name="test", data="pong")
+                self.assertEqual(len(uploader.current_window["sensor_data"]["test"]), 2)
 
-            time.sleep(uploader.window_size)
+                time.sleep(uploader.window_size)
 
-            uploader.add_to_current_window(sensor_name="test", data="ding")
-            uploader.add_to_current_window(sensor_name="test", data="dong")
-            self.assertEqual(len(uploader.current_window["sensor_data"]["test"]), 2)
+                uploader.add_to_current_window(sensor_name="test", data="ding")
+                uploader.add_to_current_window(sensor_name="test", data="dong")
+                self.assertEqual(len(uploader.current_window["sensor_data"]["test"]), 2)
 
-            time.sleep(uploader.window_size)
+                time.sleep(uploader.window_size)
 
-        self.assertEqual(len(uploader.current_window["sensor_data"]["test"]), 0)
+            self.assertEqual(len(uploader.current_window["sensor_data"]["test"]), 0)
 
-        self.assertEqual(
-            json.loads(
-                self.storage_client.download_as_string(
-                    cloud_path=storage.path.generate_gs_path(
-                        TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
-                    ),
-                )
-            )["sensor_data"],
-            {"test": ["ping", "pong"]},
-        )
+            self.assertEqual(
+                json.loads(
+                    self.storage_client.download_as_string(
+                        cloud_path=storage.path.generate_gs_path(
+                            TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"
+                        ),
+                    )
+                )["sensor_data"],
+                {"test": ["ping", "pong"]},
+            )
 
-        self.assertEqual(
-            json.loads(
-                self.storage_client.download_as_string(
-                    cloud_path=storage.path.generate_gs_path(
-                        TEST_BUCKET_NAME, uploader.output_directory, "window-1.json"
-                    ),
-                )
-            )["sensor_data"],
-            {"test": ["ding", "dong"]},
-        )
+            self.assertEqual(
+                json.loads(
+                    self.storage_client.download_as_string(
+                        cloud_path=storage.path.generate_gs_path(
+                            TEST_BUCKET_NAME, uploader.output_directory, "window-1.json"
+                        ),
+                    )
+                )["sensor_data"],
+                {"test": ["ding", "dong"]},
+            )
+
+        finally:
+            shutil.rmtree(uploader.output_directory)
 
     def test_window_is_written_to_disk_if_upload_fails(self):
         """Test that a window is written to disk if it fails to upload to the cloud."""
