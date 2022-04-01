@@ -1,9 +1,9 @@
 blake3==0.2.1
-flask_wtf
-google-cloud-bigquery==2.29.0
-octue[hdf5]==0.6.5
-pandas>=1.2.3
-python-slugify==5.0.2
-scipy>=1.6.1
-shapely
-wtforms[email]
+flask_wtf>=1,<2
+google-cloud-bigquery>=2.29,<3
+octue[hdf5]==0.16.0
+pandas>=1.2,<3
+python-slugify>=5,<6
+scipy>=1.6,<2
+shapely>=1.8,<2
+wtforms[email]>=3,<4

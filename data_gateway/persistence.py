@@ -212,7 +212,6 @@ class BatchingUploader(TimeBatcher):
     flag is `True`, its upload will then be reattempted after the upload of each subsequent window.
 
     :param iter(str) sensor_names: names of sensors to group data for
-    :param str project_name: name of Google Cloud project to upload to
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float window_size: length of time window in seconds
     :param str output_directory: directory to write windows to
@@ -224,7 +223,6 @@ class BatchingUploader(TimeBatcher):
     def __init__(
         self,
         sensor_names,
-        project_name,
         bucket_name,
         window_size,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
@@ -232,8 +230,7 @@ class BatchingUploader(TimeBatcher):
         upload_timeout=60,
         upload_backup_files=True,
     ):
-        self.project_name = project_name
-        self.client = GoogleCloudStorageClient(project_name=project_name)
+        self.client = GoogleCloudStorageClient()
         self.bucket_name = bucket_name
         self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
@@ -255,8 +252,7 @@ class BatchingUploader(TimeBatcher):
         try:
             self.client.upload_from_string(
                 string=json.dumps(self.ready_window),
-                bucket_name=self.bucket_name,
-                path_in_bucket=self._generate_window_path(),
+                cloud_path=storage.path.generate_gs_path(self.bucket_name, self._generate_window_path()),
                 metadata=self.metadata,
                 timeout=self.upload_timeout,
             )
@@ -301,8 +297,7 @@ class BatchingUploader(TimeBatcher):
             try:
                 self.client.upload_file(
                     local_path=local_path,
-                    bucket_name=self.bucket_name,
-                    path_in_bucket=path_in_bucket,
+                    cloud_path=storage.path.generate_gs_path(self.bucket_name, path_in_bucket),
                     timeout=self.upload_timeout,
                     metadata=self.metadata,
                 )

@@ -12,7 +12,7 @@ from data_gateway.configuration import Configuration
 from data_gateway.data_gateway import DataGateway
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.persistence import TimeBatcher
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME, TEST_PROJECT_NAME
+from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME
 from tests.base import BaseTestCase
 
 
@@ -32,7 +32,7 @@ class TestDataGateway(BaseTestCase):
         :return None:
         """
         cls.WINDOW_SIZE = 10
-        cls.storage_client = GoogleCloudStorageClient(project_name=TEST_PROJECT_NAME)
+        cls.storage_client = GoogleCloudStorageClient()
 
     def test_configuration_file_is_persisted(self):
         """Test that the configuration file is persisted."""
@@ -48,7 +48,6 @@ class TestDataGateway(BaseTestCase):
                 save_locally=True,
                 output_directory=self._generate_temporary_output_directory_name(),
                 window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
                 stop_sensors_on_exit=False,
             )
@@ -86,7 +85,6 @@ class TestDataGateway(BaseTestCase):
                         save_locally=True,
                         output_directory=self._generate_temporary_output_directory_name(),
                         window_size=self.WINDOW_SIZE,
-                        project_name=TEST_PROJECT_NAME,
                         bucket_name=TEST_BUCKET_NAME,
                         stop_sensors_on_exit=False,
                     )
@@ -127,7 +125,6 @@ class TestDataGateway(BaseTestCase):
                 upload_to_cloud=False,
                 output_directory=temporary_directory,
                 window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
                 stop_sensors_on_exit=False,
             )
@@ -156,7 +153,6 @@ class TestDataGateway(BaseTestCase):
                 save_locally=True,
                 output_directory=self._generate_temporary_output_directory_name(),
                 window_size=self.WINDOW_SIZE,
-                project_name=TEST_PROJECT_NAME,
                 bucket_name=TEST_BUCKET_NAME,
                 stop_sensors_on_exit=False,
             )
@@ -211,7 +207,9 @@ class TestDataGateway(BaseTestCase):
         self.assertTrue(len(window_paths) >= number_of_windows_to_check)
 
         for path in window_paths:
-            data = json.loads(self.storage_client.download_as_string(bucket_name=TEST_BUCKET_NAME, path_in_bucket=path))
+            data = json.loads(
+                self.storage_client.download_as_string(cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, path))
+            )
 
             for name in sensor_names:
                 lines = data["sensor_data"][name]

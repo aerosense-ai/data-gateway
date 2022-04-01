@@ -47,7 +47,6 @@ class DataGateway:
     :param bool interactive: if `True`, allow commands entered into `stdin` to be sent to the sensors in real time
     :param str output_directory: the name of the directory in which to save data in the cloud bucket or local file system
     :param float window_size: the period in seconds at which data is persisted
-    :param str|None project_name: the name of the Google Cloud project to upload to
     :param str|None bucket_name: the name of the Google Cloud bucket to upload to
     :param str|None label: a label to be associated with the data collected in this run of the data gateway
     :param bool save_csv_files: if `True`, also save windows locally as CSV files for debugging
@@ -65,7 +64,6 @@ class DataGateway:
         interactive=False,
         output_directory="data_gateway",
         window_size=600,
-        project_name=None,
         bucket_name=None,
         label=None,
         save_csv_files=False,
@@ -100,7 +98,6 @@ class DataGateway:
             upload_to_cloud=upload_to_cloud,
             output_directory=output_directory,
             window_size=window_size,
-            project_name=project_name,
             bucket_name=bucket_name,
             configuration=packet_reader_configuration,
             save_csv_files=save_csv_files,

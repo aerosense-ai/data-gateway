@@ -22,7 +22,6 @@ class WindowHandler:
     including its location in cloud storage, is also added to the BigQuery dataset.
 
     :param str window_cloud_path: the Google Cloud Storage path to the window file
-    :param str source_project: name of the project the source bucket belongs to
     :param str source_bucket: name of the bucket the files to be processed are stored in
     :param str destination_project: name of the project the BigQuery dataset belongs to
     :param str destination_bucket: name of the bucket to store raw microphone data in
@@ -33,16 +32,13 @@ class WindowHandler:
     def __init__(
         self,
         window_cloud_path,
-        source_project,
         source_bucket,
         destination_project,
         destination_bucket,
         destination_biq_query_dataset,
     ):
-        self.window_cloud_path = window_cloud_path
-        self.source_project = source_project
-        self.source_bucket = source_bucket
-        self.source_client = GoogleCloudStorageClient(project_name=source_project, credentials=None)
+        self.window_cloud_path = storage.path.generate_gs_path(source_bucket, window_cloud_path)
+        self.source_client = GoogleCloudStorageClient()
 
         self.destination_project = destination_project
         self.destination_bucket = destination_bucket
@@ -58,20 +54,13 @@ class WindowHandler:
 
         :return (dict, dict):
         """
-        window = json.loads(
-            self.source_client.download_as_string(bucket_name=self.source_bucket, path_in_bucket=self.window_cloud_path)
-        )
+        window = json.loads(self.source_client.download_as_string(cloud_path=self.window_cloud_path))
+        logger.info("Downloaded window %r.", self.window_cloud_path)
 
-        logger.info("Downloaded window %r from bucket %r.", self.window_cloud_path, self.source_bucket)
-
-        cloud_metadata = self.source_client.get_metadata(
-            bucket_name=self.source_bucket,
-            path_in_bucket=self.window_cloud_path,
-        )
-
+        cloud_metadata = self.source_client.get_metadata(self.window_cloud_path)
         window_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
-        logger.info("Downloaded metadata for window %r from bucket %r.", self.window_cloud_path, self.source_bucket)
 
+        logger.info("Downloaded metadata for window %r.", self.window_cloud_path)
         return window, window_metadata
 
     def persist_window(self, window, window_metadata):
@@ -131,15 +120,15 @@ class WindowHandler:
         else:
             labels = None
 
-        datafile = Datafile(
+        with Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
-            project_name=self.destination_project,
             tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
             labels=labels,
-        )
+            mode="w",
+        ) as (datafile, f):
+            f["dataset"] = data
 
-        with datafile.open("w") as f:
-            json.dump(data, f)
+        logger.info(f"Uploaded {len(data)} microphone data entries to {datafile.cloud_path!r}.")
 
         self.dataset.record_microphone_data_location_and_metadata(
             path=datafile.cloud_path,

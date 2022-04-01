@@ -28,7 +28,6 @@ class PacketReader:
     :param bool upload_to_cloud: upload data windows to Google cloud
     :param str|None output_directory: the directory in which to save data in the cloud bucket or local file system
     :param float window_size: the period in seconds at which data is persisted.
-    :param str|None project_name: name of Google Cloud project to upload to
     :param str|None bucket_name: name of Google Cloud bucket to upload to
     :param data_gateway.configuration.Configuration|None configuration: the configuration for reading and parsing data
     :param bool save_csv_files: save sensor data to .csv when in interactive mode
@@ -41,7 +40,6 @@ class PacketReader:
         upload_to_cloud,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
         window_size=600,
-        project_name=None,
         bucket_name=None,
         configuration=None,
         save_csv_files=False,
@@ -55,7 +53,6 @@ class PacketReader:
         os.makedirs(self.local_output_directory, exist_ok=True)
 
         self.window_size = window_size
-        self.project_name = project_name
         self.bucket_name = bucket_name
         self.config = configuration or Configuration()
         self.save_csv_files = save_csv_files
@@ -117,7 +114,6 @@ class PacketReader:
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
                 sensor_names=self.config.sensor_names,
-                project_name=self.project_name,
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
                 output_directory=self.cloud_output_directory,

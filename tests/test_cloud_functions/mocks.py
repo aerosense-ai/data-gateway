@@ -1,7 +1,7 @@
 class MockBigQueryClient:
     def __init__(self, expected_query_result=None):
-        self.expected_query_result = expected_query_result
-        self.rows = None
+        self.expected_query_result = expected_query_result or []
+        self.rows = []
 
     def get_table(self, name):
         """Do nothing.
@@ -18,7 +18,7 @@ class MockBigQueryClient:
         :param list(dict) rows:
         :return None:
         """
-        self.rows = rows
+        self.rows.append(rows)
 
     def query(self, query):
         """Return the `self.expected_query_result` attribute in a `MockQueryResult` instance.

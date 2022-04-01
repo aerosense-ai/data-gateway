@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "data-gateway"
+version = "0.11.7"
+repository = "https://github.com/aerosense-ai/data-gateway"
+description = "A data gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud."
+readme = "README.md"
+authors = ["OST Aerosense"]
+license = "MIT"
+keywords=["aerosense", "wind", "energy", "blades"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.7.1,<3.11"
+click = ">=7.1.2,<9"
+google-cloud-storage = "^1.35"
+pyserial = "^3.5"
+python-slugify = "^5"
+octue = { extras = ["hdf5"], version = "0.16.0" }
+
+[tool.poetry.dev-dependencies]
+# Testing.
+gcp-storage-emulator = "2021.6.2"
+tox = "^3.23"
+# Packages for testing the cloud functions, excluding octue (the requirements for the cloud function are specified in
+# `cloud_functions/requirements.txt`).
+blake3 = "0.2.1"
+flask_wtf = "^1"
+google-cloud-bigquery = "^2.29"
+pandas = "^1.2"
+scipy = "^1.6"
+shapely = "^1.8"
+wtforms = { extras = ["email"], version = "^3" }
+# Code quality.
+flake8 = "^4"
+pre-commit = "^2.17"
+coverage = "^6.3"
+black = "21.6b0"
+
+[tool.poetry.scripts]
+gateway = "data_gateway.cli:gateway_cli"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
