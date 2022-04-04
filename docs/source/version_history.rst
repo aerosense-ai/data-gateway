@@ -7,4 +7,4 @@
 Version History
 ===============
 
-Version history can be found `here on GitLab <https://gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway/-/tags>`_.
+Version history can be found `here on GitHub <https://github.com/aerosense-ai/data-gateway/releases>`_.
