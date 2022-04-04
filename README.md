@@ -1,4 +1,3 @@
-
 [![codecov](https://codecov.io/gh/aerosense-ai/data-gateway/branch/main/graph/badge.svg?token=GEQFQVL2TK)](https://codecov.io/gh/aerosense-ai/data-gateway)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
@@ -8,47 +7,40 @@
 # data-gateway
 
 ## Documentation
-Documentation for `data-gateway` can be found [here.](https://windenergie-hsr.gitlab.io/aerosense/digital-twin/data-gateway)
+Coming soon (check the `docs` directory for now).
 
 ## Developer notes
 
 ### Installation
+We're using `poetry` instead of `pip` to manage the package. In terms of developer experience, this just means there are
+some slightly different commands to run than usual. `data-gateway` can still be `pip`-installed by anyone anywhere, but
+dependency resolution and dependency specification for `data-gateway` developers is improved by using `poetry` locally.
 
 #### Clone the repository
-First, clone the repository. It's a private repository, so you'll either need to clone it via:
-- `ssh`, or
-- `https` with:
-  - a personal access token (PAT), or
-  - your GitLab username and password entered into the command line when asked.
 
-To use a PAT, run the following:
+First, clone the repository:
 ```shell
-export GATEWAY_VERSION="0.2.0" # Or whatever release number you aim to use, check the latest available on GitLab;
-export PERSONAL_ACCESS_TOKEN=abcdef123456
-git clone git+https://${PERSONAL_ACCESS_TOKEN_GITHUB}@gitlab.com/windenergie-hsr/aerosense/digital-twin/data-gateway@${GATEWAY_VERSION}
+export GATEWAY_VERSION="0.11.7" # Or whatever release number you aim to use, check the latest available on GitHub;
+git clone https://github.com/aerosense-ai/data-gateway.git@${GATEWAY_VERSION}
 ```
 
-For instructions on how to create a PAT, [click here](https://windenergie-hsr.gitlab.io/aerosense/digital-twin/data-gateway/installation.html).
-
-Finally, change directory into the repository:
+Then, change directory into the repository:
 ```shell
 cd data-gateway
 ```
 
 #### Install on Linux or MacOS
-For development, run the following from the repository root.
+
+Run the following from the repository root.
 ```bash
-# Create a virtual environment.
-python3 -m venv venv
+# Install poetry.
+pip install poetry
 
-# Activate the virtual environment.
-source ./venv/bin/activate
-
-# Editably install data-gateway.
-pip install -r requirements-dev.txt
+# Editably install data-gateway, including its development dependencies.
+poetry install
 ```
 
-This will editably install `data-gateway` in a virtual environment, meaning:
+This will editably install `data-gateway` in a `poetry`-managed virtual environment, meaning:
 - Any local changes you make to it will be automatically used when running it locally
 - It won't be affected by changes to other python packages you have installed on your system, making development much
   easier and more deterministic
@@ -65,13 +57,14 @@ Prerequisites:
 
 Installation:
 1. Clone this repo as described above.
-2. ``` cd data-gateway```
-2. ``` pyenv install 3.7.0``` (or higher)
-3. ``` pyenv local 3.7.0 ```
-4. ``` pyenv rehash ```
-5. ``` virtualenv venv ```
-6. ``` ./venv/Scripts/activate ```
-7. ``` pip install -r requirements-dev.txt ```
+2. `cd data-gateway`
+3. `pyenv install 3.7.0` (or higher)
+4. `pyenv local 3.7.0`
+5. `pyenv rehash`
+6. `virtualenv venv`
+7. `./venv/Scripts/activate`
+8. `pip install poetry`
+9. `poetry install`
 
 Every time you enter the repo over powershell again, make sure to activate the venv using
 ```
@@ -87,8 +80,8 @@ gateway --help
 ```
 Usage: gateway [OPTIONS] COMMAND [ARGS]...
 
-  AeroSense Gateway CLI. Run the on-tower gateway service to read data from
-  the bluetooth receivers and send it to AeroSense Cloud.
+  Enter the AeroSense Gateway CLI. Run the on-tower gateway service to read
+  data from the bluetooth receivers and send it to AeroSense Cloud.
 
 Options:
   --logger-uri TEXT               Stream logs to a websocket at the given URI
@@ -101,6 +94,7 @@ Options:
   -h, --help                      Show this message and exit.
 
 Commands:
+  add-sensor-type      Add a sensor type to the BigQuery dataset.
   create-installation  Create an installation representing a collection of...
   start                Begin reading and persisting data from the serial...
   supervisord-conf     Print conf entry for use with supervisord.
@@ -136,13 +130,13 @@ pre-commit install -t commit-msg
 
 Once that's done, each time you make a commit, the following checks are made:
 
-- Valid github repo and files
+- Valid GitHub repo and files
 - Code style
 - Import order
 - PEP8 compliance
 - Documentation build
 - Branch naming convention
-- Conventional Commit messages
+- Conventional Commit message checks
 
 Upon failure, the commit will halt. **Re-running the commit will automatically fix most issues** except:
 
@@ -169,13 +163,13 @@ what's happening and can advise / steer you.
 - Create a fork of `data-gateway`, undertake your changes on a new branch, (see `.pre-commit-config.yaml` for branch naming conventions). To run tests and make commits,
 you'll need to do something like:
 ```
-git clone <your_forked_repo_address>    # fetches the repo to your local machine
-cd data_gateway                     # move into the repo directory
-pyenv virtualenv 3.6.9 myenv            # Makes a virtual environment for you to install the dev tools into. Use any python >= 3.6
-pyend activate myenv                    # Activates the virtual environment so you don't screw up other installations
-pip install -r requirements-dev.txt     # Installs the testing and code formatting utilities
-pre-commit install                      # Installs the pre-commit code formatting hooks in the git repo
-tox                                     # Runs the tests with coverage. NB you can also just set up pycharm or vscode to run these.
+git clone <your_forked_repo_address>    # Fetch the repo to your local machine
+cd data_gateway                         # Move into the repo directory
+pyenv virtualenv 3.6.9 myenv            # Make a virtual environment for you to install the dev tools into. Use any python >= 3.7
+pyend activate myenv                    # Activate the virtual environment so you don't screw up other installations
+poetry install                          # Install the testing and code formatting utilities
+pre-commit install                      # Install the pre-commit code formatting hooks in the git repo
+tox                                     # Run the tests with coverage. NB you can also just set up pycharm or vscode to run these.
 ```
 
 - Adopt a Test Driven Development approach to implementing new features or fixing bugs.
@@ -192,17 +186,15 @@ roadmap, into which you can make your PR. We'll help review the changes and impr
 
 The process for creating a new release is as follows:
 
-1. Check out a branch for the next version, called `vX.Y.Z`
+1. Check out a branch with a name describing the main change
 2. Create a Pull Request into the `main` branch.
-3. Undertake your changes, committing and pushing to branch `vX.Y.Z`
+3. Undertake your changes, committing and pushing to branch
 4. Ensure that documentation is updated to match changes, and increment the changelog. **Pull requests which do not update documentation will be refused.**
 5. Ensure that test coverage is sufficient. **Pull requests that decrease test coverage will be refused.**
 6. Ensure code meets style guidelines (pre-commit scripts and flake8 tests will fail otherwise)
 7. Address Review Comments on the PR
-8. Ensure the version in `setup.py` is correct and matches the branch version.
-9. Merge to `main`. Successful test, doc build, flake8 and a new version number will automatically create the release on pypi.
-10. Go to code > releases and create a new release on GitHub at the same SHA.
-
+8. Ensure the version in `pyproject.toml` is correct.
+9. Merge into `main`. Successful test, doc build, flake8 and a new version number will automatically create a GitHub release.
 
 ## Documents
 
