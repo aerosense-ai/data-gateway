@@ -4,7 +4,7 @@
 Deployment
 ==========
 
-To deploy the AeroSense system, you must:
+To deploy the Aerosense system, you must:
 
 - Register the deployment
 - Create a deployment Service Account
@@ -16,7 +16,7 @@ To deploy the AeroSense system, you must:
 Register the deployment
 =======================
 
-A "deployment" is the act of commissioning the AeroSense system on a group of turbines (typically the turbines in a
+A "deployment" is the act of commissioning the Aerosense system on a group of turbines (typically the turbines in a
 particular wind farm).
 
 For experimental and test purposes, there will typically be only one turbine (and therefore one gateway) per deployment.
@@ -29,7 +29,7 @@ TODO Registration process documentation - See Tom and Yuriy
 Create a Service Account
 ========================
 
-The gateway that you install on a turbine needs to upload data to AeroSense Cloud. However, we don't want "just anybody"
+The gateway that you install on a turbine needs to upload data to Aerosense Cloud. However, we don't want "just anybody"
 to be able to write data to the store - that leaves us vulnerable to a wide range of attacks. So the gateway must
 authenticate itself with the store prior to upload.
 

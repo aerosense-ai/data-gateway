@@ -38,8 +38,8 @@ logger = multiprocessing.get_logger()
 )
 @click.version_option(version=pkg_resources.get_distribution("data_gateway").version)
 def gateway_cli(logger_uri, log_level):
-    """Enter the AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and
-    send it to AeroSense Cloud.
+    """Enter the Aerosense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and
+    send it to Aerosense Cloud.
     """
     from octue.log_handlers import apply_log_handler, get_remote_handler
 
