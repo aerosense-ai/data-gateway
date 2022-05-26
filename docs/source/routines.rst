@@ -40,6 +40,6 @@ Routine file schema
 -------------------
 
 - The ``commands`` key in the file should be a list of two-element lists. Each two-element list should comprise a valid string command to 
-send to the sensors and a delay in seconds from the gateway starting to run the command.
+  send to the sensors and a delay in seconds from the gateway starting to run the command.
 - An optional ``period`` in seconds can be provided to repeat the routine. If none is provided, the routine is run once only. 
   The period must be greater than each of the commands' delays.

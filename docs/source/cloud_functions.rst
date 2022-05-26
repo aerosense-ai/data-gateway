@@ -1,4 +1,4 @@
-.. _cloud_function:
+.. _cloud_functions:
 
 ==============
 Cloud function
