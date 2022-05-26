@@ -1,5 +1,3 @@
-.. _cloud_functions:
-
 ==============
 Cloud function
 ==============
@@ -12,25 +10,25 @@ part of the ``aerosense-twined`` Google Cloud project. You can view the deployed
 There is no need to read further about this if you are only working on data collection from the serial port.
 
 
-=============================
 Developing the cloud function
 =============================
+
 The entrypoint for the cloud function is ``cloud_functions.main.clean_and_upload_window`` and it must accept ``event`` and
 ``context`` arguments in that order. Apart from that, it can do anything upon receiving an event (the event is an upload
-of a file to the ingress bucket). It currently uses the ``window_handler`` module and ``preprocessing`` subpackage.
+of a file to the ingress bucket). It currently uses the ``window_handler`` module.
 
 Dependencies
-============
+------------
 Dependencies for the cloud function must be included in the ``requirements.txt`` file in the ``cloud_functions`` package.
 
 
 More information
-================
+----------------
 More information can be found at https://cloud.google.com/functions/docs/writing
 
 
 Manual redeployment
-===================
+--------------------
 The cloud function package is included in this (``data-gateway``) repository in ``cloud_functions``, which is where it
 should be edited and version controlled. When a new version is ready, it must be manually deployed to the cloud for it
 to be used for new window uploads (there is no automatic deployment enabled currently):

@@ -33,10 +33,10 @@ You can see help about this command by executing:
 
 Automatic mode
 --------------------------------
-Running the gateway in automatic mode doesn't allow further commands to be passed to the serial port. Instead, a routine
-JSON file can be provided via the ``--routine-file`` option. Data from the serial port is processed, batched into time
-windows, and uploaded to an ingress Google Cloud storage bucket where it is cleaned and forwarded to another bucket for
-storage. This is the mode you'll want to deploy in production.
+Running the gateway in automatic mode doesn't allow further commands to be passed to the serial port. Instead, a
+:doc:`routine JSON file <routines>` can be provided via the ``--routine-file`` option. Data from the serial port is
+processed, batched into time windows, and uploaded to an ingress Google Cloud storage bucket where it is cleaned and
+forwarded to another bucket for storage. This is the mode you'll want to deploy in production.
 
 Before starting this mode, Google application credentials must be provided. To start this mode, type:
 
