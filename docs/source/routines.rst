@@ -15,10 +15,10 @@ Creating and providing a routine file
 
 A routine file looks like this:
 
-.. code-block:: json
+.. code-block::
 
     {
-        "commands": [["startIMU", 0.1], ["startBaros", 0.2], ["getBattery", 3]]
+        "commands": [["startIMU", 0.1], ["startBaros", 0.2], ["getBattery", 3]],
         "period": 5  # (period is optional)
     }
 

@@ -17,10 +17,10 @@ The data flow from the aerosense sensor modules looks like this:
 .. code-block::
 
     Node (edge processor on-blade)
-      >  Receiver (bluetooth equipment in-nacelle)
-        >  Gateway (data manager and uploader on-nacelle)
-          >  Ingress (Cloud Function to receive data on-cloud)
-            >  Digital Twin (data analysis and storage system)
+    ->  Receiver (bluetooth equipment in-nacelle)
+    --->  Gateway (data manager and uploader on-nacelle)
+    ----->  Ingress (Cloud Function to receive data on-cloud)
+    ------->  Digital Twin (data analysis and storage system)
 
 A ``Node`` streams data to the ``Receiver`` via bluetooth. The ``Receiver`` writes the bytestream directly to a serial
 port. The ``Gateway`` (this library) reads the bytestream from the serial port, decodes it and buffers it in local
@@ -39,7 +39,6 @@ The code for the Cloud Function ``Ingress`` is also included in this repository.
    :maxdepth: 2
    :hidden:
 
-   self
    installation
    using_the_gateway
    output_data
