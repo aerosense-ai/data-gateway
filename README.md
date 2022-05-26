@@ -6,8 +6,7 @@
 
 # data-gateway
 
-## Documentation
-Coming soon (check the `docs` directory for now).
+Read the docs [here.](https://aerosense-data-gateway.readthedocs.io/en/latest/)
 
 ## Developer notes
 
