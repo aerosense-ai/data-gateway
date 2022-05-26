@@ -1,7 +1,6 @@
 # Required by the python script for building documentation
-Sphinx>=2,<3
-sphinx-rtd-theme==0.5.0
-sphinx-tabs==1.2.1
-octue==0.6.2
-pyserial==3.5
-docutils==0.12
+poetry>=1,<2
+Sphinx>=4,<5
+sphinx-rtd-theme>=1,<2
+sphinx-tabs>=3,<4
+sphinx-autoapi==1.8.4

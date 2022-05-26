@@ -6,8 +6,7 @@
 
 # data-gateway
 
-## Documentation
-Coming soon (check the `docs` directory for now).
+Read the docs [here.](https://aerosense-data-gateway.readthedocs.io/en/latest/)
 
 ## Developer notes
 
@@ -80,8 +79,8 @@ gateway --help
 ```
 Usage: gateway [OPTIONS] COMMAND [ARGS]...
 
-  Enter the AeroSense Gateway CLI. Run the on-tower gateway service to read
-  data from the bluetooth receivers and send it to AeroSense Cloud.
+  Enter the Aerosense Gateway CLI. Run the on-tower gateway service to read
+  data from the bluetooth receivers and send it to Aerosense Cloud.
 
 Options:
   --logger-uri TEXT               Stream logs to a websocket at the given URI

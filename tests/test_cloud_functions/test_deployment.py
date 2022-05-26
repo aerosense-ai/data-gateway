@@ -28,7 +28,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         results uploaded to a test BigQuery instance.
         """
         window = self.random_window(sensors=["Constat", MICROPHONE_SENSOR_NAME], window_duration=1)
-        upload_path = storage.path.join(os.environ["TEST_BUCKET_NAME"], "window-0.json")
+        upload_path = storage.path.generate_gs_path(os.environ["TEST_BUCKET_NAME"], "window-0.json")
 
         test_label = f"test-{uuid.uuid4()}"
         configuration = copy.deepcopy(self.VALID_CONFIGURATION)

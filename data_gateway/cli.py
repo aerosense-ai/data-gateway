@@ -1,15 +1,9 @@
-import json
 import multiprocessing
-import os
 
 import click
 import pkg_resources
 import requests
-from requests import HTTPError
 from slugify import slugify
-
-from data_gateway.data_gateway import DataGateway
-from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 
 
 SUPERVISORD_PROGRAM_NAME = "AerosenseGateway"
@@ -38,16 +32,16 @@ logger = multiprocessing.get_logger()
 )
 @click.version_option(version=pkg_resources.get_distribution("data_gateway").version)
 def gateway_cli(logger_uri, log_level):
-    """Enter the AeroSense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and
-    send it to AeroSense Cloud.
+    """Enter the Aerosense Gateway CLI. Run the on-tower gateway service to read data from the bluetooth receivers and
+    send it to Aerosense Cloud.
     """
-    from octue.log_handlers import apply_log_handler, get_remote_handler
-
     # Store log level to apply to multi-processed logger in `DataGateway` in the `start` command.
     global_cli_context["log_level"] = log_level.upper()
 
     # Stream logs to remote handler if required.
     if logger_uri is not None:
+        from octue.log_handlers import apply_log_handler, get_remote_handler
+
         apply_log_handler(
             logger=logger,
             handler=get_remote_handler(logger_uri=logger_uri),
@@ -164,6 +158,8 @@ def start(
     nodes/sensors via the serial port by typing them into stdin and pressing enter. These commands are:
     [startBaros, startMics, startIMU, getBattery, stop].
     """
+    from data_gateway.data_gateway import DataGateway
+
     data_gateway = DataGateway(
         serial_port=serial_port,
         configuration_path=config_file,
@@ -195,6 +191,10 @@ def create_installation(config_file):
     """Create an installation representing a collection of sensors that data can be collected from. The installation
     information is read from the "installation_data" field of `configuration.json`.
     """
+    import json
+
+    from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+
     with open(config_file or "configuration.json") as f:
         configuration = json.load(f)
 
@@ -241,7 +241,7 @@ def create_installation(config_file):
     response = requests.post(url=CREATE_INSTALLATION_CLOUD_FUNCTION_URL, json=parameters)
 
     if not response.status_code == 200:
-        raise HTTPError(f"{response.status_code}: {response.text}")
+        raise requests.HTTPError(f"{response.status_code}: {response.text}")
 
     print(f"Installation created: {parameters!r}")
 
@@ -295,7 +295,7 @@ def add_sensor_type(name, description, measuring_unit, metadata):
     response = requests.post(url=ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL, json=parameters)
 
     if not response.status_code == 200:
-        raise HTTPError(f"{response.status_code}: {response.text}")
+        raise requests.HTTPError(f"{response.status_code}: {response.text}")
 
     print(f"New sensor type added: {parameters!r}")
 
@@ -312,6 +312,8 @@ def supervisord_conf(config_file):
     """Print conf entry for use with supervisord. Daemonising a process ensures it automatically restarts after a
     failure and on startup of the operating system failure.
     """
+    import os
+
     supervisord_conf_str = f"""
 
 [program:{SUPERVISORD_PROGRAM_NAME,}]

@@ -6,6 +6,7 @@ import queue
 import struct
 
 from octue.cloud import storage
+from octue.log_handlers import apply_log_handler
 
 from data_gateway import MICROPHONE_SENSOR_NAME, exceptions, stop_gateway
 from data_gateway.configuration import Configuration
@@ -18,6 +19,7 @@ from data_gateway.persistence import (
 
 
 logger = multiprocessing.get_logger()
+apply_log_handler(logger=logger, include_process_name=True)
 
 
 class PacketReader:
