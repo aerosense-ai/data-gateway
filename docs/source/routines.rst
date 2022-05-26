@@ -15,7 +15,7 @@ Creating and providing a routine file
 
 A routine file looks like this:
 
-.. code-block::
+.. code-block:: json
 
     {
         "commands": [["startIMU", 0.1], ["startBaros", 0.2], ["getBattery", 3]]
@@ -24,7 +24,7 @@ A routine file looks like this:
 
 and can be provided to the CLI's ``start`` command by using:
 
-.. code-block::
+.. code-block:: shell
 
     --routine-file=<path/to/routine_file.json>
 

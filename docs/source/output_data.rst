@@ -7,7 +7,7 @@ Output data
 Here is some example output data from the data gateway when reading random data from the serial port (random apart from
 the first three bytes, which represent the packet key, sensor type, and length):
 
-.. code-block::
+.. code-block:: json
 
     {
         "sensor_time_offset": 1624381890.662965,

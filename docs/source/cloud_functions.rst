@@ -35,7 +35,7 @@ The cloud function package is included in this (``data-gateway``) repository in 
 should be edited and version controlled. When a new version is ready, it must be manually deployed to the cloud for it
 to be used for new window uploads (there is no automatic deployment enabled currently):
 
-.. code-block::
+.. code-block:: shell
 
     cd cloud_functions
 
