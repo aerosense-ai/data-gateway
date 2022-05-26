@@ -267,7 +267,7 @@ google-crc32c = "1.1.2"
 
 [[package]]
 name = "google-api-core"
-version = "2.7.1"
+version = "2.8.0"
 description = "Google API client core library"
 category = "main"
 optional = false
@@ -642,30 +642,30 @@ python-versions = ">=3.7,<3.11"
 
 [[package]]
 name = "octue"
-version = "0.16.0"
+version = "0.27.0"
 description = "A package providing template applications for data services, and a python SDK to the Octue API."
 category = "main"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.7.1,<4.0.0"
 
 [package.dependencies]
-click = ">=7.1.2,<8.0.0"
-coolname = ">=1.1.0,<2.0.0"
+click = ">=7,<9"
+coolname = ">=1.1,<2.0"
 Flask = "2.0.3"
 google-auth = ">=1.27.0,<3"
-google-cloud-pubsub = ">=2.5.0,<3.0.0"
-google-cloud-secret-manager = ">=2.3.0,<3.0.0"
-google-cloud-storage = ">=1.35.1,<2.0.0"
-google-crc32c = ">=1.1.2,<2.0.0"
-gunicorn = ">=20.1.0,<21.0.0"
-h5py = {version = ">=3.6.0,<4.0.0", optional = true, markers = "extra == \"hdf5\""}
-python-dateutil = ">=2.8.1,<3.0.0"
+google-cloud-pubsub = ">=2.5,<3.0"
+google-cloud-secret-manager = ">=2.3,<3.0"
+google-cloud-storage = ">=1.35.1,<3"
+google-crc32c = ">=1.1,<2.0"
+gunicorn = ">=20.1,<21.0"
+h5py = {version = ">=3.6,<4.0", optional = true, markers = "extra == \"hdf5\""}
+python-dateutil = ">=2.8,<3.0"
 pyyaml = ">=6,<7"
-twined = "0.2.2"
+twined = ">=0.5.0,<0.6.0"
 
 [package.extras]
-hdf5 = ["h5py (>=3.6.0,<4.0.0)"]
-dataflow = ["apache-beam[gcp] (==2.37.0)"]
+hdf5 = ["h5py (>=3.6,<4.0)"]
+dataflow = ["apache-beam[gcp] (>=2.37,<3.0)"]
 
 [[package]]
 name = "packaging"
@@ -1016,7 +1016,7 @@ testing = ["flaky (>=3.4.0)", "freezegun (>=0.3.11)", "pytest (>=4.0.0)", "pytes
 
 [[package]]
 name = "twined"
-version = "0.2.2"
+version = "0.5.0"
 description = "A library to help digital twins and data services talk to one another"
 category = "main"
 optional = false
@@ -1115,7 +1115,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "d1c9b95a0f5a8bd97fd0938c92ee10246eabe058c87cbb687377185f0b35d383"
+content-hash = "0628d4c89093a7bf71441e7515b2433857a6772c8e1d3d45d2fd5921e66d939e"
 
 [metadata.files]
 appdirs = [
@@ -1320,8 +1320,8 @@ gcp-storage-emulator = [
     {file = "gcp_storage_emulator-2021.6.2-py3-none-any.whl", hash = "sha256:ed27cefe4d510ec5c9a744f713e9c5cac1576dd9cc6df1847650868727db70df"},
 ]
 google-api-core = [
-    {file = "google-api-core-2.7.1.tar.gz", hash = "sha256:b0fa577e512f0c8e063386b974718b8614586a798c5894ed34bedf256d9dae24"},
-    {file = "google_api_core-2.7.1-py3-none-any.whl", hash = "sha256:6be1fc59e2a7ba9f66808bbc22f976f81e4c3e7ab20fa0620ce42686288787d0"},
+    {file = "google-api-core-2.8.0.tar.gz", hash = "sha256:065bb8e11c605fd232707ae50963dc1c8af5b3c95b4568887515985e6c1156b3"},
+    {file = "google_api_core-2.8.0-py3-none-any.whl", hash = "sha256:1b9f59236ce1bae9a687c1d4f22957e79a2669e53d032893f6bf0fca54f6931d"},
 ]
 google-auth = [
     {file = "google-auth-2.6.2.tar.gz", hash = "sha256:60d449f8142c742db760f4c0be39121bc8d9be855555d784c252deaca1ced3f5"},
@@ -1586,8 +1586,8 @@ numpy = [
     {file = "numpy-1.21.5.zip", hash = "sha256:6a5928bc6241264dce5ed509e66f33676fc97f464e7a919edc672fb5532221ee"},
 ]
 octue = [
-    {file = "octue-0.16.0-py3-none-any.whl", hash = "sha256:f6c566ecfa84bf381e7c35ea32a8e9a9bf8e1f01d74bff546c79648498353f2b"},
-    {file = "octue-0.16.0.tar.gz", hash = "sha256:bfac3bd66677feedfdd317965c004b446a9c23aa99b52e40886359150e23b33d"},
+    {file = "octue-0.27.0-py3-none-any.whl", hash = "sha256:08f406fbe775e2733e0635f8f96c7c9964523fe8aeb07279771881b358cabecd"},
+    {file = "octue-0.27.0.tar.gz", hash = "sha256:ee7ac545aa41924f6bce8309392af308e84b1128af81e7a2ca6c0dea99ec60b0"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
@@ -1956,8 +1956,8 @@ tox = [
     {file = "tox-3.24.5.tar.gz", hash = "sha256:67e0e32c90e278251fea45b696d0fef3879089ccbe979b0c556d35d5a70e2993"},
 ]
 twined = [
-    {file = "twined-0.2.2-py3-none-any.whl", hash = "sha256:7bcbdb2d69d425b6ecdf876d2eff4ed6038827d71bac5b0a4e0ed1f5db510214"},
-    {file = "twined-0.2.2.tar.gz", hash = "sha256:9a77521a50f9574148b0213b0999fc49f3e406febcd90a61319f124872e6e242"},
+    {file = "twined-0.5.0-py3-none-any.whl", hash = "sha256:446b753e7dc7e7561822759eb601233edb5d1ca7122a63dc9cf9363145e1ba7d"},
+    {file = "twined-0.5.0.tar.gz", hash = "sha256:f6ef8390142b1d064972f07bcbc51e6357094a9b3f841604a8dc442905cf7d31"},
 ]
 typed-ast = [
     {file = "typed_ast-1.5.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:183b183b7771a508395d2cbffd6db67d6ad52958a5fdc99f450d954003900266"},

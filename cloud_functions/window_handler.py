@@ -112,7 +112,7 @@ class WindowHandler:
         :param str label:
         :return None:
         """
-        _, upload_path = storage.path.split_bucket_name_from_gs_path(self.window_cloud_path)
+        _, upload_path = storage.path.split_bucket_name_from_cloud_path(self.window_cloud_path)
         upload_path = os.path.splitext(upload_path)[0] + ".hdf5"
 
         if label:
