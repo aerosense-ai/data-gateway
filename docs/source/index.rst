@@ -46,6 +46,5 @@ The code for the Cloud Function ``Ingress`` is also included in this repository.
    routines
    deployment
    cloud_functions
-   cloud_preprocessing
    hardware_and_firmware_versions
    version_history
