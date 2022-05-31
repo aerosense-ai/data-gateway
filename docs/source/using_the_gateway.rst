@@ -230,8 +230,7 @@ configuration file. Here is the contents of an example configuration file:
 
 A default configuration is used if a ``config.json`` file is not specified and one is not found in the working
 directory. If a configuration file is specified, all of the fields seen above must be present for it to be valid. Any
-extra metadata you'd like to include can be specified in the ``session_data`` field as a JSON object. See the
-:doc:`Configuration API </autoapi/data_gateway/configuration/index>` for more information.
+extra metadata you'd like to include can be specified in the ``session_data`` field as a JSON object.
 
 One configuration is used per run of the ``start`` command. A copy is saved with the output data if saving data
 locally. The configuration is saved as metadata on the output files uploaded to the cloud. To supply the configuration

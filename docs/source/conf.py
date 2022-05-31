@@ -37,13 +37,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     "sphinx_rtd_theme",
-    "autoapi.extension",
 ]
-
-autoapi_type = "python"
-autoapi_dirs = ["../../data_gateway"]
-autoapi_options = ["members", "undoc-members", "imported-members", "inherited-members"]
-autoapi_ignore = ["*migrations*", "*dummy_serial*"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
