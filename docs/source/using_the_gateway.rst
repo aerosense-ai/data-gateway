@@ -14,67 +14,71 @@ The gateway has a CLI which means you can call it just like any other unix comma
 It is called simply ``gateway`` and, once :ref:`installed <installation>`, you can see the options and
 help by typing:
 
-.. code-block::
+.. code-block:: shell
 
    gateway --help
 
 The main command to start the gateway running is:
 
-.. code-block::
+.. code-block:: shell
 
    gateway start
 
 You can see help about this command by executing:
 
-.. code-block::
+.. code-block:: shell
 
    gateway start --help
 
 
-Automatic (non-interactive) mode
+Automatic mode
 --------------------------------
-Running the gateway in automatic (non-interactive) mode doesn't allow further commands to be passed to the serial port.
-Data from the serial port is processed, batched into time windows, and uploaded to an ingress Google Cloud storage
-bucket where it is cleaned and forwarded to another bucket for storage. This is the mode you'll want to deploy in
-production.
+Running the gateway in automatic mode doesn't allow further commands to be passed to the serial port. Instead, a
+:doc:`routine JSON file <routines>` can be provided via the ``--routine-file`` option. Data from the serial port is
+processed, batched into time windows, and uploaded to an ingress Google Cloud storage bucket where it is cleaned and
+forwarded to another bucket for storage. This is the mode you'll want to deploy in production.
 
-Before starting this mode, this environment variable must be defined to allow a cloud connection:
-``GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json``
+Before starting this mode, Google application credentials must be provided. To start this mode, type:
 
-To start this mode, type:
+.. code-block:: shell
 
-.. code-block::
+    export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json
 
-    gateway start \
-        --gcp-project-name=<name-of-google-cloud-project> \
-        --gcp-bucket-name=<name-of-google-cloud-bucket> \
-        --output-dir=<path/to/output-directory-in-cloud-bucket> \
+    gateway start --gcp-bucket-name=my-bucket --output-dir=path/to/output-directory-in-cloud-bucket
 
 If the connection to Google Cloud fails, windows will be written to the hidden directory
-``./<output_directory>/.backup`` where they will stay until the connection resumes. Backup files will be deleted upon
+``./<output_directory>/.backup`` where they will stay until the connection resumes. Backup files are deleted upon
 successful cloud upload.
 
+You can stop the gateway by pressing ``Ctrl + C``.
 
-Interactive (manual) mode
--------------------------
-Running the gateway in interactive (manual) mode allows commands to be sent to the serial port while the gateway is
-running. Typing ``stop`` will stop the session. Commands are logged to a ``commands.txt`` file in the output directory.
-Data from the serial port is not uploaded to Google Cloud but instead written to the given output directory
-(``./data_gateway`` by default) in the same format as in automatic mode.
+
+Interactive mode
+----------------
+Running the gateway in interactive mode allows commands to be sent to the serial port while the gateway is
+running. A routine file can't be provided if using this mode. Any commands entered interactively are logged to a
+``commands.txt`` file in the output directory.
 
 To start this mode, type:
 
-.. code-block::
+.. code-block:: shell
+
+    export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json
 
     gateway start --interactive --output-dir=<path/to/output-directory>
+
+Typing ``stop`` or pressing ``Ctrl + C`` will stop the session.
 
 
 Other options
 -------------
 * The window size (default 600 seconds) can be set by using ``--window-size=<number_of_seconds>`` after the `start` command
+* You can store data locally instead of or at the same time as it is sent to the cloud by using the ``--save-locally`` option
+* To avoid sending any data to the cloud, provide the ``--no-upload-to-cloud`` option
 
 
 .. _configuring:
+
 
 Configuring the Gateway
 =======================
@@ -83,76 +87,156 @@ Configuration options for the gateway can be supplied via a configuration file. 
 a file named ``config.json`` in the working directory, although the CLI allows this to be overridden to use a specific
 configuration file. Here is the contents of an example configuration file:
 
-.. code-block::
+.. code-block:: json
 
     {
-        "acc_freq": 100,
-        "acc_range": 16,
-        "analog_freq": 16384,
-        "analog_samples_per_packet": 60,
-        "baros_bm": 1023,
-        "baros_freq": 100,
-        "baros_group_size": 4,
-        "baros_packet_size": 60,
-        "baros_samples_per_packet": 15,
-        "baudrate": 2300000,
-        "default_handles": {
-            "34": "Baro group 0",
-            "36": "Baro group 1",
-            "38": "Baro group 2",
-            "40": "Baro group 3",
-            "42": "Baro group 4",
-            "44": "Baro group 5",
-            "46": "Baro group 6",
-            "48": "Baro group 7",
-            "50": "Baro group 8",
-            "52": "Baro group 9",
-            "54": "Mic 0",
-            "56": "Mic 1",
-            "58": "Mic 2",
-            "60": "Mic 3",
-            "62": "Mic 4",
-            "64": "Mic 5",
-            "66": "Mic 6",
-            "68": "Mic 7",
-            "70": "Mic 8",
-            "72": "Mic 9",
-            "74": "IMU Accel",
-            "76": "IMU Gyro",
-            "78": "IMU Magnetometer",
-            "80": "Analog Kinetron",
-            "82": "Analog Vbat"
-        },
-        "endian": "little",
-        "gyro_freq": 100,
-        "gyro_range": 2000,
-        "imu_samples_per_packet": 40,
-        "max_period_drift": 0.02,
-        "max_timestamp_slack": 0.005,
-        "mics_bm": 1023,
-        "mics_freq": 5000,
-        "mics_samples_per_packet": 120,
-        "packet_key": 254,
-        "serial_buffer_rx_size": 100000,
-        "serial_buffer_tx_size": 1280,
-        "serial_port": "COM9",
-        "type_handle_def": 255,
-        "n_meas_qty": {"Mics": 10, "Baros": 40, "Acc": 3, "Gyro": 3, "Mag": 3, "Analog Vbat": 2},
-        "period": {"Mics": 0.0002, "Baros": 0.01, "Acc": 0.01, "Gyro": 0.01, "Mag": 0.08, "Analog Vbat": 6.103515625e-05},
-        "samples_per_packet": {"Mics": 120, "Baros": 15, "Acc": 40, "Gyro": 40, "Mag": 40, "Analog Vbat": 60},
-        "user_data": {}
+      "mics_freq": 15625,
+      "mics_bm": 1023,
+      "baros_freq": 100,
+      "diff_baros_freq": 1000,
+      "baros_bm": 1023,
+      "acc_freq": 100,
+      "acc_range": 16,
+      "gyro_freq": 100,
+      "gyro_range": 2000,
+      "mag_freq": 12.5,
+      "analog_freq": 16384,
+      "constat_period": 45,
+      "serial_buffer_rx_size": 100000,
+      "serial_buffer_tx_size": 1280,
+      "baudrate": 2300000,
+      "endian": "little",
+      "max_timestamp_slack": 0.005,
+      "max_period_drift": 0.02,
+      "packet_key": 254,
+      "type_handle_def": 255,
+      "mics_samples_per_packet": 8,
+      "imu_samples_per_packet": 40,
+      "analog_samples_per_packet": 60,
+      "baros_samples_per_packet": 1,
+      "diff_baros_samples_per_packet": 24,
+      "constat_samples_per_packet": 24,
+      "sensor_names": [
+        "Mics",
+        "Baros_P",
+        "Baros_T",
+        "Diff_Baros",
+        "Acc",
+        "Gyro",
+        "Mag",
+        "Analog Vbat",
+        "Constat"
+      ],
+      "default_handles": {
+        "34": "Abs. baros",
+        "36": "Diff. baros",
+        "38": "Mic 0",
+        "40": "Mic 1",
+        "42": "IMU Accel",
+        "44": "IMU Gyro",
+        "46": "IMU Magnetometer",
+        "48": "Analog1",
+        "50": "Analog2",
+        "52": "Constat",
+        "54": "Cmd Decline",
+        "56": "Sleep State",
+        "58": "Info Message"
+      },
+      "decline_reason": {
+        "0": "Bad block detection ongoing",
+        "1": "Task already registered, cannot register again",
+        "2": "Task is not registered, cannot de-register",
+        "3": "Connection Parameter update unfinished"
+      },
+      "sleep_state": {
+        "0": "Exiting sleep",
+        "1": "Entering sleep"
+      },
+      "info_type": {
+        "0": "Battery info"
+      },
+      "samples_per_packet": {
+        "Mics": 8,
+        "Diff_Baros": 24,
+        "Baros_P": 1,
+        "Baros_T": 1,
+        "Acc": 40,
+        "Gyro": 40,
+        "Mag": 40,
+        "Analog Vbat": 60,
+        "Constat": 24
+      },
+      "number_of_sensors": {
+        "Mics": 10,
+        "Baros_P": 40,
+        "Baros_T": 40,
+        "Diff_Baros": 5,
+        "Acc": 3,
+        "Gyro": 3,
+        "Mag": 3,
+        "Analog Vbat": 1,
+        "Constat": 4
+      },
+      "sensor_conversion_constants":{
+        "Mics": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        "Diff_Baros": [1, 1, 1, 1, 1],
+        "Baros_P": [40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96],
+        "Baros_T": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+        "Acc": [1, 1, 1],
+        "Gyro": [1, 1, 1],
+        "Mag": [1, 1, 1],
+        "Analog Vbat": [1],
+        "Constat": [1, 1, 1, 1]
+      },
+      "period": {
+        "Mics": 6.4e-05,
+        "Baros_P": 0.01,
+        "Baros_T": 0.01,
+        "Diff_Baros": 0.001,
+        "Acc": 0.01,
+        "Gyro": 0.01,
+        "Mag": 0.08,
+        "Analog Vbat": 6.103515625e-05,
+        "Constat": 0.045
+      },
+      "sensor_commands": {
+        "start": ["startBaros", "startDiffBaros", "startIMU", "startMics"],
+        "stop": ["stopBaros", "stopDiffBaros", "stopIMU", "stopMics"],
+        "configuration": ["configBaros", "configAccel", "configGyro", "configMics"],
+        "utilities": [
+          "getBattery",
+          "setConnInterval",
+          "tpcBoostIncrease",
+          "tpcBoostDecrease",
+          "tpcBoostHeapMemThr1",
+          "tpcBoostHeapMemThr2",
+          "tpcBoostHeapMemThr4"
+        ]
+      },
+      "installation_data": {
+        "installation_reference": "aventa_turbine",
+        "turbine_id": "0",
+        "blade_id": "0",
+        "hardware_version": "1.2.3",
+        "sensor_coordinates": {
+          "Mics": [[0, 0, 0], [0, 0, 1]],
+          "Baros_p": [[1, 0, 0], [1, 0, 1], [1, 2, 0]]
+        }
+      },
+      "session_data": {
+        "label": "my-test-1"
+      }
     }
 
-A default configuration (see ``data_gateway.reader.configuration`` is used if a ``config.json`` file is not specified
-and one is not found in the working directory. If a configuration file is specified, all of the fields seen above must
-be present for it to be valid. Any extra metadata you'd like to include can be specified in the ``user_data`` field as
-a JSON object. See the :ref:`Configuration API <configuration_api>` for more information.
+A default configuration is used if a ``config.json`` file is not specified and one is not found in the working
+directory. If a configuration file is specified, all of the fields seen above must be present for it to be valid. Any
+extra metadata you'd like to include can be specified in the ``session_data`` field as a JSON object.
 
-One configuration is used per run of the ``start`` command and is a copy is saved with the output data. The
-configuration is also saved as metadata on the output files uploaded to the cloud. To supply the
-configuration file and start the gateway, type the following, supplying any other options you need:
+One configuration is used per run of the ``start`` command. A copy is saved with the output data if saving data
+locally. The configuration is saved as metadata on the output files uploaded to the cloud. To supply the configuration
+file and start the gateway, type the following, supplying any other options you need:
 
-.. code-block::
+.. code-block:: shell
 
     gateway start --config-file=</path/to/config.json>
 
@@ -175,7 +259,7 @@ which, as the name suggests, is a supervisor for daemonised processes.
 
 Install supervisord on your system:
 
-.. code-block::
+.. code-block:: shell
 
    # Ensure you've got the latest version of supervisord installed
    sudo apt-get install --update supervisord
@@ -183,7 +267,7 @@ Install supervisord on your system:
 Configure supervisord to  (`more info here <http://supervisord.org/installing.html#creating-a-configuration-file>`_) run
 the gateway as a daemonised service:
 
-.. code-block::
+.. code-block:: shell
 
    sudo gateway supervisord-conf >> /etc/supervisord.conf
    # Or, if you want to set up the daemon with a specific configuration file
@@ -193,13 +277,13 @@ Restarting your system, at this point, should start the gateway process at boot 
 
 You can use `supervisorctl <http://supervisord.org/running.html#running-supervisorctl>`_ to check gateway status:
 
-.. code-block::
+.. code-block:: shell
 
    supervisorctl status AerosenseGateway
 
 Similarly, you can stop and start the daemon with:
 
-.. code-block::
+.. code-block:: shell
 
    supervisorctl stop AerosenseGateway
    supervisorctl start AerosenseGateway

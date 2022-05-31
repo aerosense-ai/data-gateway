@@ -15,14 +15,14 @@ on board a turbine nacelle.
 It's anticipated that you're using:
     - Raspberry Pi 4
     - With at least 2GB ram
-    - Python >= 3.7
+    - Python >= 3.7.1
 
 You'll need to install Raspberry Pi OS (formerly "Raspbian", which was a much better name) onto your **pi**. Use
 `the current instructions from raspberrypi.org <https://www.raspberrypi.org/software/>`_, and follow their setup guides.
 
 When booted into your **pi**, use the following commands to install...
 
-.. code-block::
+.. code-block:: shell
 
    export GATEWAY_VERSION="0.11.8" # Or whatever release number you aim to use, check the latest available on GitHub
    pip install git+https://github.com/aerosense-ai/data-gateway.git@${GATEWAY_VERSION}

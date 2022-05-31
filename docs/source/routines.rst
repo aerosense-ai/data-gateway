@@ -18,13 +18,13 @@ A routine file looks like this:
 .. code-block::
 
     {
-        "commands": [["startIMU", 0.1], ["startBaros", 0.2], ["getBattery", 3]]
+        "commands": [["startIMU", 0.1], ["startBaros", 0.2], ["getBattery", 3]],
         "period": 5  # (period is optional)
     }
 
 and can be provided to the CLI's ``start`` command by using:
 
-.. code-block::
+.. code-block:: shell
 
     --routine-file=<path/to/routine_file.json>
 
@@ -40,6 +40,6 @@ Routine file schema
 -------------------
 
 - The ``commands`` key in the file should be a list of two-element lists. Each two-element list should comprise a valid string command to 
-send to the sensors and a delay in seconds from the gateway starting to run the command.
+  send to the sensors and a delay in seconds from the gateway starting to run the command.
 - An optional ``period`` in seconds can be provided to repeat the routine. If none is provided, the routine is run once only. 
   The period must be greater than each of the commands' delays.

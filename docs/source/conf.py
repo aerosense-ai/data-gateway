@@ -36,6 +36,7 @@ extensions = [
     'sphinx_tabs.tabs',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
+    "sphinx_rtd_theme",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -52,6 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'data_gateway'
+author = "Aerosense"
 copyright = u'The Aerosense Research Partners'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -59,9 +61,7 @@ copyright = u'The Aerosense Research Partners'
 # built documents.
 
 # The full version, including alpha/beta/rc tags.
-os.chdir(os.path.join("..", ".."))
 release = subprocess.check_output(["poetry", "version", "-s"]).decode().strip()
-os.chdir(os.path.join("docs", "source"))
 
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])
