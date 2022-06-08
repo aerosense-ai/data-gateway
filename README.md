@@ -8,6 +8,9 @@
 
 Read the docs [here.](https://aerosense-data-gateway.readthedocs.io/en/latest/)
 
+*Note that the test coverage figure is more like 90% - the recent addition of multiprocessing has made it difficult to
+measure the true coverage across the codebase.*
+
 ## Installation and usage
 To install, run one of
 ```shell
