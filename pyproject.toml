@@ -24,7 +24,7 @@ click = ">=7.1.2,<9"
 google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
-octue = {version = "0.27.1"}
+octue = {version = "0.27.2"}
 
 [tool.poetry.dev-dependencies]
 # Testing.
