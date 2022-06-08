@@ -18,6 +18,7 @@ steps:
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   id: Deploy create-installation cloud function
+  waitFor: ['-']
   args:
   - gcloud
   - functions
@@ -33,6 +34,7 @@ steps:
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   id: Deploy add-sensor-type cloud function
+  waitFor: ['-']
   args:
   - gcloud
   - functions
@@ -48,6 +50,7 @@ steps:
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   id: Deploy ingress-eu cloud function
+  waitFor: ['-']
   args:
   - gcloud
   - functions
