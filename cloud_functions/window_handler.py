@@ -120,18 +120,20 @@ class WindowHandler:
         else:
             labels = None
 
-        with Datafile(
+        microphone_file = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
             tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
             labels=labels,
-            mode="w",
-        ) as (datafile, f):
+            hypothetical=True,
+        )
+
+        with microphone_file.open("w") as f:
             f["dataset"] = data
 
-        logger.info(f"Uploaded {len(data)} microphone data entries to {datafile.cloud_path!r}.")
+        logger.info(f"Uploaded {len(data)} microphone data entries to {microphone_file.cloud_path!r}.")
 
         self.dataset.record_microphone_data_location_and_metadata(
-            path=datafile.cloud_path,
+            path=microphone_file.cloud_path,
             project_name=self.destination_project,
             configuration_id=configuration_id,
             installation_reference=installation_reference,
