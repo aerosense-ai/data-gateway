@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 
 from octue.log_handlers import apply_log_handler
 
@@ -7,8 +8,9 @@ from data_gateway.configuration import Configuration
 
 apply_log_handler(include_process_name=True)
 
-# Set the multiprocessing start method to "fork" so that patching works across different processes.
-multiprocessing.set_start_method("fork")
+if os.name != "nt":
+    # Set the multiprocessing start method to "fork" so that patching works across different processes.
+    multiprocessing.set_start_method("fork")
 
 
 TEST_BUCKET_NAME = "a-bucket-name"
