@@ -7,15 +7,14 @@ import sys
 import threading
 import time
 
-import serial
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import stop_gateway
 from data_gateway.configuration import Configuration
-from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
 from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
+from data_gateway.serial_port import get_serial_port
 
 
 logger = multiprocessing.get_logger()
@@ -87,10 +86,13 @@ class DataGateway:
         packet_reader_configuration = self._load_configuration(configuration_path=configuration_path)
         packet_reader_configuration.session_data["label"] = label
 
-        self.serial_port = self._get_serial_port(
+        self.serial_port_name = serial_port
+        self.use_dummy_serial_port = use_dummy_serial_port
+
+        self.serial_port = get_serial_port(
             serial_port,
             configuration=packet_reader_configuration,
-            use_dummy_serial_port=use_dummy_serial_port,
+            use_dummy_serial_port=self.use_dummy_serial_port,
         )
 
         self.packet_reader = PacketReader(
@@ -121,9 +123,10 @@ class DataGateway:
             name="Reader",
             target=self.packet_reader.read_packets,
             kwargs={
-                "serial_port": self.serial_port,
+                "serial_port_name": self.serial_port_name,
                 "packet_queue": packet_queue,
                 "stop_signal": stop_signal,
+                "use_dummy_serial_port": self.use_dummy_serial_port,
             },
             daemon=True,
         )
@@ -199,32 +202,6 @@ class DataGateway:
         configuration = Configuration()
         logger.info("No configuration file provided - using default configuration.")
         return configuration
-
-    def _get_serial_port(self, serial_port, configuration, use_dummy_serial_port):
-        """Get the serial port or a dummy serial port if specified. If a serial port instance is provided, return that
-        as the serial port to use.
-
-        :param str|serial.Serial serial_port: the name of a serial port or a `serial.Serial` instance
-        :param data_gateway.configuration.Configuration configuration: the packet reader configuration
-        :param bool use_dummy_serial_port: if `True`, use a dummy serial port instead
-        :return serial.Serial|data_gateway.dummy_serial.DummySerial:
-        """
-        if isinstance(serial_port, str):
-            if not use_dummy_serial_port:
-                serial_port = serial.Serial(port=serial_port, baudrate=configuration.baudrate)
-            else:
-                serial_port = DummySerial(port=serial_port, baudrate=configuration.baudrate)
-
-            # The buffer size can only be set on Windows.
-            if os.name == "nt":
-                serial_port.set_buffer_size(
-                    rx_size=configuration.serial_buffer_rx_size,
-                    tx_size=configuration.serial_buffer_tx_size,
-                )
-            else:
-                logger.debug("Serial port buffer size can only be set on Windows.")
-
-        return serial_port
 
     def _load_routine(self, routine_path):
         """Load a sensor commands routine from the path if it exists, otherwise return no routine. If in interactive

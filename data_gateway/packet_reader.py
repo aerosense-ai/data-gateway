@@ -16,6 +16,7 @@ from data_gateway.persistence import (
     BatchingUploader,
     NoOperationContextManager,
 )
+from data_gateway.serial_port import get_serial_port
 
 
 logger = multiprocessing.get_logger()
@@ -65,15 +66,23 @@ class PacketReader:
         self.sleep = False
         self.sensor_time_offset = None
 
-    def read_packets(self, serial_port, packet_queue, stop_signal):
+    def read_packets(self, serial_port_name, packet_queue, stop_signal, use_dummy_serial_port=False):
         """Read packets from a serial port and send them to the parser thread for processing and persistence.
 
-        :param serial.Serial serial_port: name of serial port to read from
+        :param str serial_port_name: the name of the serial port to read from
         :param queue.Queue packet_queue: a thread-safe queue to put packets on to for the parser thread to pick up
+        :param multiprocessing.Value stop_signal: a value of 0 means don't stop; a value of 1 means stop
+        :param bool use_dummy_serial_port: if `True` use a dummy serial port for testing
         :return None:
         """
         try:
             logger.info("Packet reader process started.")
+
+            serial_port = get_serial_port(
+                serial_port=serial_port_name,
+                configuration=self.config,
+                use_dummy_serial_port=use_dummy_serial_port,
+            )
 
             while stop_signal.value == 0:
                 serial_data = serial_port.read()
