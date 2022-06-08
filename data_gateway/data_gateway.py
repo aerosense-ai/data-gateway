@@ -181,7 +181,6 @@ class DataGateway:
             # This should ensure that the `stopMics` command is run last.
             for command in sensor_stop_commands:
                 self._send_command_to_sensors(command)
-                logger.info("Sent %r command.", command)
                 time.sleep(5)
 
     def _load_configuration(self, configuration_path):
