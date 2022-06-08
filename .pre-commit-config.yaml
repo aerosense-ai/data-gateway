@@ -67,6 +67,7 @@ repos:
           - '^refactor/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
           - '^enhancement/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
           - '^test/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
+          - '^dependencies/([a-z][a-z0-9]*)(-[a-z0-9]+)*$'
 
   - repo: https://github.com/octue/conventional-commits
     rev: 0.3.1
