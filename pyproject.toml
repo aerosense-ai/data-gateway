@@ -24,7 +24,7 @@ click = ">=7.1.2,<9"
 google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
-octue = {version = "0.27.0", extras = ["hdf5"]}
+octue = {version = "0.27.0"}
 
 [tool.poetry.dev-dependencies]
 # Testing.
@@ -44,6 +44,7 @@ flake8 = "^4"
 pre-commit = "^2.17"
 coverage = "^6.3"
 black = "21.6b0"
+h5py = "^3.7.0"
 
 [tool.poetry.scripts]
 gateway = "data_gateway.cli:gateway_cli"
