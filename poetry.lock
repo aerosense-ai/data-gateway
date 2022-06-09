@@ -866,7 +866,7 @@ reference = "piwheels"
 
 [[package]]
 name = "octue"
-version = "0.27.2"
+version = "0.27.3"
 description = "A package providing template applications for data services, and a python SDK to the Octue API."
 category = "main"
 optional = false
@@ -882,6 +882,7 @@ google-cloud-secret-manager = ">=2.3,<3.0"
 google-cloud-storage = ">=1.35.1,<3"
 google-crc32c = ">=1.1,<2.0"
 gunicorn = ">=20.1,<21.0"
+packaging = ">=21.3,<22.0"
 python-dateutil = ">=2.8,<3.0"
 pyyaml = ">=6,<7"
 twined = ">=0.5.0,<0.6.0"
@@ -899,7 +900,7 @@ reference = "piwheels"
 name = "packaging"
 version = "21.3"
 description = "Core utilities for Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -1087,7 +1088,7 @@ reference = "piwheels"
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6.8"
 
@@ -1483,7 +1484,7 @@ reference = "piwheels"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.10"
-content-hash = "db0fcebcf1089e564f04e89ffc323943b9dba738d1bde049a419371a1257ede9"
+content-hash = "0ad7d918c02f98deba72aee8362ba3f641b856c8566b0be30ee8783f35acb0c4"
 
 [metadata.files]
 appdirs = [
@@ -1668,7 +1669,7 @@ numpy = [
     {file = "numpy-1.21.6-cp39-cp39-linux_armv7l.whl", hash = "sha256:1a8cbe0ad0873c79e850a5aa43dd6103f50a1e28adeca7b4c457300a7c0c4dfc"},
 ]
 octue = [
-    {file = "octue-0.27.2-py3-none-any.whl", hash = "sha256:47e7346ea323be6e9efd919e398e20121bb39008d6242cd850aa77238438fec8"},
+    {file = "octue-0.27.3-py3-none-any.whl", hash = "sha256:5811d9e0fe8307a9638a9c272601c343e7de9c930141a60fdac29101b321fe6d"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:36bb3108f8e33f88e52e7985b4068e2585b67e5b7b3a0fa2817f9852bc39d2ef"},
