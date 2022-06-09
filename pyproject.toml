@@ -33,7 +33,7 @@ octue = {version = "0.27.2"}
 # meaning it gets installed from pypi by default.
 grpcio = [
     { version = "1.45.0", markers = "platform_machine == 'armv7l'", source = "piwheels"},
-    { version = "1.45.0", markers = "platform_machine != 'armv7l'", source = "pypi"}
+    { version = "1.45.0", markers = "platform_machine != 'armv7l'", source = "desperation"}
 ]
 
 
@@ -58,6 +58,10 @@ h5py = "^3.7.0"
 [[tool.poetry.source]]
 name = "piwheels"
 url = "https://www.piwheels.org/simple/"
+
+[[tool.poetry.source]]
+name = "desperation"
+url = "https://pypi.python.org/simple/"
 
 [tool.poetry.scripts]
 gateway = "data_gateway.cli:gateway_cli"

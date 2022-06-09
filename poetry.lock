@@ -54,6 +54,11 @@ d = ["aiohttp (>=3.6.0)", "aiohttp-cors (>=0.4.0)"]
 python2 = ["typed-ast (>=1.4.2)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
+[package.source]
+type = "legacy"
+url = "https://pypi.python.org/simple"
+reference = "desperation"
+
 [[package]]
 name = "blake3"
 version = "0.2.1"
@@ -61,6 +66,11 @@ description = "Python bindings for the Rust blake3 crate"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.python.org/simple"
+reference = "desperation"
 
 [[package]]
 name = "cachetools"
@@ -1473,7 +1483,7 @@ reference = "piwheels"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.10"
-content-hash = "5811ccc2887ae41115d9da2597802d5bdf6d4e2c16809f8be769d8764c3d14e6"
+content-hash = "db0fcebcf1089e564f04e89ffc323943b9dba738d1bde049a419371a1257ede9"
 
 [metadata.files]
 appdirs = [
