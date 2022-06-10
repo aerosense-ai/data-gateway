@@ -69,8 +69,10 @@ repos:
           - "^test/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
           - "^dependencies/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
 
-  - repo: https://github.com/octue/conventional-commits
-    rev: 0.3.1
+  - repo: https://github.com/octue/pre-commit-hooks
+    rev: 0.6.0
     hooks:
       - id: check-commit-message-is-conventional
         stages: [commit-msg]
+        args:
+          - --maximum-body-line-length=2000
