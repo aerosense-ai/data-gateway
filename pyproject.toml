@@ -29,12 +29,9 @@ octue = {version = "0.27.3"}
 # On raspberry pi, using the pypi binary (which is built against glibc) fails with:
 #   https://stackoverflow.com/questions/72185264/glibc-2-29-not-found
 # The solution is to use the wheel that's built specifically for raspberry pi: https://www.piwheels.org/project/grpcio/
-# However, piwheels only has a built wheel for 1.45.0; so unless we pin that exact version, poetry specifies the latest (currently 1.46.3) 
+# However, piwheels only has a built wheel for 1.45.0; so unless we pin that exact version, poetry specifies the latest (currently 1.46.3)
 # meaning it gets installed from pypi by default.
-grpcio = [
-    { version = "1.45.0", markers = "platform_machine == 'armv7l'", source = "piwheels"},
-    { version = "1.45.0", markers = "platform_machine != 'armv7l'", source = "desperation"}
-]
+grpcio = "1.45.0"
 
 
 [tool.poetry.dev-dependencies]
@@ -52,16 +49,9 @@ wtforms = { extras = ["email"], version = "^3" }
 flake8 = "^4"
 pre-commit = "^2.17"
 coverage = "^6.3"
-black = "21.6b0"
 h5py = "^3.7.0"
-
-[[tool.poetry.source]]
-name = "piwheels"
-url = "https://www.piwheels.org/simple/"
-
-[[tool.poetry.source]]
-name = "desperation"
-url = "https://pypi.python.org/simple/"
+pytest = "^7.1.2"
+black = "22.3.0"
 
 [tool.poetry.scripts]
 gateway = "data_gateway.cli:gateway_cli"
