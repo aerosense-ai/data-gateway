@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "data-gateway"
-version = "0.11.10"
+version = "0.11.11"
 repository = "https://github.com/aerosense-ai/data-gateway"
 description = "A data gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud."
 readme = "README.md"
@@ -19,12 +19,20 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7.1,<3.11"
+python = ">=3.7.1,<3.10"
 click = ">=7.1.2,<9"
 google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
-octue = {version = "0.27.0", extras = ["hdf5"]}
+octue = {version = "0.27.3"}
+
+# On raspberry pi, using the pypi binary (which is built against glibc) fails with:
+#   https://stackoverflow.com/questions/72185264/glibc-2-29-not-found
+# The solution is to use the wheel that's built specifically for raspberry pi: https://www.piwheels.org/project/grpcio/
+# However, piwheels only has a built wheel for 1.45.0; so unless we pin that exact version, poetry specifies the latest (currently 1.46.3)
+# meaning it gets installed from pypi by default.
+grpcio = "1.45.0"
+
 
 [tool.poetry.dev-dependencies]
 # Testing.
@@ -35,15 +43,15 @@ tox = "^3.23"
 blake3 = "0.2.1"
 flask_wtf = "^1"
 google-cloud-bigquery = "^2.29"
-pandas = "^1.2"
-scipy = "^1.6"
 shapely = "^1.8"
 wtforms = { extras = ["email"], version = "^3" }
 # Code quality.
 flake8 = "^4"
 pre-commit = "^2.17"
 coverage = "^6.3"
-black = "21.6b0"
+h5py = "^3.7.0"
+pytest = "^7.1.2"
+black = "22.3.0"
 
 [tool.poetry.scripts]
 gateway = "data_gateway.cli:gateway_cli"

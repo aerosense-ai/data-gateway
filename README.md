@@ -8,13 +8,13 @@
 
 Read the docs [here.](https://aerosense-data-gateway.readthedocs.io/en/latest/)
 
+*Note that the test coverage figure is more like 90% - the recent addition of multiprocessing has made it difficult to
+measure the true coverage across multiple processes.*
+
 ## Installation and usage
-To install, run one of
+To install, run:
 ```shell
-pip install data-gateway
-```
-```shell
-poetry add data-gateway
+pip install git+https://github.com/aerosense-ai/data-gateway.git
 ```
 
 The command line interface (CLI) can then be accessed via:
@@ -48,16 +48,24 @@ Commands:
 ## Developer notes
 
 ### Installation
-We're using `poetry` instead of `pip` to manage the package. In terms of developer experience, this just means there are
-some slightly different commands to run than usual. `data-gateway` can still be `pip`-installed by anyone anywhere, but
-dependency resolution and dependency specification for `data-gateway` developers is improved by using `poetry` locally.
+
+#### Poetry
+We're using `poetry` instead of `pip` to manage the package to take advantage of the `poetry.lock` file [among other
+useful features](https://python-poetry.org/). In terms of developer experience, this just means there are some slightly
+different commands to run than usual. `data-gateway` can still be `pip`-installed by anyone anywhere, but dependency
+resolution and dependency specification for `data-gateway` developers is improved by using `poetry` locally.
+
+#### Architecture-specific installations
+Due to some (most likely temporary) constraints with `poetry` and the need to run and develop the gateway on Linux,
+Windows, M1 Macs, and Raspberry Pis, the need has arisen for some slightly different installation procedures on these
+different architectures/platforms. Instructions are detailed below - [click here](https://github.com/aerosense-ai/data-gateway/issues/65)
+to read more.
 
 #### Clone the repository
 
 First, clone the repository:
 ```shell
-export GATEWAY_VERSION="0.11.7" # Or whatever release number you aim to use, check the latest available on GitHub;
-git clone https://github.com/aerosense-ai/data-gateway.git@${GATEWAY_VERSION}
+git clone https://github.com/aerosense-ai/data-gateway.git
 ```
 
 Then, change directory into the repository:
@@ -65,11 +73,9 @@ Then, change directory into the repository:
 cd data-gateway
 ```
 
-#### Install on Linux or MacOS
-
-Run the following from the repository root.
-```bash
-# Install poetry.
+#### Install on Linux and MacOS
+Run the following from the repository root:
+```shell
 pip install poetry
 
 # Editably install data-gateway, including its development dependencies.
@@ -81,7 +87,15 @@ This will editably install `data-gateway` in a `poetry`-managed virtual environm
 - It won't be affected by changes to other python packages you have installed on your system, making development much
   easier and more deterministic
 
-Don't forget to re-activate the virtual environment each time you use a new terminal window to work in the repository.
+#### Install on Raspberry Pi
+Run the following from the repository root:
+```shell
+pip install poetry
+
+poetry export -f requirements.txt --output requirements.txt --dev --without-hashes
+
+pip install -r requirements.txt
+```
 
 #### Install on Windows
 This workflow works for Windows using Powershell.

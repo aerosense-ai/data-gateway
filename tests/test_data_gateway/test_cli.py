@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import time
+import unittest
 from unittest import mock
 from unittest.mock import call
 
@@ -193,6 +194,11 @@ class TestStart(BaseTestCase):
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
 
+    @unittest.skipIf(
+        condition=os.name == "nt",
+        reason="Unittest mock patches are needed across processes for this test to work. For that to happen, the "
+        "'fork' multiprocessing start method is needed, which isn't available on Windows.",
+    )
     def test_save_locally(self):
         """Ensure `--save-locally` mode writes data to disk."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
