@@ -8,7 +8,7 @@ import struct
 from octue.cloud import storage
 from octue.log_handlers import apply_log_handler
 
-from data_gateway import MICROPHONE_SENSOR_NAME, exceptions, stop_gateway
+from data_gateway import exceptions, stop_gateway
 from data_gateway.configuration import Configuration
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
@@ -62,7 +62,7 @@ class PacketReader:
 
         self.uploader = None
         self.writer = None
-        self.handles = self.config.default_handles
+        self.handles = dict((k, v.default_handles) for k, v in self.config.nodes.items())
         self.sleep = False
         self.sensor_time_offset = None
 
@@ -87,22 +87,27 @@ class PacketReader:
             while stop_signal.value == 0:
                 serial_data = serial_port.read()
 
+                # Handle no data on the serial port
                 if len(serial_data) == 0:
                     continue
 
-                if serial_data[0] != self.config.packet_key:
+                # Get the id of the node the packet is coming from
+                if serial_data[0] not in self.config.packet_key_map:
                     continue
+                else:
+                    node_id = self.config.packet_key_map[serial_data[0]]
 
-                packet_type = str(int.from_bytes(serial_port.read(), self.config.endian))
-                length = int.from_bytes(serial_port.read(), self.config.endian)
+                # Read the packet off the serial port
+                packet_type = str(int.from_bytes(serial_port.read(), self.config.gateway.endian))
+                length = int.from_bytes(serial_port.read(), self.config.gateway.endian)
                 packet = serial_port.read(length)
 
                 # Check for bytes in serial input buffer. A full buffer results in overflow.
-                if serial_port.in_waiting == self.config.serial_buffer_rx_size:
+                if serial_port.in_waiting == self.config.gateway.serial_buffer_rx_size:
                     logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
                     continue
 
-                packet_queue.put({"packet_type": packet_type, "packet": packet})
+                packet_queue.put({"node_id": node_id, "packet_type": packet_type, "packet": packet})
 
         except KeyboardInterrupt:
             pass
@@ -148,13 +153,16 @@ class PacketReader:
 
         previous_timestamp = {}
         data = {}
-
-        for sensor_name in self.config.sensor_names:
-            previous_timestamp[sensor_name] = -1
-            data[sensor_name] = [
-                ([0] * self.config.samples_per_packet[sensor_name])
-                for _ in range(self.config.number_of_sensors[sensor_name])
-            ]
+        for node_id in self.config.node_ids:
+            node_config = self.config.nodes[node_id]
+            data[node_id] = {}
+            previous_timestamp[node_id] = {}
+            for sensor_name in node_config.sensor_names:
+                previous_timestamp[node_id][sensor_name] = -1
+                data[node_id][sensor_name] = [
+                    ([0] * node_config.samples_per_packet[sensor_name])
+                    for _ in range(node_config.number_of_sensors[sensor_name])
+                ]
 
         if stop_when_no_more_data_after is False:
             timeout = 5
@@ -166,25 +174,26 @@ class PacketReader:
                 with self.writer:
                     while stop_signal.value == 0:
                         try:
-                            packet_type, packet = packet_queue.get(timeout=timeout).values()
+                            node_id, packet_type, packet = packet_queue.get(timeout=timeout).values()
                         except queue.Empty:
                             if stop_when_no_more_data_after is not False:
                                 break
                             continue
 
                         if packet_type == str(self.config.type_handle_def):
-                            self.update_handles(packet)
+                            logger.warning("Updating handles (not node-specific) for node %s", node_id)
+                            self.update_handles(packet, node_id)
                             continue
 
-                        if packet_type not in self.handles:
+                        if packet_type not in self.handles[node_id]:
                             logger.error("Received packet with unknown type: %s", packet_type)
                             continue
 
                         if len(packet) == 244:  # If the full data payload is received, proceed parsing it
-                            timestamp = int.from_bytes(packet[240:244], self.config.endian, signed=False) / (2 ** 16)
+                            timestamp = int.from_bytes(packet[240:244], self.config.endian, signed=False) / (2**16)
 
                             data, sensor_names = self._parse_sensor_packet_data(
-                                packet_type=self.handles[packet_type],
+                                packet_type=self.handles[node_id][packet_type],
                                 payload=packet,
                                 data=data,
                             )
@@ -201,13 +210,13 @@ class PacketReader:
 
                             continue
 
-                        if self.handles[packet_type] in [
+                        if self.handles[node_id][packet_type] in [
                             "Mic 1",
                             "Cmd Decline",
                             "Sleep State",
                             "Info Message",
                         ]:
-                            self._parse_info_packet(self.handles[packet_type], packet, previous_timestamp)
+                            self._parse_info_packet(self.handles[node_id][packet_type], packet, previous_timestamp)
 
         except KeyboardInterrupt:
             pass
@@ -215,18 +224,18 @@ class PacketReader:
         finally:
             stop_gateway(logger, stop_signal)
 
-    def update_handles(self, payload):
+    def update_handles(self, payload, node_id):
         """Update the Bluetooth handles object. Handles are updated every time a new Bluetooth connection is
         established.
 
         :param iter payload:
         :return None:
         """
-        start_handle = int.from_bytes(payload[0:1], self.config.endian)
-        end_handle = int.from_bytes(payload[2:3], self.config.endian)
+        start_handle = int.from_bytes(payload[0:1], self.config.gateway.endian)
+        end_handle = int.from_bytes(payload[2:3], self.config.gateway.endian)
 
         if end_handle - start_handle == 26:
-            self.handles = {
+            self.handles[node_id] = {
                 str(start_handle + 2): "Abs. baros",
                 str(start_handle + 4): "Diff. baros",
                 str(start_handle + 6): "Mic 0",
@@ -244,10 +253,15 @@ class PacketReader:
 
             self.sensor_time_offset = None
 
-            logger.info("Successfully updated handles.")
+            logger.info("Successfully updated handles for node %s", node_id)
             return
 
-        logger.error("Handle error: start handle is %s, end handle is %s.", start_handle, end_handle)
+        logger.error(
+            "Error while updating handles for node %s: start handle is %s, end handle is %s.",
+            node_id,
+            start_handle,
+            end_handle,
+        )
 
     def _save_configuration_to_disk(self):
         """Save the configuration to disk as a JSON file.
@@ -306,32 +320,32 @@ class PacketReader:
             bytes_per_sample = 3
 
             for i in range(self.config.mics_samples_per_packet // 2):
-                for j in range(self.config.number_of_sensors[MICROPHONE_SENSOR_NAME] // 2):
+                for j in range(self.config.number_of_sensors["Mics"] // 2):
 
                     index = j + 20 * i
 
-                    data[MICROPHONE_SENSOR_NAME][j][2 * i] = int.from_bytes(
+                    data["Mics"][j][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * index) : (bytes_per_sample * index + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[MICROPHONE_SENSOR_NAME][j][2 * i + 1] = int.from_bytes(
+                    data["Mics"][j][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 5)) : (bytes_per_sample * (index + 5) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[MICROPHONE_SENSOR_NAME][j + 5][2 * i] = int.from_bytes(
+                    data["Mics"][j + 5][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 10)) : (bytes_per_sample * (index + 10) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[MICROPHONE_SENSOR_NAME][j + 5][2 * i + 1] = int.from_bytes(
+                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 15)) : (bytes_per_sample * (index + 15) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
 
-            return data, [MICROPHONE_SENSOR_NAME]
+            return data, ["Mics"]
 
         if packet_type.startswith("IMU"):
 

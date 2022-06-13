@@ -22,9 +22,9 @@ def get_serial_port(serial_port, configuration, use_dummy_serial_port=False):
         serial_port_name = serial_port
 
         if use_dummy_serial_port:
-            serial_port = DummySerial(port=serial_port_name, baudrate=configuration.baudrate)
+            serial_port = DummySerial(port=serial_port_name, baudrate=configuration.gateway.baudrate)
         else:
-            serial_port = serial.Serial(port=serial_port_name, baudrate=configuration.baudrate)
+            serial_port = serial.Serial(port=serial_port_name, baudrate=configuration.gateway.baudrate)
 
         logger.info("Serial port %r found.", serial_port_name)
 

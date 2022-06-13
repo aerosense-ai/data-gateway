@@ -41,9 +41,9 @@ class TestPacketReader(BaseTestCase):
         )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
-            packet_reader.update_handles(packet)
+            packet_reader.update_handles(packet, 0)
 
-        self.assertIn("Handle error", mock_logger.method_calls[0].args[0])
+        self.assertIn("Error while updating handles for node", mock_logger.method_calls[0].args[0])
 
     def test_update_handles(self):
         """Test that the handles can be updated."""
@@ -57,7 +57,7 @@ class TestPacketReader(BaseTestCase):
         )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
-            packet_reader.update_handles(packet)
+            packet_reader.update_handles(packet, 0)
 
         self.assertIn("Successfully updated handles", mock_logger.method_calls[0].args[0])
 
