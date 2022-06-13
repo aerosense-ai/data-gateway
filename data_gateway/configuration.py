@@ -97,18 +97,18 @@ DEFAULT_SESSION = {
 
 
 class GatewayConfiguration:
-    """A data class containing configured/default valuer for the gateway receiver
+    """A data class containing configured/default values for the gateway receiver
 
     :param float baudrate: serial port baud rate
     :param Literal["little", "big"] endian: one of "little" or "big"
-    :param string installation_reference: A unique reference (id) for the current installation
+    :param str installation_reference: A unique reference (id) for the current installation
     :param float latitude: The latitude of the turbine in WGS84 coordinate system
     :param float longitude: The longitude of the turbine in WGS84 coordinate system
     :param int packet_key_offset: The value from which each node's packet key is calculated (packet_key = node_id + packet_key_offset)
-    :param string receiver_firmware_version: The version ofthe firmware running on the gateway receiver, if known.
+    :param str receiver_firmware_version: The version ofthe firmware running on the gateway receiver, if known.
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
-    :param string turbine_id: A unique id for the turbine on which this is installed
+    :param str turbine_id: A unique id for the turbine on which this is installed
     :return None:
     """
 
@@ -145,7 +145,7 @@ class NodeConfiguration:
     :param float baros_freq: barometers sampling frequency
     :param float baros_bm: TODO nobody seems to know...
     :param float diff_baros_freq: differential barometers sampling frequency
-    :param string blade_id: The id of the blade on which the node is mounted, if known
+    :param str blade_id: The id of the blade on which the node is mounted, if known
     :param float constat_period: period of incoming connection statistic parameters in ms
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO nobody seems to know...
@@ -153,7 +153,7 @@ class NodeConfiguration:
     :param float max_timestamp_slack: TODO   # 5ms
     :param float mics_bm: TODO nobody seems to know...
     :param float mics_freq: microphones sampling frequency
-    :param string node_firmware_version: The verison of the firmware on the node, if known.
+    :param str node_firmware_version: The verison of the firmware on the node, if known.
     :param int type_handle_def: TODO
     :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param dict|None number_of_sensors: A map for each sensor, giving the number of samples expected from that sensor
@@ -311,7 +311,7 @@ class Configuration:
             )
 
         # Set up a single-node default in the absence of any nodes at all
-        self.nodes = dict()
+        self.nodes = {}
         if nodes is None:
             self.nodes[0] = NodeConfiguration()
         else:
@@ -326,17 +326,20 @@ class Configuration:
         """Return the packet key for a given node, computed from the packet key offset
         :param int node_id: The node ID for which you want the packet key
         :param bool as_bytes: Convert the package key to the bytes representation
+        :return int|bytes: The packet key for a given node_id
         """
-        pk = self.gateway.packet_key_offset + node_id
+        packet_key = self.gateway.packet_key_offset + node_id
         if as_bytes:
-            pk = pk.to_bytes(1, self.gateway.endian)
+            packet_key = packet_key.to_bytes(1, self.gateway.endian)
 
-        return pk
+        return packet_key
 
     @property
     def node_ids(self):
-        """Access a list of node ids in the current configuration"""
-        return [node_id for node_id in self.nodes]
+        """Access a list of node ids in the current configuration
+        :return list: A list of node ids
+        """
+        return list(self.nodes)
 
     def to_dict(self):
         """Serialise the configuration to a dictionary."""
