@@ -338,6 +338,11 @@ class Configuration:
         """Access a list of node ids in the current configuration"""
         return [node_id for node_id in self.nodes]
 
+    @property
+    def packet_key_map(self):
+        """Return a dict that maps the packet keys (as bytes) to node ids"""
+        return dict((self.get_packet_key(node_id, as_bytes=True), node_id) for node_id in self.node_ids)
+
     def to_dict(self):
         """Serialise the configuration to a dictionary."""
         return vars(self)
