@@ -302,12 +302,13 @@ class Configuration:
         **kwargs,
     ):
         # Set up the gateway configuration
-        gateway_configuration = gateway or dict()
+        gateway_configuration = gateway or {}
         self.gateway = GatewayConfiguration(**gateway_configuration)
 
         if len(kwargs) > 0:
             raise ValueError(
-                "Properties other than 'gateway', 'nodes' and 'session' passed to Configuration. Are you using an old-format configuration file?"
+                "Properties other than 'gateway', 'nodes' and 'session' passed to Configuration. Are you using an "
+                "old-format configuration file?"
             )
 
         # Set up a single-node default in the absence of any nodes at all

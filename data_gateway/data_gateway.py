@@ -84,7 +84,7 @@ class DataGateway:
         self.interactive = interactive
 
         packet_reader_configuration = self._load_configuration(configuration_path=configuration_path)
-        packet_reader_configuration.session_data["label"] = label
+        packet_reader_configuration.session["label"] = label
 
         self.serial_port_name = serial_port
         self.use_dummy_serial_port = use_dummy_serial_port
