@@ -313,6 +313,7 @@ class Configuration:
 
         # Set up a single-node default in the absence of any nodes at all
         self.nodes = {}
+
         if nodes is None:
             self.nodes[0] = NodeConfiguration()
         else:
