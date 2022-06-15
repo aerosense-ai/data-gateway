@@ -14,7 +14,7 @@ if os.name != "nt":
 
 
 TEST_BUCKET_NAME = "a-bucket-name"
-PACKET_KEY = Configuration().packet_key.to_bytes(1, "little")
+PACKET_KEY = Configuration().get_packet_key(0, as_bytes=True)
 LENGTH = bytes([244])
 
 RANDOM_BYTES = [
