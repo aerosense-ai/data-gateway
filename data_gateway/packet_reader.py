@@ -10,6 +10,7 @@ from octue.log_handlers import apply_log_handler
 
 from data_gateway import exceptions, stop_gateway
 from data_gateway.configuration import Configuration
+from data_gateway.configuration import DEFAULT_SENSOR_NAMES, Configuration
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
     BatchingFileWriter,
@@ -320,32 +321,32 @@ class PacketReader:
             bytes_per_sample = 3
 
             for i in range(self.config.mics_samples_per_packet // 2):
-                for j in range(self.config.number_of_sensors["Mics"] // 2):
+                for j in range(self.config.number_of_sensors[DEFAULT_SENSOR_NAMES[0]] // 2):
 
                     index = j + 20 * i
 
-                    data["Mics"][j][2 * i] = int.from_bytes(
+                    data[DEFAULT_SENSOR_NAMES[0]][j][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * index) : (bytes_per_sample * index + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data["Mics"][j][2 * i + 1] = int.from_bytes(
+                    data[DEFAULT_SENSOR_NAMES[0]][j][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 5)) : (bytes_per_sample * (index + 5) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data["Mics"][j + 5][2 * i] = int.from_bytes(
+                    data[DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 10)) : (bytes_per_sample * (index + 10) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data["Mics"][j + 5][2 * i + 1] = int.from_bytes(
+                    data[DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 15)) : (bytes_per_sample * (index + 15) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
 
-            return data, ["Mics"]
+            return data, [DEFAULT_SENSOR_NAMES[0]]
 
         if packet_type.startswith("IMU"):
 

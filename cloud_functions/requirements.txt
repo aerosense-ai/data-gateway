@@ -1,7 +1,7 @@
 blake3==0.2.1
 flask_wtf>=1,<2
 google-cloud-bigquery>=2.29,<3
-octue[hdf5]==0.27.2
+octue[hdf5]==0.27.3
 python-slugify>=5,<6
 shapely>=1.8,<2
 wtforms[email]>=3,<4
