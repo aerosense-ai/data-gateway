@@ -192,7 +192,9 @@ class TestBigQueryDataset(BaseTestCase):
                 )
 
     def test_add_configuration(self):
-        """Test that a configuration can be added."""
+        """Test that a configuration can be added. The sha256 hash is used in the tests but blake3 is used in
+        production. This is to avoid the need to install rust to install blake3 as a development dependency.
+        """
         mock_big_query_client = MockBigQueryClient(expected_query_result=[])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
@@ -206,9 +208,9 @@ class TestBigQueryDataset(BaseTestCase):
             mock_big_query_client.rows[0][0],
             {
                 "software_configuration": '{"blah": "blah"}',
-                "software_configuration_hash": "a9a553b17102e3f08a1ca32486086cdb8699f8f50c358b0fed8071b1d4c11bb2",
+                "software_configuration_hash": "68f975983c497fbf847a7b55deae52b4c44aeab40f28a23e765512a9d2990ec5",
                 "installation_data": '{"stuff": "data"}',
-                "installation_data_hash": "9fe86ad8340043710ee7c69ac555ad2e6981dc7a2c6d18f1757b899de5de1240",
+                "installation_data_hash": "6076cf0f824bcf1a887a96c75c1a33ec720ea271776f03e8168df3feed983c91",
             },
         )
 

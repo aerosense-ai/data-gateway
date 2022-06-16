@@ -1,10 +1,11 @@
 import copy
 import datetime
+import hashlib
+import importlib.util
 import json
 import logging
 import uuid
 
-from blake3 import blake3
 from google.cloud import bigquery
 
 from exceptions import (
@@ -15,6 +16,16 @@ from exceptions import (
 
 
 logger = logging.getLogger(__name__)
+
+
+if importlib.util.find_spec("blake3"):
+    from blake3 import blake3
+else:
+    blake3 = hashlib.sha256
+    logger.warning(
+        "The blake3 package is not available so it's been mocked with hashlib.sha256. Pip install blake3 to "
+        "resume normal behaviour."
+    )
 
 
 SENSOR_NAME_MAPPING = {
