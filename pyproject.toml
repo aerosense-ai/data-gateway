@@ -24,7 +24,6 @@ click = ">=7.1.2,<9"
 google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
-octue = {version = "0.27.3"}
 
 # On raspberry pi, using the pypi binary (which is built against glibc) fails with:
 #   https://stackoverflow.com/questions/72185264/glibc-2-29-not-found
@@ -32,6 +31,7 @@ octue = {version = "0.27.3"}
 # However, piwheels only has a built wheel for 1.45.0; so unless we pin that exact version, poetry specifies the latest (currently 1.46.3)
 # meaning it gets installed from pypi by default.
 grpcio = "1.45.0"
+octue = {git = "https://github.com/octue/octue-sdk-python.git", rev = "fix/avoid-importing-h5py-unnecessarily"}
 
 
 [tool.poetry.dev-dependencies]

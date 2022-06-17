@@ -541,7 +541,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 
 [[package]]
 name = "importlib-resources"
-version = "5.7.1"
+version = "5.8.0"
 description = "Read resources from Python packages"
 category = "main"
 optional = false
@@ -645,30 +645,37 @@ python-versions = ">=3.7,<3.11"
 
 [[package]]
 name = "octue"
-version = "0.27.3"
+version = "0.29.1"
 description = "A package providing template applications for data services, and a python SDK to the Octue API."
 category = "main"
 optional = false
-python-versions = ">=3.7.1,<4.0.0"
+python-versions = "^3.7.1"
+develop = false
 
 [package.dependencies]
 click = ">=7,<9"
-coolname = ">=1.1,<2.0"
+coolname = "^1.1"
 Flask = "2.0.3"
-google-auth = ">=1.27.0,<3"
-google-cloud-pubsub = ">=2.5,<3.0"
-google-cloud-secret-manager = ">=2.3,<3.0"
-google-cloud-storage = ">=1.35.1,<3"
-google-crc32c = ">=1.1,<2.0"
-gunicorn = ">=20.1,<21.0"
-packaging = ">=21.3,<22.0"
-python-dateutil = ">=2.8,<3.0"
-pyyaml = ">=6,<7"
-twined = ">=0.5.0,<0.6.0"
+google-auth = ">=1.27.0, <3"
+google-cloud-pubsub = "^2.5"
+google-cloud-secret-manager = "^2.3"
+google-cloud-storage = ">=1.35.1, <3"
+google-crc32c = "^1.1"
+gunicorn = "^20.1"
+packaging = "^21.3"
+python-dateutil = "^2.8"
+pyyaml = "^6"
+twined = "^0.5.0"
 
 [package.extras]
 hdf5 = ["h5py (>=3.6,<4.0)"]
 dataflow = ["apache-beam[gcp] (>=2.37,<3.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/octue/octue-sdk-python.git"
+reference = "fix/avoid-importing-h5py-unnecessarily"
+resolved_reference = "d8db39fe6e00f1398302f6d80b710eda52e8f474"
 
 [[package]]
 name = "packaging"
@@ -1108,7 +1115,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.10"
-content-hash = "903077ed9d9351f47b4fadf10edb5668161b7019f27abb40b5e45d3eb2293f1d"
+content-hash = "4f69bf89e6bf819f8b61b306db871195e8e61b693061c44ec5cca5d8eb8a76c7"
 
 [metadata.files]
 appdirs = [
@@ -1477,8 +1484,8 @@ importlib-metadata = [
     {file = "importlib_metadata-4.2.0.tar.gz", hash = "sha256:b7e52a1f8dec14a75ea73e0891f3060099ca1d8e6a462a4dff11c3e119ea1b31"},
 ]
 importlib-resources = [
-    {file = "importlib_resources-5.7.1-py3-none-any.whl", hash = "sha256:e447dc01619b1e951286f3929be820029d48c75eb25d265c28b92a16548212b8"},
-    {file = "importlib_resources-5.7.1.tar.gz", hash = "sha256:b6062987dfc51f0fcb809187cffbd60f35df7acb4589091f154214af6d0d49d3"},
+    {file = "importlib_resources-5.8.0-py3-none-any.whl", hash = "sha256:7952325ffd516c05a8ad0858c74dff2c3343f136fe66a6002b2623dd1d43f223"},
+    {file = "importlib_resources-5.8.0.tar.gz", hash = "sha256:568c9f16cb204f9decc8d6d24a572eeea27dacbb4cee9e6b03a8025736769751"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
@@ -1583,10 +1590,7 @@ numpy = [
     {file = "numpy-1.21.6-pp37-pypy37_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:dd1c8f6bd65d07d3810b90d02eba7997e32abbdf1277a481d698969e921a3be0"},
     {file = "numpy-1.21.6.zip", hash = "sha256:ecb55251139706669fdec2ff073c98ef8e9a84473e51e716211b41aa0f18e656"},
 ]
-octue = [
-    {file = "octue-0.27.3-py3-none-any.whl", hash = "sha256:5811d9e0fe8307a9638a9c272601c343e7de9c930141a60fdac29101b321fe6d"},
-    {file = "octue-0.27.3.tar.gz", hash = "sha256:9161e365485de25ede035f8b89e2d137a1245728dab82f08a8aaa0a86793c25d"},
-]
+octue = []
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
     {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
