@@ -90,11 +90,7 @@ This will editably install `data-gateway` in a `poetry`-managed virtual environm
 #### Install on Raspberry Pi
 Run the following from the repository root:
 ```shell
-pip install poetry
-
-poetry export -f requirements.txt --output requirements.txt --dev --without-hashes
-
-pip install -r requirements.txt
+pip install -r requirements-pi.txt
 ```
 
 #### Install on Windows
