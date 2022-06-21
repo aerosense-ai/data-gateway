@@ -31,7 +31,7 @@ python-slugify = "^5"
 # However, piwheels only has a built wheel for 1.45.0; so unless we pin that exact version, poetry specifies the latest (currently 1.46.3)
 # meaning it gets installed from pypi by default.
 grpcio = "1.45.0"
-octue = {git = "https://github.com/octue/octue-sdk-python.git", rev = "fix/avoid-importing-h5py-unnecessarily"}
+octue = "0.29.2"
 
 
 [tool.poetry.dev-dependencies]
