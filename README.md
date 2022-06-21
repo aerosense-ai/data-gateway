@@ -62,18 +62,15 @@ different architectures/platforms. Instructions are detailed below - [click here
 to read more.
 
 #### Clone the repository
-
-First, clone the repository:
+First, clone the repository and `cd` into it:
 ```shell
 git clone https://github.com/aerosense-ai/data-gateway.git
-```
-
-Then, change directory into the repository:
-```shell
 cd data-gateway
 ```
 
-#### Install on Linux and MacOS
+Then follow the instructions for your platform below.
+
+#### Install on MacOS and Linux (except on Raspberry Pi)
 Run the following from the repository root:
 ```shell
 pip install poetry
@@ -87,9 +84,17 @@ This will editably install `data-gateway` in a `poetry`-managed virtual environm
 - It won't be affected by changes to other python packages you have installed on your system, making development much
   easier and more deterministic
 
+You may also need to run:
+```shell
+sudo apt-get update
+sudo apt-get install libhdf5-dev libhdf5-serial-dev
+```
+
 #### Install on Raspberry Pi
 Run the following from the repository root:
 ```shell
+sudo apt-get update
+sudo apt-get install libhdf5-dev libhdf5-serial-dev
 pip install -r requirements-pi.txt
 ```
 
