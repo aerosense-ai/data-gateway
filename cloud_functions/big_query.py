@@ -23,8 +23,12 @@ if importlib.util.find_spec("blake3"):
 else:
     blake3 = hashlib.sha256
     logger.warning(
-        "The blake3 package is not available so it's been mocked with hashlib.sha256. Pip install blake3 to "
-        "resume normal behaviour."
+        "The blake3 package is not available, so hashlib.sha256 is being used instead. This is probably because blake3 "
+        "is only required by the cloud function, where it is separately specified as a requirement. The reason blake3 "
+        "is not in the development or production dependencies is because it requires the rust language/bindings to be "
+        "available, which adds multiple unnecessary steps when installing data-gateway on Raspberry Pi. blake3 not "
+        "being available is not a problem for development and testing, but if this warning shows up in the production "
+        "cloud function, it is a problem. Pip install blake3 to resume normal behaviour."
     )
 
 
