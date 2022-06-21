@@ -102,23 +102,23 @@ pip install -r requirements-pi.txt
 This workflow works for Windows using Powershell.
 
 Prerequisites:
-1. Make sure to have python not installed from the [python.org](https://www.python.org/)
+1. Make sure to have python not installed from [python.org](https://www.python.org/)
 2. Install [pyenv-win](https://github.com/pyenv-win/pyenv-win) via pip method
 3. Execute ```pip install virtualenv```
 
 Installation:
-1. Clone this repo as described above.
-2. `cd data-gateway`
-3. `pyenv install 3.7.0` (or higher)
-4. `pyenv local 3.7.0`
-5. `pyenv rehash`
-6. `virtualenv venv`
-7. `./venv/Scripts/activate`
-8. `pip install poetry`
-9. `poetry install`
+```shell
+pyenv install 3.7.0  # (or higher)
+pyenv local 3.7.0
+pyenv rehash
+virtualenv venv
+./venv/Scripts/activate
+pip install poetry
+poetry install
+```
 
 Every time you enter the repo over powershell again, make sure to activate the venv using
-```
+```shell
 ./venv/Scripts/activate
 ```
 
