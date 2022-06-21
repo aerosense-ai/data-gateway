@@ -1,10 +1,11 @@
 import copy
 import datetime
+import hashlib
+import importlib.util
 import json
 import logging
 import uuid
 
-from blake3 import blake3
 from google.cloud import bigquery
 
 from exceptions import (
@@ -15,6 +16,20 @@ from exceptions import (
 
 
 logger = logging.getLogger(__name__)
+
+
+if importlib.util.find_spec("blake3"):
+    from blake3 import blake3
+else:
+    blake3 = hashlib.sha256
+    logger.warning(
+        "The blake3 package is not available, so hashlib.sha256 is being used instead. This is probably because blake3 "
+        "is only required by the cloud function, where it is separately specified as a requirement. The reason blake3 "
+        "is not in the development or production dependencies is because it requires the rust language/bindings to be "
+        "available, which adds multiple unnecessary steps when installing data-gateway on Raspberry Pi. blake3 being "
+        "unavailable is not a problem for general development, testing, or gateway-only production, but if this warning "
+        "shows up in the production cloud function, it is a problem. Pip install blake3 to resume normal behaviour."
+    )
 
 
 SENSOR_NAME_MAPPING = {
