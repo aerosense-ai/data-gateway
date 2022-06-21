@@ -95,7 +95,7 @@ Run the following from the repository root:
 ```shell
 sudo apt-get update
 sudo apt-get install libhdf5-dev libhdf5-serial-dev
-pip install -r requirements-pi.txt
+pip install -r requirements-pi-dev.txt
 ```
 
 #### Install on Windows
