@@ -44,10 +44,10 @@ class DatasetMixin:
         window = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
 
         for sensor in sensors:
-            rows = int(window_duration // self.VALID_CONFIGURATION["period"][sensor]) + 1
-            cols = self.VALID_CONFIGURATION["number_of_sensors"][sensor]
+            rows = int(window_duration // self.VALID_CONFIGURATION["nodes"]["0"]["periods"][sensor]) + 1
+            cols = self.VALID_CONFIGURATION["nodes"]["0"]["number_of_sensors"][sensor]
             # Compute last sample time within the window duration
-            last_sample_time = (rows - 1) * self.VALID_CONFIGURATION["period"][sensor]
+            last_sample_time = (rows - 1) * self.VALID_CONFIGURATION["nodes"]["0"]["periods"][sensor]
             window["sensor_data"][sensor] = self.random_sensor_data(rows, cols, 0, last_sample_time)
 
         return window
