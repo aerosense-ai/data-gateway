@@ -77,7 +77,7 @@ class TestUploadWindow(BaseTestCase):
 
         # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        del expected_configuration["session_data"]
+        del expected_configuration["session"]
         self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
         self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
 
@@ -133,14 +133,14 @@ class TestUploadWindow(BaseTestCase):
             self.assertTrue(
                 np.equal(
                     np.array(f["dataset"])[:, 1:],
-                    window["sensor_data"][MICROPHONE_SENSOR_NAME][:, 1:],
+                    window["0"][MICROPHONE_SENSOR_NAME][:, 1:],
                 ).all()
             )
 
         # Check non-microphone sensor data was added to BigQuery.
         self.assertEqual(mock_big_query_client.rows[1][0]["sensor_type_reference"], "connection_statistics")
         self.assertEqual(mock_big_query_client.rows[1][0]["configuration_id"], configuration_id)
-        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["sensor_data"]["Constat"]))
+        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["0"]["Constat"]))
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""

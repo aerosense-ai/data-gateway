@@ -32,7 +32,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
 
         test_label = f"test-{uuid.uuid4()}"
         configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        configuration["session_data"]["label"] = test_label
+        configuration["session"]["label"] = test_label
 
         self.storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),

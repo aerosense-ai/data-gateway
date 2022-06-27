@@ -70,7 +70,7 @@ class WindowHandler:
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
-        session_data = window_metadata.pop("session_data")
+        session_data = window_metadata.pop("session")
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)
@@ -81,26 +81,18 @@ class WindowHandler:
             self._store_microphone_data(
                 data=window.pop(MICROPHONE_SENSOR_NAME),
                 configuration_id=configuration_id,
-                installation_reference=window_metadata["installation_data"]["installation_reference"],
+                installation_reference=window_metadata["gateway"]["installation_reference"],
                 label=session_data.get("label"),
             )
 
         self.dataset.add_sensor_data(
             data=window,
             configuration_id=configuration_id,
-            installation_reference=window_metadata["installation_data"]["installation_reference"],
+            installation_reference=window_metadata["gateway"]["installation_reference"],
             label=session_data.get("label"),
         )
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
-
-    def convert_window_timestamps_to_unix_time(self, window):
-        """Use sensor_time_offset, to convert sensor node internal clock timestamps into UNIX time for the window samples"""
-        for sensor in window["sensor_data"].keys():
-            for sample in window["sensor_data"][sensor]:
-                sample[0] += window["sensor_time_offset"]
-
-        return window
 
     def _store_microphone_data(self, data, configuration_id, installation_reference, label):
         """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
