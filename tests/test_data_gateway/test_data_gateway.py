@@ -92,11 +92,14 @@ class TestDataGateway(BaseTestCase):
                     data_gateway.start(stop_when_no_more_data_after=0.1)
 
                     self._check_data_is_written_to_files(
-                        data_gateway.packet_reader.local_output_directory, sensor_names=[sensor_name]
+                        data_gateway.packet_reader.local_output_directory,
+                        node_id="0",
+                        sensor_names=[sensor_name],
                     )
 
                     self._check_windows_are_uploaded_to_cloud(
                         data_gateway.packet_reader.cloud_output_directory,
+                        node_id="0",
                         sensor_names=[sensor_name],
                         number_of_windows_to_check=1,
                     )
@@ -133,8 +136,11 @@ class TestDataGateway(BaseTestCase):
                 data_gateway.start(stop_when_no_more_data_after=0.1)
 
             self._check_data_is_written_to_files(
-                data_gateway.packet_reader.local_output_directory, sensor_names=["Constat"]
+                data_gateway.packet_reader.local_output_directory,
+                node_id="0",
+                sensor_names=["Constat"],
             )
+
             self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
@@ -160,11 +166,14 @@ class TestDataGateway(BaseTestCase):
             data_gateway.start(stop_when_no_more_data_after=0.1)
 
             self._check_data_is_written_to_files(
-                data_gateway.packet_reader.local_output_directory, sensor_names=sensor_names
+                data_gateway.packet_reader.local_output_directory,
+                node_id="0",
+                sensor_names=sensor_names,
             )
 
             self._check_windows_are_uploaded_to_cloud(
                 data_gateway.packet_reader.cloud_output_directory,
+                node_id="0",
                 sensor_names=sensor_names,
                 number_of_windows_to_check=1,
             )
@@ -194,8 +203,17 @@ class TestDataGateway(BaseTestCase):
             except FileNotFoundError:
                 pass
 
-    def _check_windows_are_uploaded_to_cloud(self, output_directory, sensor_names, number_of_windows_to_check=5):
-        """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage."""
+    def _check_windows_are_uploaded_to_cloud(
+        self,
+        output_directory,
+        node_id,
+        sensor_names,
+        number_of_windows_to_check=5,
+    ):
+        """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage.
+
+        :return None:
+        """
         window_paths = [
             blob.name
             for blob in self.storage_client.scandir(
@@ -212,11 +230,14 @@ class TestDataGateway(BaseTestCase):
             )
 
             for name in sensor_names:
-                lines = data["sensor_data"][name]
+                lines = data[node_id][name]
                 self.assertTrue(len(lines[0]) > 1)
 
-    def _check_data_is_written_to_files(self, output_directory, sensor_names):
-        """Check that non-trivial data is written to the given file."""
+    def _check_data_is_written_to_files(self, output_directory, node_id, sensor_names):
+        """Check that non-trivial data is written to the given file.
+
+        :return None:
+        """
         windows = [file for file in os.listdir(output_directory) if file.startswith(TimeBatcher._file_prefix)]
         self.assertTrue(len(windows) > 0)
 
@@ -225,5 +246,5 @@ class TestDataGateway(BaseTestCase):
                 data = json.load(f)
 
                 for name in sensor_names:
-                    lines = data["sensor_data"][name]
+                    lines = data[node_id][name]
                     self.assertTrue(len(lines[0]) > 1)
