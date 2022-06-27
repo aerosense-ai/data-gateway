@@ -321,7 +321,7 @@ class PacketReader:
             bytes_per_sample = 2
             number_of_diff_baros_sensors = self.config.nodes[node_id].number_of_sensors["Diff_Baros"]
 
-            for i in range(self.config.nodes[node_id].diff_baros_samples_per_packet):
+            for i in range(self.config.nodes[node_id].samples_per_packet["Diff_Baros"]):
                 for j in range(number_of_diff_baros_sensors):
                     data[node_id]["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
@@ -339,7 +339,7 @@ class PacketReader:
             # Write the received payload to the data field
             bytes_per_sample = 3
 
-            for i in range(self.config.nodes[node_id].mics_samples_per_packet // 2):
+            for i in range(self.config.nodes[node_id].samples_per_packet["Mics"] // 2):
                 for j in range(self.config.nodes[node_id].number_of_sensors[DEFAULT_SENSOR_NAMES[0]] // 2):
 
                     index = j + 20 * i
@@ -372,7 +372,7 @@ class PacketReader:
             imu_sensor = imu_sensor_names[packet_type]
 
             # Write the received payload to the data field
-            for i in range(self.config.nodes[node_id].imu_samples_per_packet):
+            for i in range(self.config.nodes[node_id].samples_per_packet["Acc"]):
                 index = 6 * i
 
                 data[node_id][imu_sensor][0][i] = int.from_bytes(
@@ -397,7 +397,7 @@ class PacketReader:
             def val_to_v(val):
                 return val / 1e6
 
-            for i in range(self.config.nodes[node_id].analog_samples_per_packet):
+            for i in range(self.config.nodes[node_id].samples_per_packet["Analog Vbat"]):
                 index = 4 * i
 
                 data[node_id]["Analog Vbat"][0][i] = val_to_v(
