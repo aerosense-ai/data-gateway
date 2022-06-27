@@ -64,6 +64,17 @@
         "Analog Vbat": 1,
         "Constat": 4
       },
+      "periods": {
+        "Mics": 6.4e-05,
+        "Baros_P": 0.01,
+        "Baros_T": 0.01,
+        "Diff_Baros": 0.001,
+        "Acc": 0.01,
+        "Gyro": 0.01,
+        "Mag": 0.08,
+        "Analog Vbat": 6.103515625e-05,
+        "Constat": 0.045
+      },
       "samples_per_packet": {
         "Mics": 8,
         "Diff_Baros": 24,

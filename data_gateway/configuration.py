@@ -1,3 +1,4 @@
+import copy
 from functools import cached_property
 
 
@@ -242,8 +243,12 @@ class NodeConfiguration:
         # Validate the final configuration
         self._check()
 
-    def get_periods(self):
-        """Return a dict of periods (in s) for each of the sensors, computed from the sensor frequencies"""
+    @property
+    def periods(self):
+        """Get the period in seconds for each sensor (computed from the sensor frequencies).
+
+        :return dict:
+        """
         return {
             "Mics": 1 / self.mics_freq,
             "Baros_P": 1 / self.baros_freq,
@@ -261,7 +266,7 @@ class NodeConfiguration:
 
         :return dict:
         """
-        return vars(self)
+        return vars(self) | {"periods": self.periods}
 
     def _get_default_sensor_coordinates(self):
         return {
@@ -338,7 +343,17 @@ class Configuration:
         :param dict dictionary:
         :return Configuration:
         """
-        return cls(**{attribute_name: dictionary[attribute_name] for attribute_name in vars(Configuration())})
+        dictionary = copy.deepcopy(dictionary)
+
+        for node in dictionary["nodes"].values():
+            if "periods" in node:
+                node.pop("periods")
+
+        return cls(
+            gateway=dictionary["gateway"],
+            nodes=dictionary["nodes"],
+            session=dictionary["session"],
+        )
 
     def get_packet_key(self, node_id, as_bytes=False):
         """Return the packet key for a given node, computed from the packet key offset
@@ -375,6 +390,6 @@ class Configuration:
         """
         return {
             "gateway": self.gateway.to_dict(),
-            "nodes": {name: vars(node) for name, node in self.nodes.items()},
+            "nodes": {name: node.to_dict() for name, node in self.nodes.items()},
             "session": self.session,
         }
