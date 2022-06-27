@@ -9,7 +9,6 @@ from octue.cloud import storage
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import exceptions, stop_gateway
-from data_gateway.configuration import Configuration
 from data_gateway.configuration import DEFAULT_SENSOR_NAMES, Configuration
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
