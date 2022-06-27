@@ -129,7 +129,7 @@ class PacketReader:
 
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
-                sensor_names=self.config.sensor_names,
+                node_ids=self.config.node_ids,
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
                 output_directory=self.cloud_output_directory,
@@ -140,7 +140,7 @@ class PacketReader:
 
         if self.save_locally:
             self.writer = BatchingFileWriter(
-                sensor_names=self.config.sensor_names,
+                node_ids=self.config.node_ids,
                 window_size=self.window_size,
                 output_directory=self.local_output_directory,
                 save_csv_files=self.save_csv_files,
@@ -213,6 +213,7 @@ class PacketReader:
 
                                 self._timestamp_and_persist_data(
                                     data=data,
+                                    node_id=node_id,
                                     sensor_name=sensor_name,
                                     timestamp=timestamp,
                                     period=self.config.nodes[node_id].periods[sensor_name],
@@ -540,12 +541,13 @@ class PacketReader:
 
         previous_timestamp[sensor_name] = timestamp
 
-    def _timestamp_and_persist_data(self, data, sensor_name, timestamp, period):
+    def _timestamp_and_persist_data(self, data, node_id, sensor_name, timestamp, period):
         """Persist data to the required storage media.
         Since timestamps only come at a packet level, this function assumes constant period for
          the within-packet-timestamps
 
         :param dict data: data to persist
+        :param str node_id:
         :param str sensor_name: sensor type to persist data from
         :param float timestamp: timestamp in s
         :param float period:
@@ -561,17 +563,18 @@ class PacketReader:
             for meas in data[sensor_name]:
                 sample.append(meas[i])
 
-            self._add_data_to_current_window(sensor_name, data=sample)
+            self._add_data_to_current_window(node_id, sensor_name, data=sample)
 
-    def _add_data_to_current_window(self, sensor_name, data):
+    def _add_data_to_current_window(self, node_id, sensor_name, data):
         """Add data to the current window.
 
+        :param str node_id:
         :param str sensor_name: sensor type to persist data from
         :param iter data: data to persist
         :return None:
         """
         if self.save_locally:
-            self.writer.add_to_current_window(sensor_name, data)
+            self.writer.add_to_current_window(node_id, sensor_name, data)
 
         if self.upload_to_cloud:
-            self.uploader.add_to_current_window(sensor_name, data)
+            self.uploader.add_to_current_window(node_id, sensor_name, data)
