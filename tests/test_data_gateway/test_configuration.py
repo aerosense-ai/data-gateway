@@ -15,12 +15,12 @@ class TestConfiguration(BaseTestCase):
         """Ensure a valid dictionary can be used to build a configuration."""
         Configuration.from_dict(self.VALID_CONFIGURATION)
 
-    def test_dictionary_has_to_have_all_attributes_for_configuration_construction(self):
-        """Test that a dictionary has to include all the attributes of a configuration to be able to construct one (i.e.
-        that default arguments are unavailable when constructing from a dictionary).
+    def test_dictionary_has_to_have_all_sub_configurations_for_configuration_construction(self):
+        """Test that a dictionary has to include all the sub-configurations of a configuration to be able to construct
+        one (i.e. that default arguments for the sub-configurations are unavailable when constructing from a dictionary).
         """
         invalid_configuration = self.VALID_CONFIGURATION.copy()
-        del invalid_configuration["baudrate"]
+        del invalid_configuration["gateway"]
 
         with self.assertRaises(KeyError):
             Configuration.from_dict(invalid_configuration)

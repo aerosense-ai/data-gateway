@@ -139,6 +139,13 @@ class GatewayConfiguration:
         self.receiver_firmware_version = receiver_firmware_version
         self.packet_key_offset = packet_key_offset
 
+    def to_dict(self):
+        """Convert the configuration to a dictionary.
+
+        :return dict:
+        """
+        return vars(self)
+
 
 class NodeConfiguration:
     """A data class containing configured/default values for a sensor node
@@ -250,7 +257,10 @@ class NodeConfiguration:
         }
 
     def to_dict(self):
-        """Serialise the configuration to a dictionary."""
+        """Serialise the configuration to a dictionary.
+
+        :return dict:
+        """
         return vars(self)
 
     def _get_default_sensor_coordinates(self):
@@ -297,13 +307,7 @@ class Configuration:
     :return None:
     """
 
-    def __init__(
-        self,
-        gateway=None,
-        nodes=None,
-        session=None,
-        **kwargs,
-    ):
+    def __init__(self, gateway=None, nodes=None, session=None, **kwargs):
         # Set up the gateway configuration
         gateway_configuration = gateway or {}
         self.gateway = GatewayConfiguration(**gateway_configuration)
@@ -320,12 +324,21 @@ class Configuration:
         if nodes is None:
             self.nodes[0] = NodeConfiguration()
         else:
-            for key, value in nodes.items():
-                node_id = int(key)
-                self.nodes[node_id] = NodeConfiguration(**value)
+            for node_id, node in nodes.items():
+                self.nodes[node_id] = NodeConfiguration(**node)
 
         # Set up the session-specific data as empty
         self.session = session or DEFAULT_SESSION
+
+    @classmethod
+    def from_dict(cls, dictionary):
+        """Construct a configuration from a dictionary. Note that a dictionary for each sub-configurations is required
+        - the construction will fail if any are missing.
+
+        :param dict dictionary:
+        :return Configuration:
+        """
+        return cls(**{attribute_name: dictionary[attribute_name] for attribute_name in vars(Configuration())})
 
     def get_packet_key(self, node_id, as_bytes=False):
         """Return the packet key for a given node, computed from the packet key offset
@@ -341,16 +354,27 @@ class Configuration:
 
     @property
     def node_ids(self):
-        """Access a list of node ids in the current configuration
+        """Access a list of node ids in the current configuration.
+
         :return list: A list of node ids
         """
         return list(self.nodes)
 
     @cached_property
     def packet_key_map(self):
-        """Access a dict that maps the packet keys (as bytes) to node ids"""
+        """Access a dict that maps the packet keys (as bytes) to node ids.
+
+        :return dict:
+        """
         return dict((self.get_packet_key(node_id, as_bytes=True), node_id) for node_id in self.node_ids)
 
     def to_dict(self):
-        """Serialise the configuration to a dictionary."""
-        return vars(self)
+        """Serialise the configuration to a dictionary.
+
+        :return dict:
+        """
+        return {
+            "gateway": self.gateway.to_dict(),
+            "nodes": {name: vars(node) for name, node in self.nodes.items()},
+            "session": self.session,
+        }
