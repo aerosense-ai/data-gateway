@@ -83,7 +83,7 @@ class TestUploadWindow(BaseTestCase):
 
         # Check data was persisted.
         self.assertIn("add_sensor_data", mock_dataset.mock_calls[2][0])
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"]["0"].keys(), {"Constat"})
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my-test-1")
 
