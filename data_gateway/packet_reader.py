@@ -552,7 +552,6 @@ class PacketReader:
         :return None:
         """
         number_of_samples = len(data[sensor_name][0])
-        time = None
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
@@ -563,31 +562,6 @@ class PacketReader:
                 sample.append(meas[i])
 
             self._add_data_to_current_window(sensor_name, data=sample)
-
-        # The first time this method runs, calculate the offset between the last timestamp of the first sample and the
-        # UTC time now. Store it as the `sensor_time_offset` metadata in the windows.
-        if sensor_name == "Constat":
-            logger.debug("Constat packet: %d" % timestamp)
-            if time and self.sensor_time_offset is None:
-                self._calculate_and_store_sensor_timestamp_offset(time)
-
-    def _calculate_and_store_sensor_timestamp_offset(self, timestamp):
-        """Calculate the offset between the given timestamp and the UTC time now, storing it in the metadata of the
-        windows in the uploader and/or writer.
-
-        :param float timestamp: posix timestamp from sensor
-        :return None:
-        """
-        now = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).timestamp()
-        self.sensor_time_offset = now - timestamp
-
-        if hasattr(self.writer, "current_window"):
-            self.writer.current_window["sensor_time_offset"] = self.sensor_time_offset
-            self.writer.ready_window["sensor_time_offset"] = self.sensor_time_offset
-
-        if hasattr(self.uploader, "current_window"):
-            self.uploader.current_window["sensor_time_offset"] = self.sensor_time_offset
-            self.uploader.ready_window["sensor_time_offset"] = self.sensor_time_offset
 
     def _add_data_to_current_window(self, sensor_name, data):
         """Add data to the current window.
