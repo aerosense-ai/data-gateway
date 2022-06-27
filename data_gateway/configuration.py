@@ -325,10 +325,10 @@ class Configuration:
         self.nodes = {}
 
         if nodes is None:
-            self.nodes[0] = NodeConfiguration()
+            self.nodes["0"] = NodeConfiguration()
         else:
             for node_id, node in nodes.items():
-                self.nodes[node_id] = NodeConfiguration(**node)
+                self.nodes[str(node_id)] = NodeConfiguration(**node)
 
         # Set up the session-specific data as empty
         self.session = session or DEFAULT_SESSION
@@ -359,7 +359,8 @@ class Configuration:
         :param bool as_bytes: Convert the package key to the bytes representation
         :return int|bytes: The packet key for a given node_id
         """
-        packet_key = self.gateway.packet_key_offset + node_id
+        packet_key = self.gateway.packet_key_offset + int(node_id)
+
         if as_bytes:
             packet_key = packet_key.to_bytes(1, self.gateway.endian)
 

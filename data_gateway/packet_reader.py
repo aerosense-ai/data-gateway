@@ -153,6 +153,7 @@ class PacketReader:
 
         previous_timestamp = {}
         data = {}
+
         for node_id in self.config.node_ids:
             node_config = self.config.nodes[node_id]
             data[node_id] = {}
