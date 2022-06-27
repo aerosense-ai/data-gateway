@@ -229,9 +229,9 @@ class TestStart(BaseTestCase):
                 with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
                     data = json.loads(f.read())
 
-                self.assertEqual(len(data), 2)
-                self.assertTrue(len(data["sensor_data"]["Baros_P"][0]) > 1)
-                self.assertTrue(len(data["sensor_data"]["Baros_T"][0]) > 1)
+                self.assertEqual(len(data["0"]), 2)
+                self.assertTrue(len(data["0"]["Baros_P"][0]) > 1)
+                self.assertTrue(len(data["0"]["Baros_T"][0]) > 1)
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
