@@ -11,7 +11,14 @@ class TestPacketReader(BaseTestCase):
     def test_error_is_logged_if_unknown_sensor_type_packet_is_received(self):
         """Test that an error is logged if an unknown sensor type packet is received."""
         queue = multiprocessing.Queue()
-        queue.put({"packet_type": bytes([0]), "packet": b"".join((PACKET_KEY, bytes([0]), LENGTH, RANDOM_BYTES[0]))})
+
+        queue.put(
+            {
+                "node_id": "0",
+                "packet_type": bytes([0]),
+                "packet": b"".join((PACKET_KEY, bytes([0]), LENGTH, RANDOM_BYTES[0])),
+            }
+        )
 
         packet_reader = PacketReader(
             save_locally=False,
@@ -76,7 +83,7 @@ class TestPacketReader(BaseTestCase):
 
         for index, packet_type in enumerate(packet_types):
             for packet in packets[index]:
-                queue.put({"packet_type": str(int.from_bytes(packet_type, "little")), "packet": packet})
+                queue.put({"node_id": "0", "packet_type": str(int.from_bytes(packet_type, "little")), "packet": packet})
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
