@@ -107,7 +107,7 @@ class GatewayConfiguration:
     :param float latitude: The latitude of the turbine in WGS84 coordinate system
     :param float longitude: The longitude of the turbine in WGS84 coordinate system
     :param int packet_key_offset: The value from which each node's packet key is calculated (packet_key = node_id + packet_key_offset)
-    :param str receiver_firmware_version: The version ofthe firmware running on the gateway receiver, if known.
+    :param str receiver_firmware_version: The version of the firmware running on the gateway receiver, if known.
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
     :param str turbine_id: A unique id for the turbine on which this is installed
@@ -148,14 +148,15 @@ class GatewayConfiguration:
 
 class NodeConfiguration:
     """A data class containing configured/default values for a sensor node
+
     :param float acc_freq: accelerometers sampling frequency
     :param float acc_range: TODO nobody seems to know...
     :param float analog_freq: analog sensors sampling frequency
     :param float baros_freq: barometers sampling frequency
     :param float baros_bm: TODO nobody seems to know...
-    :param float diff_baros_freq: differential barometers sampling frequency
     :param str blade_id: The id of the blade on which the node is mounted, if known
     :param float constat_period: period of incoming connection statistic parameters in ms
+    :param float diff_baros_freq: differential barometers sampling frequency
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO nobody seems to know...
     :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
@@ -264,7 +265,7 @@ class NodeConfiguration:
 
         :return dict:
         """
-        return vars(self) | {"periods": self.periods}
+        return {**vars(self), "periods": self.periods}
 
     def _get_default_sensor_coordinates(self):
         return {
