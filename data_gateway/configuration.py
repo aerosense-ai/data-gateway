@@ -2,19 +2,17 @@ import copy
 from functools import cached_property
 
 
-DEFAULT_SENSOR_NAMES = (
-    [
-        "Mics",
-        "Baros_P",
-        "Baros_T",
-        "Diff_Baros",
-        "Acc",
-        "Gyro",
-        "Mag",
-        "Analog Vbat",
-        "Constat",
-    ],
-)
+DEFAULT_SENSOR_NAMES = [
+    "Mics",
+    "Baros_P",
+    "Baros_T",
+    "Diff_Baros",
+    "Acc",
+    "Gyro",
+    "Mag",
+    "Analog Vbat",
+    "Constat",
+]
 
 DEFAULT_DEFAULT_HANDLES = {
     "34": "Abs. baros",
