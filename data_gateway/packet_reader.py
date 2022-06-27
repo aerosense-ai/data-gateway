@@ -303,13 +303,13 @@ class PacketReader:
             bytes_per_sample = 6
             for i in range(self.config.nodes[node_id].samples_per_packet["Baros_P"]):
                 for j in range(self.config.nodes[node_id].number_of_sensors["Baros_P"]):
-                    data["Baros_P"][j][i] = int.from_bytes(
+                    data[node_id]["Baros_P"][j][i] = int.from_bytes(
                         payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.gateway.endian,
                         signed=False,
                     )
 
-                    data["Baros_T"][j][i] = int.from_bytes(
+                    data[node_id]["Baros_T"][j][i] = int.from_bytes(
                         payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
                         self.config.gateway.endian,
                         signed=True,
@@ -323,7 +323,7 @@ class PacketReader:
 
             for i in range(self.config.nodes[node_id].diff_baros_samples_per_packet):
                 for j in range(number_of_diff_baros_sensors):
-                    data["Diff_Baros"][j][i] = int.from_bytes(
+                    data[node_id]["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
                             (bytes_per_sample * (number_of_diff_baros_sensors * i + j)) : (
                                 bytes_per_sample * (number_of_diff_baros_sensors * i + j + 1)
@@ -344,22 +344,22 @@ class PacketReader:
 
                     index = j + 20 * i
 
-                    data[DEFAULT_SENSOR_NAMES[0]][j][2 * i] = int.from_bytes(
+                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * index) : (bytes_per_sample * index + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[DEFAULT_SENSOR_NAMES[0]][j][2 * i + 1] = int.from_bytes(
+                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 5)) : (bytes_per_sample * (index + 5) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i] = int.from_bytes(
+                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 10)) : (bytes_per_sample * (index + 10) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i + 1] = int.from_bytes(
+                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 15)) : (bytes_per_sample * (index + 15) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
@@ -375,13 +375,13 @@ class PacketReader:
             for i in range(self.config.nodes[node_id].imu_samples_per_packet):
                 index = 6 * i
 
-                data[imu_sensor][0][i] = int.from_bytes(
+                data[node_id][imu_sensor][0][i] = int.from_bytes(
                     payload[index : (index + 2)], self.config.gateway.endian, signed=True
                 )
-                data[imu_sensor][1][i] = int.from_bytes(
+                data[node_id][imu_sensor][1][i] = int.from_bytes(
                     payload[(index + 2) : (index + 4)], self.config.gateway.endian, signed=True
                 )
-                data[imu_sensor][2][i] = int.from_bytes(
+                data[node_id][imu_sensor][2][i] = int.from_bytes(
                     payload[(index + 4) : (index + 6)], self.config.gateway.endian, signed=True
                 )
 
@@ -400,7 +400,7 @@ class PacketReader:
             for i in range(self.config.nodes[node_id].analog_samples_per_packet):
                 index = 4 * i
 
-                data["Analog Vbat"][0][i] = val_to_v(
+                data[node_id]["Analog Vbat"][0][i] = val_to_v(
                     int.from_bytes(payload[index : (index + 4)], self.config.gateway.endian, signed=False)
                 )
 
@@ -409,21 +409,21 @@ class PacketReader:
         if packet_type == "Constat":
             bytes_per_sample = 10
             for i in range(self.config.nodes[node_id].samples_per_packet["Constat"]):
-                data["Constat"][0][i] = struct.unpack(
+                data[node_id]["Constat"][0][i] = struct.unpack(
                     "<f" if self.config.gateway.endian == "little" else ">f",
                     payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
                 )[0]
-                data["Constat"][1][i] = int.from_bytes(
+                data[node_id]["Constat"][1][i] = int.from_bytes(
                     payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)],
                     self.config.gateway.endian,
                     signed=True,
                 )
-                data["Constat"][2][i] = int.from_bytes(
+                data[node_id]["Constat"][2][i] = int.from_bytes(
                     payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)],
                     self.config.gateway.endian,
                     signed=True,
                 )
-                data["Constat"][3][i] = int.from_bytes(
+                data[node_id]["Constat"][3][i] = int.from_bytes(
                     payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)],
                     self.config.gateway.endian,
                     signed=False,
@@ -467,7 +467,7 @@ class PacketReader:
                 self.sleep = False
                 # Reset previous timestamp on wake up
                 for sensor_name in self.config.nodes[node_id].sensor_names:
-                    previous_timestamp[sensor_name] = -1
+                    previous_timestamp[node_id][sensor_name] = -1
 
             return
 
@@ -505,11 +505,11 @@ class PacketReader:
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
-        if previous_timestamp[sensor_name] == -1:
+        if previous_timestamp[node_id][sensor_name] == -1:
             logger.info("Received first %s packet." % sensor_name)
         else:
             expected_current_timestamp = (
-                previous_timestamp[sensor_name]
+                previous_timestamp[node_id][sensor_name]
                 + self.config.nodes[node_id].samples_per_packet[sensor_name]
                 * self.config.nodes[node_id].periods[sensor_name]
             )
@@ -524,7 +524,7 @@ class PacketReader:
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
                     # IMU sensors are not synchronised to CPU, so their actual periods might differ
                     self.config.nodes[node_id].periods[sensor_name] = (
-                        timestamp - previous_timestamp[sensor_name]
+                        timestamp - previous_timestamp[node_id][sensor_name]
                     ) / self.config.nodes[node_id].samples_per_packet[sensor_name]
 
                     logger.debug(
@@ -540,7 +540,7 @@ class PacketReader:
                         timestamp_deviation * 1000,
                     )
 
-        previous_timestamp[sensor_name] = timestamp
+        previous_timestamp[node_id][sensor_name] = timestamp
 
     def _timestamp_and_persist_data(self, data, node_id, sensor_name, timestamp, period):
         """Persist data to the required storage media.
@@ -554,14 +554,14 @@ class PacketReader:
         :param float period:
         :return None:
         """
-        number_of_samples = len(data[sensor_name][0])
+        number_of_samples = len(data[node_id][sensor_name][0])
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
             time = timestamp + i * period
             sample = [time]
 
-            for meas in data[sensor_name]:
+            for meas in data[node_id][sensor_name]:
                 sample.append(meas[i])
 
             self._add_data_to_current_window(node_id, sensor_name, data=sample)
