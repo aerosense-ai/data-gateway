@@ -87,17 +87,17 @@ class PacketReader:
             while stop_signal.value == 0:
                 serial_data = serial_port.read()
 
-                # Handle no data on the serial port
+                # Handle no data on the serial port.
                 if len(serial_data) == 0:
                     continue
 
-                # Get the id of the node the packet is coming from
-                if serial_data[0] not in self.config.packet_key_map:
+                # Get the ID of the node the packet is coming from.
+                if serial_data not in self.config.packet_key_map:
                     continue
-                else:
-                    node_id = self.config.packet_key_map[serial_data[0]]
 
-                # Read the packet off the serial port
+                node_id = self.config.packet_key_map[serial_data]
+
+                # Read the packet from the serial port.
                 packet_type = str(int.from_bytes(serial_port.read(), self.config.gateway.endian))
                 length = int.from_bytes(serial_port.read(), self.config.gateway.endian)
                 packet = serial_port.read(length)
