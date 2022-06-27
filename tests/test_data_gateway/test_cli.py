@@ -13,7 +13,7 @@ from data_gateway.cli import ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL, CREATE_INSTALLA
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
+from tests import LENGTH, RANDOM_BYTES, ZEROTH_NODE_PACKET_KEY
 from tests.base import BaseTestCase
 
 
@@ -204,8 +204,8 @@ class TestStart(BaseTestCase):
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             serial_port = DummySerial(port="test")
             sensor_type = bytes([34])
-            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
 
             with tempfile.TemporaryDirectory() as temporary_directory:
                 with mock.patch("serial.Serial", return_value=serial_port):
