@@ -212,7 +212,6 @@ def create_installation(config_file):
     parameters = {
         "reference": slugified_reference,
         "turbine_id": gateway_configuration["turbine_id"],
-        "blade_id": gateway_configuration["blade_id"],
         "receiver_firmware_version": gateway_configuration["receiver_firmware_version"],
     }
 

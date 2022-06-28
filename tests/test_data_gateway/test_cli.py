@@ -273,7 +273,6 @@ class TestCreateInstallation(BaseTestCase):
                             "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
-                                "blade_id": 0,
                                 "receiver_firmware_version": "1.7.19",
                             }
                         },
@@ -295,7 +294,6 @@ class TestCreateInstallation(BaseTestCase):
             json={
                 "reference": "my-installation-1",
                 "turbine_id": 0,
-                "blade_id": 0,
                 "receiver_firmware_version": "1.7.19",
             },
         )
@@ -310,7 +308,6 @@ class TestCreateInstallation(BaseTestCase):
                             "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
-                                "blade_id": 0,
                                 "receiver_firmware_version": "1.7.19",
                                 "longitude": 3.25604,
                                 "latitude": 178.24833,
@@ -334,7 +331,6 @@ class TestCreateInstallation(BaseTestCase):
             json={
                 "reference": "my-installation-1",
                 "turbine_id": 0,
-                "blade_id": 0,
                 "receiver_firmware_version": "1.7.19",
                 "longitude": 3.25604,
                 "latitude": 178.24833,
@@ -353,7 +349,6 @@ class TestCreateInstallation(BaseTestCase):
                             "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
-                                "blade_id": 0,
                                 "receiver_firmware_version": "1.7.19",
                             }
                         },

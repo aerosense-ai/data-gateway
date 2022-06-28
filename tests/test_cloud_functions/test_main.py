@@ -375,7 +375,6 @@ class TestCreateInstallation(BaseTestCase):
                             "reference": "hello",
                             "receiver_firmware_version": "0.0.1",
                             "turbine_id": "0",
-                            "blade_id": "0",
                             "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                         }
                     )
@@ -394,7 +393,6 @@ class TestCreateInstallation(BaseTestCase):
                         "reference": "hello",
                         "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
-                        "blade_id": "0",
                         "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                     }
                 )
@@ -409,7 +407,6 @@ class TestCreateInstallation(BaseTestCase):
             "reference": "hello",
             "receiver_firmware_version": "0.0.1",
             "turbine_id": "0",
-            "blade_id": "0",
             "latitude": 0,
             "longitude": 1,
         }
@@ -432,7 +429,6 @@ class TestCreateInstallation(BaseTestCase):
                         "reference": "hello",
                         "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
-                        "blade_id": "0",
                         "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                     }
                 )

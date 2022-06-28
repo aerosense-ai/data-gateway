@@ -165,7 +165,6 @@ class TestBigQueryDataset(BaseTestCase):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
                 reference="my-installation",
                 turbine_id="my-turbine",
-                blade_id="my-blade",
                 receiver_firmware_version="1.0.0",
             )
 
@@ -174,7 +173,6 @@ class TestBigQueryDataset(BaseTestCase):
             {
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
-                "blade_id": "my-blade",
                 "receiver_firmware_version": "1.0.0",
                 "location": None,
             },
@@ -193,7 +191,6 @@ class TestBigQueryDataset(BaseTestCase):
                 dataset.add_installation(
                     reference="my-installation",
                     turbine_id="my-turbine",
-                    blade_id="my-blade",
                     receiver_firmware_version="1.0.0",
                 )
 

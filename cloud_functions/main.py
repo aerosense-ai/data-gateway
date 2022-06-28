@@ -111,7 +111,6 @@ def create_installation(request):
             dataset.add_installation(
                 reference=form.reference.data,
                 turbine_id=form.turbine_id.data,
-                blade_id=form.blade_id.data,
                 receiver_firmware_version=form.receiver_firmware_version.data,
                 location=location,
             )
