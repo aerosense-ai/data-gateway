@@ -62,7 +62,7 @@ class PacketReader:
 
         self.uploader = None
         self.writer = None
-        self.handles = dict((k, v.default_handles) for k, v in self.config.nodes.items())
+        self.handles = {node_id: node_config.default_handles for node_id, node_config in self.config.nodes.items()}
         self.sleep = False
         self.sensor_time_offset = None
 

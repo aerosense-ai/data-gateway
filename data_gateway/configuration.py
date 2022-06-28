@@ -381,7 +381,7 @@ class Configuration:
 
         :return dict:
         """
-        return dict((self.get_packet_key(node_id, as_bytes=True), node_id) for node_id in self.node_ids)
+        return {self.get_packet_key(node_id, as_bytes=True): node_id for node_id in self.node_ids}
 
     def to_dict(self):
         """Serialise the configuration to a dictionary.
