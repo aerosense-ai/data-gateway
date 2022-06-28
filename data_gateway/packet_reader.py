@@ -184,7 +184,7 @@ class PacketReader:
                             continue
 
                         if packet_type == str(self.config.nodes[node_id].type_handle_def):
-                            logger.warning("Updating handles (not node-specific) for node %s", node_id)
+                            logger.warning("Updating handles (not node-specific) for node %s.", node_id)
                             self.update_handles(packet, node_id)
                             continue
 
@@ -193,8 +193,13 @@ class PacketReader:
                             continue
 
                         if len(packet) == 244:  # If the full data payload is received, proceed parsing it
-                            timestamp = int.from_bytes(packet[240:244], self.config.gateway.endian, signed=False) / (
-                                2**16
+                            timestamp = (
+                                int.from_bytes(
+                                    packet[240:244],
+                                    self.config.gateway.endian,
+                                    signed=False,
+                                )
+                                / 2**16
                             )
 
                             data, sensor_names = self._parse_sensor_packet_data(
@@ -246,6 +251,7 @@ class PacketReader:
         established.
 
         :param iter payload:
+        :param str node_id: the ID of the node the packet is from
         :return None:
         """
         start_handle = int.from_bytes(payload[0:1], self.config.gateway.endian)
@@ -270,7 +276,7 @@ class PacketReader:
 
             self.sensor_time_offset = None
 
-            logger.info("Successfully updated handles for node %s", node_id)
+            logger.info("Successfully updated handles for node %s.", node_id)
             return
 
         logger.error(
@@ -291,7 +297,7 @@ class PacketReader:
     def _parse_sensor_packet_data(self, node_id, packet_type, payload, data):
         """Parse sensor data type payloads.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the packet is from
         :param str packet_type: Type of the packet
         :param iter payload: Raw payload to be parsed
         :param dict data: Initialised data dict to be completed with parsed data
@@ -438,7 +444,7 @@ class PacketReader:
     def _parse_info_packet(self, node_id, information_type, payload, previous_timestamp):
         """Parse information type packet and send the information to logger.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the packet is from
         :param str information_type: From packet handles, defines what information is stored in payload.
         :param iter payload:
         :return None:
@@ -499,7 +505,7 @@ class PacketReader:
         timestamps in two consecutive packets is expected to be approximately equal to the number of samples in the
         packet times sampling period.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the packet is from
         :param str sensor_name:
         :param float timestamp: Current timestamp for the first sample in the packet Unit: s
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
@@ -518,11 +524,11 @@ class PacketReader:
             if abs(timestamp_deviation) > self.config.nodes[node_id].max_timestamp_slack:
 
                 if self.sleep:
-                    # Only Constat (Connections statistics) comes during sleep
+                    # Only Constat (Connections statistics) comes during sleep.
                     return
 
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
-                    # IMU sensors are not synchronised to CPU, so their actual periods might differ
+                    # IMU sensors are not synchronised to CPU, so their actual periods might differ.
                     self.config.nodes[node_id].periods[sensor_name] = (
                         timestamp - previous_timestamp[node_id][sensor_name]
                     ) / self.config.nodes[node_id].samples_per_packet[sensor_name]
@@ -543,12 +549,11 @@ class PacketReader:
         previous_timestamp[node_id][sensor_name] = timestamp
 
     def _timestamp_and_persist_data(self, data, node_id, sensor_name, timestamp, period):
-        """Persist data to the required storage media.
-        Since timestamps only come at a packet level, this function assumes constant period for
-         the within-packet-timestamps
+        """Persist data to the required storage media. Since timestamps only come at a packet level, this function
+        assumes constant period for the within-packet-timestamps.
 
         :param dict data: data to persist
-        :param str node_id:
+        :param str node_id: the ID of the node the data is from
         :param str sensor_name: sensor type to persist data from
         :param float timestamp: timestamp in s
         :param float period:
@@ -569,7 +574,7 @@ class PacketReader:
     def _add_data_to_current_window(self, node_id, sensor_name, data):
         """Add data to the current window.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the data is from
         :param str sensor_name: sensor type to persist data from
         :param iter data: data to persist
         :return None:
