@@ -77,28 +77,32 @@ class WindowHandler:
         except ConfigurationAlreadyExists as e:
             configuration_id = e.args[1]
 
-        if MICROPHONE_SENSOR_NAME in window:
-            self._store_microphone_data(
-                data=window.pop(MICROPHONE_SENSOR_NAME),
+        for node_id, node_data in window.items():
+            if MICROPHONE_SENSOR_NAME in node_data:
+                self._store_microphone_data(
+                    data=node_data.pop(MICROPHONE_SENSOR_NAME),
+                    node_id=node_id,
+                    configuration_id=configuration_id,
+                    installation_reference=window_metadata["gateway"]["installation_reference"],
+                    label=session_data.get("label"),
+                )
+
+            self.dataset.add_sensor_data(
+                data=node_data,
+                node_id=node_id,
                 configuration_id=configuration_id,
                 installation_reference=window_metadata["gateway"]["installation_reference"],
                 label=session_data.get("label"),
             )
 
-        self.dataset.add_sensor_data(
-            data=window,
-            configuration_id=configuration_id,
-            installation_reference=window_metadata["gateway"]["installation_reference"],
-            label=session_data.get("label"),
-        )
-
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
-    def _store_microphone_data(self, data, configuration_id, installation_reference, label):
+    def _store_microphone_data(self, data, node_id, configuration_id, installation_reference, label):
         """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
         metadata in a BigQuery table.
 
         :param list(list) data:
+        :param str node_id:
         :param str configuration_id:
         :param str installation_reference:
         :param str label:
@@ -114,7 +118,11 @@ class WindowHandler:
 
         microphone_file = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
-            tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
+            tags={
+                "node_id": node_id,
+                "configuration_id": configuration_id,
+                "installation_reference": installation_reference,
+            },
             labels=labels,
             hypothetical=True,
         )
@@ -127,6 +135,7 @@ class WindowHandler:
         self.dataset.record_microphone_data_location_and_metadata(
             path=microphone_file.cloud_path,
             project_name=self.destination_project,
+            node_id=node_id,
             configuration_id=configuration_id,
             installation_reference=installation_reference,
             label=label,
