@@ -1,5 +1,7 @@
 import copy
 
+from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+
 
 DEFAULT_SENSOR_NAMES = [
     "Mics",
@@ -239,6 +241,15 @@ class NodeConfiguration:
 
         # Set calculated defaults
         self.sensor_coordinates = sensor_coordinates or self._get_default_sensor_coordinates()
+
+        for sensor, coordinates in self.sensor_coordinates.items():
+            number_of_sensors = self.number_of_sensors[sensor]
+
+            if len(coordinates) != number_of_sensors:
+                raise WrongNumberOfSensorCoordinatesError(
+                    f"The number of sensors for the {sensor!r} sensor type is {number_of_sensors} but coordinates "
+                    f"were only given for {len(coordinates)} sensors. Coordinates must be given for every sensor."
+                )
 
         # Ensure conversion constants are consistent
         self._expand_sensor_conversion_constants()
