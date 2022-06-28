@@ -113,7 +113,6 @@ def create_installation(request):
                 turbine_id=form.turbine_id.data,
                 blade_id=form.blade_id.data,
                 hardware_version=form.hardware_version.data,
-                sensor_coordinates=form.sensor_coordinates.data,
                 location=location,
             )
 

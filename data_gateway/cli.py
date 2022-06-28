@@ -193,8 +193,6 @@ def create_installation(config_file):
     """
     import json
 
-    from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
-
     with open(config_file or "configuration.json") as f:
         configuration = json.load(f)
 
@@ -210,23 +208,12 @@ def create_installation(config_file):
         if user_confirmation.upper() in {"Y", ""}:
             break
 
-    for sensor, coordinates in installation_data["sensor_coordinates"].items():
-        number_of_sensors = configuration["number_of_sensors"][sensor]
-
-        if len(coordinates) != number_of_sensors:
-            raise WrongNumberOfSensorCoordinatesError(
-                f"In the configuration file, the number of sensors for the {sensor!r} sensor type is "
-                f"{number_of_sensors} but coordinates were given for {len(coordinates)} sensors - these numbers must "
-                f"match."
-            )
-
     # Required parameters:
     parameters = {
         "reference": slugified_reference,
         "turbine_id": installation_data["turbine_id"],
         "blade_id": installation_data["blade_id"],
         "hardware_version": installation_data["hardware_version"],
-        "sensor_coordinates": json.dumps(installation_data["sensor_coordinates"]),
     }
 
     # Optional parameters:
