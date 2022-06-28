@@ -62,7 +62,7 @@ class PacketReader:
 
         self.uploader = None
         self.writer = None
-        self.handles = dict((k, v.default_handles) for k, v in self.config.nodes.items())
+        self.handles = {node_id: node_config.default_handles for node_id, node_config in self.config.nodes.items()}
         self.sleep = False
         self.sensor_time_offset = None
 
@@ -183,8 +183,10 @@ class PacketReader:
                                 break
                             continue
 
-                        if packet_type == str(self.config.nodes[node_id].type_handle_def):
-                            logger.warning("Updating handles (not node-specific) for node %s", node_id)
+                        node_config = self.config.nodes[node_id]
+
+                        if packet_type == str(node_config.type_handle_def):
+                            logger.warning("Updating handles (not node-specific) for node %s.", node_id)
                             self.update_handles(packet, node_id)
                             continue
 
@@ -193,8 +195,13 @@ class PacketReader:
                             continue
 
                         if len(packet) == 244:  # If the full data payload is received, proceed parsing it
-                            timestamp = int.from_bytes(packet[240:244], self.config.gateway.endian, signed=False) / (
-                                2**16
+                            timestamp = (
+                                int.from_bytes(
+                                    packet[240:244],
+                                    self.config.gateway.endian,
+                                    signed=False,
+                                )
+                                / 2**16
                             )
 
                             data, sensor_names = self._parse_sensor_packet_data(
@@ -217,7 +224,7 @@ class PacketReader:
                                     node_id=node_id,
                                     sensor_name=sensor_name,
                                     timestamp=timestamp,
-                                    period=self.config.nodes[node_id].periods[sensor_name],
+                                    period=node_config.periods[sensor_name],
                                 )
 
                             continue
@@ -246,6 +253,7 @@ class PacketReader:
         established.
 
         :param iter payload:
+        :param str node_id: the ID of the node the packet is from
         :return None:
         """
         start_handle = int.from_bytes(payload[0:1], self.config.gateway.endian)
@@ -270,7 +278,7 @@ class PacketReader:
 
             self.sensor_time_offset = None
 
-            logger.info("Successfully updated handles for node %s", node_id)
+            logger.info("Successfully updated handles for node %s.", node_id)
             return
 
         logger.error(
@@ -291,18 +299,20 @@ class PacketReader:
     def _parse_sensor_packet_data(self, node_id, packet_type, payload, data):
         """Parse sensor data type payloads.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the packet is from
         :param str packet_type: Type of the packet
         :param iter payload: Raw payload to be parsed
         :param dict data: Initialised data dict to be completed with parsed data
         :return dict data:
         """
+        node_config = self.config.nodes[node_id]
+
         if packet_type == "Abs. baros":
             # Write the received payload to the data field
             # TODO bytes_per_sample should probably be in the configuration
             bytes_per_sample = 6
-            for i in range(self.config.nodes[node_id].samples_per_packet["Baros_P"]):
-                for j in range(self.config.nodes[node_id].number_of_sensors["Baros_P"]):
+            for i in range(node_config.samples_per_packet["Baros_P"]):
+                for j in range(node_config.number_of_sensors["Baros_P"]):
                     data[node_id]["Baros_P"][j][i] = int.from_bytes(
                         payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.gateway.endian,
@@ -319,9 +329,9 @@ class PacketReader:
 
         if packet_type == "Diff. baros":
             bytes_per_sample = 2
-            number_of_diff_baros_sensors = self.config.nodes[node_id].number_of_sensors["Diff_Baros"]
+            number_of_diff_baros_sensors = node_config.number_of_sensors["Diff_Baros"]
 
-            for i in range(self.config.nodes[node_id].samples_per_packet["Diff_Baros"]):
+            for i in range(node_config.samples_per_packet["Diff_Baros"]):
                 for j in range(number_of_diff_baros_sensors):
                     data[node_id]["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
@@ -339,8 +349,8 @@ class PacketReader:
             # Write the received payload to the data field
             bytes_per_sample = 3
 
-            for i in range(self.config.nodes[node_id].samples_per_packet["Mics"] // 2):
-                for j in range(self.config.nodes[node_id].number_of_sensors[DEFAULT_SENSOR_NAMES[0]] // 2):
+            for i in range(node_config.samples_per_packet["Mics"] // 2):
+                for j in range(node_config.number_of_sensors[DEFAULT_SENSOR_NAMES[0]] // 2):
 
                     index = j + 20 * i
 
@@ -372,7 +382,7 @@ class PacketReader:
             imu_sensor = imu_sensor_names[packet_type]
 
             # Write the received payload to the data field
-            for i in range(self.config.nodes[node_id].samples_per_packet["Acc"]):
+            for i in range(node_config.samples_per_packet["Acc"]):
                 index = 6 * i
 
                 data[node_id][imu_sensor][0][i] = int.from_bytes(
@@ -397,7 +407,7 @@ class PacketReader:
             def val_to_v(val):
                 return val / 1e6
 
-            for i in range(self.config.nodes[node_id].samples_per_packet["Analog Vbat"]):
+            for i in range(node_config.samples_per_packet["Analog Vbat"]):
                 index = 4 * i
 
                 data[node_id]["Analog Vbat"][0][i] = val_to_v(
@@ -408,7 +418,7 @@ class PacketReader:
 
         if packet_type == "Constat":
             bytes_per_sample = 10
-            for i in range(self.config.nodes[node_id].samples_per_packet["Constat"]):
+            for i in range(node_config.samples_per_packet["Constat"]):
                 data[node_id]["Constat"][0][i] = struct.unpack(
                     "<f" if self.config.gateway.endian == "little" else ">f",
                     payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
@@ -438,11 +448,13 @@ class PacketReader:
     def _parse_info_packet(self, node_id, information_type, payload, previous_timestamp):
         """Parse information type packet and send the information to logger.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the packet is from
         :param str information_type: From packet handles, defines what information is stored in payload.
         :param iter payload:
         :return None:
         """
+        node_config = self.config.nodes[node_id]
+
         if information_type == "Mic 1":
             if payload[0] == 1:
                 logger.info("Microphone data reading done")
@@ -454,26 +466,26 @@ class PacketReader:
 
         if information_type == "Cmd Decline":
             reason_index = str(int.from_bytes(payload, self.config.gateway.endian, signed=False))
-            logger.info("Command declined, %s", self.config.nodes[node_id].decline_reason[reason_index])
+            logger.info("Command declined, %s", node_config.decline_reason[reason_index])
             return
 
         if information_type == "Sleep State":
             state_index = str(int.from_bytes(payload, self.config.gateway.endian, signed=False))
-            logger.info("\n%s\n", self.config.nodes[node_id].sleep_state[state_index])
+            logger.info("\n%s\n", node_config.sleep_state[state_index])
 
             if bool(int(state_index)):
                 self.sleep = True
             else:
                 self.sleep = False
                 # Reset previous timestamp on wake up
-                for sensor_name in self.config.nodes[node_id].sensor_names:
+                for sensor_name in node_config.sensor_names:
                     previous_timestamp[node_id][sensor_name] = -1
 
             return
 
         if information_type == "Info Message":
             info_index = str(int.from_bytes(payload[0:1], self.config.gateway.endian, signed=False))
-            info_type = self.config.nodes[node_id].info_type[info_index]
+            info_type = node_config.info_type[info_index]
             logger.info(info_type)
 
             if info_type == "Battery info":
@@ -499,38 +511,39 @@ class PacketReader:
         timestamps in two consecutive packets is expected to be approximately equal to the number of samples in the
         packet times sampling period.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the packet is from
         :param str sensor_name:
         :param float timestamp: Current timestamp for the first sample in the packet Unit: s
         :param dict previous_timestamp: Timestamp for the first sample in the previous packet. Must be initialized with -1. Unit: s
         :return None:
         """
+        node_config = self.config.nodes[node_id]
+
         if previous_timestamp[node_id][sensor_name] == -1:
             logger.info("Received first %s packet." % sensor_name)
         else:
             expected_current_timestamp = (
                 previous_timestamp[node_id][sensor_name]
-                + self.config.nodes[node_id].samples_per_packet[sensor_name]
-                * self.config.nodes[node_id].periods[sensor_name]
+                + node_config.samples_per_packet[sensor_name] * node_config.periods[sensor_name]
             )
             timestamp_deviation = timestamp - expected_current_timestamp
 
-            if abs(timestamp_deviation) > self.config.nodes[node_id].max_timestamp_slack:
+            if abs(timestamp_deviation) > node_config.max_timestamp_slack:
 
                 if self.sleep:
-                    # Only Constat (Connections statistics) comes during sleep
+                    # Only Constat (Connections statistics) comes during sleep.
                     return
 
                 if sensor_name in ["Acc", "Gyro", "Mag"]:
-                    # IMU sensors are not synchronised to CPU, so their actual periods might differ
-                    self.config.nodes[node_id].periods[sensor_name] = (
+                    # IMU sensors are not synchronised to CPU, so their actual periods might differ.
+                    node_config.periods[sensor_name] = (
                         timestamp - previous_timestamp[node_id][sensor_name]
-                    ) / self.config.nodes[node_id].samples_per_packet[sensor_name]
+                    ) / node_config.samples_per_packet[sensor_name]
 
                     logger.debug(
                         "Updated %s period to %f ms.",
                         sensor_name,
-                        self.config.nodes[node_id].periods[sensor_name] * 1000,
+                        node_config.periods[sensor_name] * 1000,
                     )
 
                 else:
@@ -543,12 +556,11 @@ class PacketReader:
         previous_timestamp[node_id][sensor_name] = timestamp
 
     def _timestamp_and_persist_data(self, data, node_id, sensor_name, timestamp, period):
-        """Persist data to the required storage media.
-        Since timestamps only come at a packet level, this function assumes constant period for
-         the within-packet-timestamps
+        """Persist data to the required storage media. Since timestamps only come at a packet level, this function
+        assumes constant period for the within-packet-timestamps.
 
         :param dict data: data to persist
-        :param str node_id:
+        :param str node_id: the ID of the node the data is from
         :param str sensor_name: sensor type to persist data from
         :param float timestamp: timestamp in s
         :param float period:
@@ -569,7 +581,7 @@ class PacketReader:
     def _add_data_to_current_window(self, node_id, sensor_name, data):
         """Add data to the current window.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the data is from
         :param str sensor_name: sensor type to persist data from
         :param iter data: data to persist
         :return None:

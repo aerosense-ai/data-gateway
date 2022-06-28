@@ -41,7 +41,7 @@ class NoOperationContextManager:
 class TimeBatcher:
     """A batcher that groups the given data into time windows.
 
-    :param iter(str) sensor_names: names of sensors to group data for
+    :param iter(str) node_ids: the IDs of the nodes that data is being persisted for
     :param float window_size: length of time window in seconds
     :param str output_directory: directory to write windows to
     :return None:
@@ -67,7 +67,7 @@ class TimeBatcher:
     def add_to_current_window(self, node_id, sensor_name, data):
         """Add data to the current window for the given sensor name.
 
-        :param str node_id:
+        :param str node_id: the ID of the node the data is from
         :param str sensor_name: name of sensor
         :param iter data: data to add to window
         :return None:
@@ -132,8 +132,9 @@ class TimeBatcher:
 class BatchingFileWriter(TimeBatcher):
     """A file writer that groups the given into time windows, saving each window to disk.
 
-    :param iter(str) sensor_names: names of sensors to make windows for
+    :param iter(str) node_ids: the IDs of the nodes that data is being persisted for
     :param float window_size: length of time window in seconds
+    :param bool save_csv_files:
     :param str output_directory: directory to write windows to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
@@ -216,7 +217,7 @@ class BatchingUploader(TimeBatcher):
     Storage.  If upload fails for a window, it will be written to the backup directory. If the `upload_backup_files`
     flag is `True`, its upload will then be reattempted after the upload of each subsequent window.
 
-    :param iter(str) sensor_names: names of sensors to group data for
+    :param iter(str) node_ids: the IDs of the nodes that data is being persisted for
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float window_size: length of time window in seconds
     :param str output_directory: directory to write windows to
