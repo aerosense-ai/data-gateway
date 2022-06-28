@@ -166,7 +166,7 @@ class TestBigQueryDataset(BaseTestCase):
                 reference="my-installation",
                 turbine_id="my-turbine",
                 blade_id="my-blade",
-                hardware_version="1.0.0",
+                receiver_firmware_version="1.0.0",
             )
 
         self.assertEqual(
@@ -175,7 +175,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
                 "blade_id": "my-blade",
-                "hardware_version": "1.0.0",
+                "receiver_firmware_version": "1.0.0",
                 "location": None,
             },
         )
@@ -194,7 +194,7 @@ class TestBigQueryDataset(BaseTestCase):
                     reference="my-installation",
                     turbine_id="my-turbine",
                     blade_id="my-blade",
-                    hardware_version="1.0.0",
+                    receiver_firmware_version="1.0.0",
                 )
 
     def test_add_configuration(self):
@@ -213,10 +213,10 @@ class TestBigQueryDataset(BaseTestCase):
         self.assertEqual(
             mock_big_query_client.rows[0][0],
             {
-                "software_configuration": '{"nodes": {"0": {"blah": "blah"}}}',
-                "software_configuration_hash": "d0e8a69fa81467a56ca1a2837557a75122c7de884536674e7f6ba9051206b75d",
-                "installation_data": '{"stuff": "data"}',
-                "installation_data_hash": "6076cf0f824bcf1a887a96c75c1a33ec720ea271776f03e8168df3feed983c91",
+                "nodes_configuration": '{"0": {"blah": "blah"}}',
+                "nodes_configuration_hash": "1aea08f4603f76a55d3267dd40c310e14787a8d64663a72cfc62f58152e44504",
+                "gateway_configuration": '{"stuff": "data"}',
+                "gateway_configuration_hash": "6076cf0f824bcf1a887a96c75c1a33ec720ea271776f03e8168df3feed983c91",
             },
         )
 

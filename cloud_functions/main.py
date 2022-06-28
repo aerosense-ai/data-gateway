@@ -112,7 +112,7 @@ def create_installation(request):
                 reference=form.reference.data,
                 turbine_id=form.turbine_id.data,
                 blade_id=form.blade_id.data,
-                hardware_version=form.hardware_version.data,
+                receiver_firmware_version=form.receiver_firmware_version.data,
                 location=location,
             )
 

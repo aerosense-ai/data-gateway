@@ -270,11 +270,11 @@ class TestCreateInstallation(BaseTestCase):
                 with open(temporary_file.name, "w") as f:
                     json.dump(
                         {
-                            "installation_data": {
+                            "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
                                 "blade_id": 0,
-                                "hardware_version": "1.7.19",
+                                "receiver_firmware_version": "1.7.19",
                             }
                         },
                         f,
@@ -296,7 +296,7 @@ class TestCreateInstallation(BaseTestCase):
                 "reference": "my-installation-1",
                 "turbine_id": 0,
                 "blade_id": 0,
-                "hardware_version": "1.7.19",
+                "receiver_firmware_version": "1.7.19",
             },
         )
 
@@ -307,11 +307,11 @@ class TestCreateInstallation(BaseTestCase):
                 with open(temporary_file.name, "w") as f:
                     json.dump(
                         {
-                            "installation_data": {
+                            "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
                                 "blade_id": 0,
-                                "hardware_version": "1.7.19",
+                                "receiver_firmware_version": "1.7.19",
                                 "longitude": 3.25604,
                                 "latitude": 178.24833,
                             }
@@ -321,7 +321,9 @@ class TestCreateInstallation(BaseTestCase):
 
             with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
                 result = CliRunner().invoke(
-                    gateway_cli, ["create-installation", f"--config-file={temporary_file.name}"], input="Y"
+                    gateway_cli,
+                    ["create-installation", f"--config-file={temporary_file.name}"],
+                    input="Y",
                 )
 
         self.assertIsNone(result.exception)
@@ -333,7 +335,7 @@ class TestCreateInstallation(BaseTestCase):
                 "reference": "my-installation-1",
                 "turbine_id": 0,
                 "blade_id": 0,
-                "hardware_version": "1.7.19",
+                "receiver_firmware_version": "1.7.19",
                 "longitude": 3.25604,
                 "latitude": 178.24833,
             },
@@ -348,11 +350,11 @@ class TestCreateInstallation(BaseTestCase):
                 with open(temporary_file.name, "w") as f:
                     json.dump(
                         {
-                            "installation_data": {
+                            "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
                                 "blade_id": 0,
-                                "hardware_version": "1.7.19",
+                                "receiver_firmware_version": "1.7.19",
                             }
                         },
                         f,

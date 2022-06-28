@@ -189,15 +189,15 @@ def start(
 )
 def create_installation(config_file):
     """Create an installation representing a collection of sensors that data can be collected from. The installation
-    information is read from the "installation_data" field of `configuration.json`.
+    information is read from the "gateway" field of `configuration.json`.
     """
     import json
 
     with open(config_file or "configuration.json") as f:
         configuration = json.load(f)
 
-    installation_data = configuration["installation_data"]
-    slugified_reference = slugify(installation_data["installation_reference"])
+    gateway_configuration = configuration["gateway"]
+    slugified_reference = slugify(gateway_configuration["installation_reference"])
 
     while True:
         user_confirmation = input(f"Create installation with reference {slugified_reference!r}? [Y/n]\n")
@@ -211,17 +211,17 @@ def create_installation(config_file):
     # Required parameters:
     parameters = {
         "reference": slugified_reference,
-        "turbine_id": installation_data["turbine_id"],
-        "blade_id": installation_data["blade_id"],
-        "hardware_version": installation_data["hardware_version"],
+        "turbine_id": gateway_configuration["turbine_id"],
+        "blade_id": gateway_configuration["blade_id"],
+        "receiver_firmware_version": gateway_configuration["receiver_firmware_version"],
     }
 
     # Optional parameters:
-    if installation_data.get("longitude"):
-        parameters["longitude"] = installation_data["longitude"]
+    if gateway_configuration.get("longitude"):
+        parameters["longitude"] = gateway_configuration["longitude"]
 
-    if installation_data.get("latitude"):
-        parameters["latitude"] = installation_data["latitude"]
+    if gateway_configuration.get("latitude"):
+        parameters["latitude"] = gateway_configuration["latitude"]
 
     print("Creating...")
 

@@ -184,13 +184,13 @@ class BigQueryDataset:
 
         logger.info("Added new sensor %r to BigQuery dataset %r.", reference, self.dataset_id)
 
-    def add_installation(self, reference, turbine_id, blade_id, hardware_version, location=None):
+    def add_installation(self, reference, turbine_id, blade_id, receiver_firmware_version, location=None):
         """Add a new installation to the BigQuery dataset.
 
         :param str reference: the name to give to the installation
         :param str turbine_id:
         :param str blade_id:
-        :param str hardware_version: the version of the sensor hardware at this installation
+        :param str receiver_firmware_version: the version of the receiver firmware in this installation
         :param str|None location: the geographical location of the installation in WKT format if relevant (it may not be if it's a wind tunnel which could be set up anywhere)
         :raise cloud_functions.exceptions.InstallationWithSameNameAlreadyExists: if an installation with the given name already exists
         :raise ValueError: if the addition fails
@@ -215,7 +215,7 @@ class BigQueryDataset:
                     "reference": reference,
                     "turbine_id": turbine_id,
                     "blade_id": blade_id,
-                    "hardware_version": hardware_version,
+                    "receiver_firmware_version": receiver_firmware_version,
                     "location": location,
                 }
             ],
@@ -237,16 +237,16 @@ class BigQueryDataset:
         configuration = copy.deepcopy(configuration)
 
         # Installation data is stored in a separate column, so pop it before the next step.
-        installation_data = configuration.pop("gateway")
+        gateway_configuration = configuration.pop("gateway")
 
-        software_configuration_json = json.dumps(configuration)
-        software_configuration_hash = blake3(software_configuration_json.encode()).hexdigest()
+        nodes_configuration_json = json.dumps(configuration["nodes"])
+        nodes_configuration_hash = blake3(nodes_configuration_json.encode()).hexdigest()
 
         configuration_id = self._get_field_if_exists(
             table_name=self.table_names["configuration"],
             field_name="id",
-            comparison_field_name="software_configuration_hash",
-            value=software_configuration_hash,
+            comparison_field_name="nodes_configuration_hash",
+            value=nodes_configuration_hash,
         )
 
         if configuration_id:
@@ -256,18 +256,18 @@ class BigQueryDataset:
             )
 
         configuration_id = str(uuid.uuid4())
-        installation_data_json = json.dumps(installation_data)
-        installation_data_hash = blake3(installation_data_json.encode()).hexdigest()
+        gateway_configuration_json = json.dumps(gateway_configuration)
+        gateway_configuration_hash = blake3(gateway_configuration_json.encode()).hexdigest()
 
         errors = self.client.insert_rows(
             table=self.client.get_table(self.table_names["configuration"]),
             rows=[
                 {
                     "id": configuration_id,
-                    "software_configuration": software_configuration_json,
-                    "software_configuration_hash": software_configuration_hash,
-                    "installation_data": installation_data_json,
-                    "installation_data_hash": installation_data_hash,
+                    "nodes_configuration": nodes_configuration_json,
+                    "nodes_configuration_hash": nodes_configuration_hash,
+                    "gateway_configuration": gateway_configuration_json,
+                    "gateway_configuration_hash": gateway_configuration_hash,
                 }
             ],
         )

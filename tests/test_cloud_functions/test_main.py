@@ -339,16 +339,20 @@ class TestCreateInstallation(BaseTestCase):
             with self.app.test_client() as client:
 
                 for expected_error_field, data in (
-                    ("reference", {"reference": "not slugified", "hardware_version": "0.0.1"}),
-                    ("reference", {"reference": None, "hardware_version": "0.0.1"}),
-                    ("hardware_version", {"reference": "is-slugified", "hardware_version": None}),
+                    ("reference", {"reference": "not slugified", "receiver_firmware_version": "0.0.1"}),
+                    ("reference", {"reference": None, "receiver_firmware_version": "0.0.1"}),
+                    ("receiver_firmware_version", {"reference": "is-slugified", "receiver_firmware_version": None}),
                     (
                         "longitude",
-                        {"reference": "is-slugified", "hardware_version": "0.0.1", "longitude": "not-a-number"},
+                        {
+                            "reference": "is-slugified",
+                            "receiver_firmware_version": "0.0.1",
+                            "longitude": "not-a-number",
+                        },
                     ),
                     (
                         "latitude",
-                        {"reference": "is-slugified", "hardware_version": "0.0.1", "latitude": "not-a-number"},
+                        {"reference": "is-slugified", "receiver_firmware_version": "0.0.1", "latitude": "not-a-number"},
                     ),
                 ):
                     with self.subTest(expected_error_field=expected_error_field, data=data):
@@ -369,7 +373,7 @@ class TestCreateInstallation(BaseTestCase):
                     response = client.post(
                         json={
                             "reference": "hello",
-                            "hardware_version": "0.0.1",
+                            "receiver_firmware_version": "0.0.1",
                             "turbine_id": "0",
                             "blade_id": "0",
                             "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
@@ -388,7 +392,7 @@ class TestCreateInstallation(BaseTestCase):
                 response = client.post(
                     json={
                         "reference": "hello",
-                        "hardware_version": "0.0.1",
+                        "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
                         "blade_id": "0",
                         "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
@@ -403,7 +407,7 @@ class TestCreateInstallation(BaseTestCase):
         """
         data = {
             "reference": "hello",
-            "hardware_version": "0.0.1",
+            "receiver_firmware_version": "0.0.1",
             "turbine_id": "0",
             "blade_id": "0",
             "latitude": 0,
@@ -426,7 +430,7 @@ class TestCreateInstallation(BaseTestCase):
                 response = client.post(
                     json={
                         "reference": "hello",
-                        "hardware_version": "0.0.1",
+                        "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
                         "blade_id": "0",
                         "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},

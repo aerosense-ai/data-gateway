@@ -21,7 +21,7 @@ class CreateInstallationForm(FlaskForm):
     reference = StringField("Reference", [validators.DataRequired(), SlugifiedValidator()])
     turbine_id = StringField("Turbine ID", [validators.DataRequired()])
     blade_id = StringField("Blade ID", [validators.DataRequired()])
-    hardware_version = StringField("Hardware version", [validators.DataRequired()])
+    receiver_firmware_version = StringField("Receiver firmware version", [validators.DataRequired()])
     longitude = FloatField("Longitude", [validators.Optional()])
     latitude = FloatField("Latitude", [validators.Optional()])
 
