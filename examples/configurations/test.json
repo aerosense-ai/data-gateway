@@ -1,0 +1,9 @@
+{
+  "gateway": {},
+  "nodes": {
+    "0": {}
+  },
+  "session": {
+    "notes": "A basic session for integration testing. Data is likely totally meaningless."
+  }
+}

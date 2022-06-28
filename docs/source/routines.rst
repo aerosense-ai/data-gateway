@@ -43,3 +43,52 @@ Routine file schema
   send to the sensors and a delay in seconds from the gateway starting to run the command.
 - An optional ``period`` in seconds can be provided to repeat the routine. If none is provided, the routine is run once only. 
   The period must be greater than each of the commands' delays.
+
+
+Example routine files
+---------------------
+
+The following routine file instructs the gateway to 
+.. code-block:: shell
+
+    {
+        "commands": [
+            [
+            "startDiffBaros",
+            60
+            ],
+            [
+            "startIMU",
+            65
+            ],
+            [
+            "getBattery",
+            70
+            ],
+            [
+            "stopDiffBaros",
+            660
+            ],
+            [
+            "startBaros",
+            670
+            ],
+            [
+            "startMics",
+            1265
+            ],
+            [
+            "stopBaros",
+            1270
+            ],
+            [
+            "stopIMU",
+            1275
+            ],
+            [
+            "stopMics",
+            1280
+            ]
+        ],
+        "period": 3600
+    }
