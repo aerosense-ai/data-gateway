@@ -1,5 +1,4 @@
 import copy
-from functools import cached_property
 
 
 DEFAULT_SENSOR_NAMES = [
@@ -380,7 +379,7 @@ class Configuration:
         """
         return list(self.nodes)
 
-    @cached_property
+    @property
     def packet_key_map(self):
         """Access a dict that maps the packet keys (as bytes) to node ids.
 
