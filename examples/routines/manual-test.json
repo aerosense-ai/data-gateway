@@ -1,0 +1,11 @@
+{
+  "commands": [
+    ["selMsgDest 2", 0.1],
+    ["wakeUp", 0.2],
+    ["getBattery", 30],
+    ["startBaros", 35],
+    ["stopBaros", 65],
+    ["readSens", 70],
+    ["sleep", 140]
+  ]
+}

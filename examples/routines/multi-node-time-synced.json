@@ -1,8 +1,14 @@
 {
   "commands": [
-    ["startSync", 0],
-    ["selMsgDest 3", 0.1],
-    ["getBattery", 0.2],
+    ["selMsgDest 2", 0.005], // get feedback
+    ["wakeUp", 0.01], // Exiting sleep (message received after up to 30s)
+    ["selMsgDest 3", 0.02],
+    ["wakeUp", 0.03],
+    ["selMsgDest 4", 0.04],
+    ["wakeUp", 0.05], // command declined if already away, or exit from sleep
+    ["startSync", 0.06], // time synchronisation success should be returned
+    ["selMsgDest 3", 0.1], // select message destination successful, or Device not connected
+    ["getBattery", 0.2], // battery info displayed
     ["startBaros", 0.3],
     ["selMsgDest 4", 1.1],
     ["getBattery", 1.2],
@@ -15,28 +21,23 @@
     ["selMsgDest 4", 61.1],
     ["stopBaros", 61.2],
     ["selMsgDest 5", 62.1],
-    ["stopBaros", 62.2],
-    ["stopSync", 65],
-    ["enterHighSpeed", 65.1],
-    ["selDevice 3", 70], // (wait until the connection parameter is updated, you can tell that with the constatpacket number)
-    ["readSens", 75], // allow 1 minute download per minute collection
-    ["selDevice 4", 135], // (wait until the connection parameter is updated, you can tell that with the constatpacket number)
-    ["readSens", 140],
-    ["selDevice 5", 200], // (wait until the connection parameter is updated, you can tell that with the constatpacket number)
-    ["readSens", 205],
-    ["exitHighSpeed", 265],
-    ["selMsgDest 3", 270.0], // (now we reconnect all the nodes and put them into sleep)
-    ["sleep", 270.1],
+    ["stopBaros", 62.2], // no feedback
+    ["stopSync", 65], // no feedback
+    ["enterHighSpeed", 65.1], // no feedback
+    ["selDevice 3", 70], // no feedback
+    ["readSens", 75], // received first packet
+    ["selDevice 4", 135],
+    ["readSens", 140], // if the node is turned off this will throw us into an infinite loop; make sure there's a timeout.
+    ["selDevice 5", 200],
+    ["readSens", 205], // sensor reading from flash done
+    // flash erasing done is a result of turning the sensor on and off again
+    ["exitHighSpeed", 265], // no feedback
+    ["selMsgDest 3", 270.0],
+    ["sleep", 270.1], // Entering sleep
     ["selMsgDest 4", 271.0],
     ["sleep", 271.1],
     ["selMsgDest 5", 272.0],
-    ["sleep", 272.1],
-    ["selMsgDest 3", 330.0], // (wake up nodes and allow them to re-establish connection parameters)
-    ["wakeUp", 330.1],
-    ["selMsgDest 4", 331.0],
-    ["wakeUp", 331.1],
-    ["selMsgDest 5", 332.0],
-    ["wakeUp", 332.1]
+    ["sleep", 272.1]
   ],
   "period": 360
 }
