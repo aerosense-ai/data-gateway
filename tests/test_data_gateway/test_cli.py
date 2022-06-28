@@ -275,7 +275,6 @@ class TestCreateInstallation(BaseTestCase):
                                 "turbine_id": 0,
                                 "blade_id": 0,
                                 "hardware_version": "1.7.19",
-                                "sensor_coordinates": {},
                             }
                         },
                         f,
@@ -298,7 +297,6 @@ class TestCreateInstallation(BaseTestCase):
                 "turbine_id": 0,
                 "blade_id": 0,
                 "hardware_version": "1.7.19",
-                "sensor_coordinates": "{}",
             },
         )
 
@@ -314,7 +312,6 @@ class TestCreateInstallation(BaseTestCase):
                                 "turbine_id": 0,
                                 "blade_id": 0,
                                 "hardware_version": "1.7.19",
-                                "sensor_coordinates": {},
                                 "longitude": 3.25604,
                                 "latitude": 178.24833,
                             }
@@ -337,7 +334,6 @@ class TestCreateInstallation(BaseTestCase):
                 "turbine_id": 0,
                 "blade_id": 0,
                 "hardware_version": "1.7.19",
-                "sensor_coordinates": "{}",
                 "longitude": 3.25604,
                 "latitude": 178.24833,
             },
@@ -357,7 +353,6 @@ class TestCreateInstallation(BaseTestCase):
                                 "turbine_id": 0,
                                 "blade_id": 0,
                                 "hardware_version": "1.7.19",
-                                "sensor_coordinates": {},
                             }
                         },
                         f,
