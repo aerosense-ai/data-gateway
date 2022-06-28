@@ -105,3 +105,6 @@ ENV/
 
 .DS_store
 .pytest_cache
+
+# Wireguard credentials
+*.wg.conf
