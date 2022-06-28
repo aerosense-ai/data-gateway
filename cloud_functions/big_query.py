@@ -65,10 +65,11 @@ class BigQueryDataset:
             "microphone_data": f"{self.dataset_id}.microphone_data",
         }
 
-    def add_sensor_data(self, data, configuration_id, installation_reference, label=None):
+    def add_sensor_data(self, data, node_id, configuration_id, installation_reference, label=None):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data: data from the sensors - the keys are the sensor names and the values are samples in the form of lists of lists
+        :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the given data
         :param str installation_reference: the reference (name) of the installation that produced the data
         :param str|None label: an optional label relevant to the given data
@@ -84,6 +85,7 @@ class BigQueryDataset:
                 rows.append(
                     {
                         "datetime": datetime.datetime.fromtimestamp(sample[0]),
+                        "node_id": node_id,
                         "sensor_type_reference": sensor_type_reference,
                         "sensor_value": sample[1:],
                         "configuration_id": configuration_id,
@@ -103,6 +105,7 @@ class BigQueryDataset:
         self,
         path,
         project_name,
+        node_id,
         configuration_id,
         installation_reference,
         label=None,
@@ -111,6 +114,7 @@ class BigQueryDataset:
 
         :param str path: the Google Cloud Storage path to the microphone data
         :param str project_name: the name of the project the storage bucket belongs to
+        :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the data
         :param str installation_reference: the reference for the installation that produced the data
         :param str|None label: the label applied to the gateway session that produced the data
@@ -123,6 +127,7 @@ class BigQueryDataset:
                 {
                     "path": path,
                     "project_name": project_name,
+                    "node_id": node_id,
                     "configuration_id": configuration_id,
                     "installation_reference": installation_reference,
                     "label": label,
@@ -234,7 +239,7 @@ class BigQueryDataset:
         configuration = copy.deepcopy(configuration)
 
         # Installation data is stored in a separate column, so pop it before the next step.
-        installation_data = configuration.pop("installation_data")
+        installation_data = configuration.pop("gateway")
 
         software_configuration_json = json.dumps(configuration)
         software_configuration_hash = blake3(software_configuration_json.encode()).hexdigest()
