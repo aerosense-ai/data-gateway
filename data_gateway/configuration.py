@@ -53,7 +53,6 @@ DEFAULT_SAMPLES_PER_PACKET = {
     "Constat": 24,
 }
 
-
 DEFAULT_SENSOR_CONVERSION_CONSTANTS = {
     "Mics": 1,
     "Diff_Baros": 1,
@@ -152,24 +151,30 @@ class NodeConfiguration:
     :param float acc_freq: accelerometers sampling frequency
     :param float acc_range: TODO nobody seems to know...
     :param float analog_freq: analog sensors sampling frequency
-    :param float baros_freq: barometers sampling frequency
     :param float baros_bm: TODO nobody seems to know...
+    :param float baros_freq: barometers sampling frequency
     :param str blade_id: The id of the blade on which the node is mounted, if known
     :param float constat_period: period of incoming connection statistic parameters in ms
+    :param dict|None decline_reason:
     :param float diff_baros_freq: differential barometers sampling frequency
+    :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO nobody seems to know...
-    :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
-    :param float max_timestamp_slack: TODO   # 5ms
-    :param float mics_bm: TODO nobody seems to know...
+    :param dict|None info_type:
+    :param float mag_freq:
     :param float mics_freq: microphones sampling frequency
+    :param float mics_bm: TODO nobody seems to know...
+    :param float max_timestamp_slack: TODO   # 5ms
+    :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
     :param str node_firmware_version: The verison of the firmware on the node, if known.
-    :param int type_handle_def: TODO
-    :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param dict|None number_of_sensors: A map for each sensor, giving the number of samples expected from that sensor
     :param dict|None samples_per_packet: A map for each sensor, giving the number of samples sent in a packet from that sensor
     :param dict|None sensor_commands:
+    :param dict|None sensor_conversion_constants:
+    :param dict|None sensor_coordinates:
     :param list|None sensor_names: List of sensors present on the measurement node
+    :param dict|None sleep_state:
+    :param int type_handle_def: TODO
     :return None:
     """
 
@@ -312,7 +317,6 @@ class Configuration:
     """
 
     def __init__(self, gateway=None, nodes=None, session=None, **kwargs):
-        # Set up the gateway configuration
         gateway_configuration = gateway or {}
         self.gateway = GatewayConfiguration(**gateway_configuration)
 
@@ -322,7 +326,7 @@ class Configuration:
                 "old-format configuration file?"
             )
 
-        # Set up a single-node default in the absence of any nodes at all
+        # Set up a single-node default in the absence of any nodes at all.
         self.nodes = {}
 
         if nodes is None:
@@ -331,7 +335,7 @@ class Configuration:
             for node_id, node in nodes.items():
                 self.nodes[str(node_id)] = NodeConfiguration(**node)
 
-        # Set up the session-specific data as empty
+        # Set up the session-specific data as empty.
         self.session = session or DEFAULT_SESSION
 
     @classmethod
@@ -355,7 +359,8 @@ class Configuration:
         )
 
     def get_packet_key(self, node_id, as_bytes=False):
-        """Return the packet key for a given node, computed from the packet key offset
+        """Return the packet key for a given node, computed from the packet key offset.
+
         :param int node_id: The node ID for which you want the packet key
         :param bool as_bytes: Convert the package key to the bytes representation
         :return int|bytes: The packet key for a given node_id
@@ -369,7 +374,7 @@ class Configuration:
 
     @property
     def node_ids(self):
-        """Access a list of node ids in the current configuration.
+        """Get the IDs of the nodes in the current configuration.
 
         :return list: A list of node ids
         """
