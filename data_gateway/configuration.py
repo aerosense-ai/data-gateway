@@ -1,6 +1,6 @@
 import copy
 
-from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+from data_gateway.exceptions import InvalidNodeIdError, WrongNumberOfSensorCoordinatesError
 
 
 DEFAULT_SENSOR_NAMES = [
@@ -362,9 +362,13 @@ class Configuration:
         self.nodes = {}
 
         if nodes is None:
-            self.nodes["0"] = NodeConfiguration()
+            self.nodes["1"] = NodeConfiguration()
         else:
             for node_id, node in nodes.items():
+                if str(node_id) == "0":
+                    raise InvalidNodeIdError(
+                        "Configuration specifies node_id of 0, which is reserved for base station data packets"
+                    )
                 self.nodes[str(node_id)] = NodeConfiguration(**node)
 
         # Set up the session-specific data as empty.
@@ -415,10 +419,15 @@ class Configuration:
     @property
     def packet_key_map(self):
         """Access a dict that maps the packet keys (as bytes) to node ids.
+        Note that "0" is always a node_id, reserved for the base station.
 
         :return dict:
         """
-        return {self.get_packet_key(node_id, as_bytes=True): node_id for node_id in self.node_ids}
+        nodes = {self.get_packet_key(node_id, as_bytes=True): node_id for node_id in self.node_ids}
+        return {
+            int(0).to_bytes(1, "little"): "0",
+            **nodes,
+        }
 
     def to_dict(self):
         """Serialise the configuration to a dictionary.
