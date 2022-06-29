@@ -173,18 +173,19 @@ class DataGateway:
             if not self.stop_sensors_on_exit:
                 return
 
-            sensor_stop_commands = self.packet_reader.config.sensor_commands.get("stop")
+            # TODO reinstate sensor stopping for multi-node
+            # sensor_stop_commands = self.packet_reader.config.sensor_commands.get("stop")
 
-            if not sensor_stop_commands:
-                logger.warning(
-                    "No sensor stop commands defined in configuration file - sensors cannot be automatically stopped."
-                )
-                return
+            # if not sensor_stop_commands:
+            #     logger.warning(
+            #         "No sensor stop commands defined in configuration file - sensors cannot be automatically stopped."
+            #     )
+            #     return
 
-            # This should ensure that the `stopMics` command is run last.
-            for command in sensor_stop_commands:
-                self._send_command_to_sensors(command)
-                time.sleep(5)
+            # # This should ensure that the `stopMics` command is run last.
+            # for command in sensor_stop_commands:
+            #     self._send_command_to_sensors(command)
+            #     time.sleep(5)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.
