@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 
 import click
 import pkg_resources
@@ -63,14 +64,14 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(dir_okay=False),
     default="config.json",
     show_default=True,
-    help="Path to your Aerosense deployment configuration JSON file.",
+    help="Path to your Aerosense deployment configuration JSON file. This value is overridden by the environment variable GATEWAY_CONFIG_FILE if set",
 )
 @click.option(
     "--routine-file",
     type=click.Path(dir_okay=False),
     default="routine.json",
     show_default=True,
-    help="Path to sensor command routine JSON file.",
+    help="Path to sensor command routine JSON file. This value is overridden by the environment variable GATEWAY_ROUTINE_FILE if set",
 )
 @click.option(
     "--save-locally", "-l", is_flag=True, default=False, show_default=True, help="Save output JSON data to disk."
@@ -96,7 +97,7 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(file_okay=False),
     default="data_gateway",
     show_default=True,
-    help="The directory in which to save data windows from the gateway.",
+    help="The directory in which to save data windows from the gateway. This value is overridden by the environment variable GATEWAY_OUTPUT_DIR if set",
 )
 @click.option(
     "--window-size",
@@ -160,14 +161,19 @@ def start(
     """
     from data_gateway.data_gateway import DataGateway
 
+    # Allow override of defaults from the environment
+    overridden_config_file = os.environ.get("GATEWAY_CONFIG_FILE", None) or config_file
+    overridden_output_dir = os.environ.get("GATEWAY_OUTPUT_DIR", None) or output_dir
+    overridden_routine_file = os.environ.get("GATEWAY_ROUTINE_FILE", None) or routine_file
+
     data_gateway = DataGateway(
         serial_port=serial_port,
-        configuration_path=config_file,
-        routine_path=routine_file,
+        configuration_path=overridden_config_file,
+        routine_path=overridden_routine_file,
         save_locally=save_locally,
         upload_to_cloud=not no_upload_to_cloud,
         interactive=interactive,
-        output_directory=output_dir,
+        output_directory=overridden_output_dir,
         window_size=window_size,
         bucket_name=gcp_bucket_name,
         label=label,
