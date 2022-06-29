@@ -117,6 +117,8 @@ class PacketReader:
                     logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
                     continue
 
+                logger.info("Received packet type %s from node_id %s", packet_type, node_id)
+
                 packet_queue.put({"node_id": node_id, "packet_type": packet_type, "packet": packet})
 
         except KeyboardInterrupt:
