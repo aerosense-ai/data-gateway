@@ -425,7 +425,7 @@ class Configuration:
         """
         nodes = {self.get_packet_key(node_id, as_bytes=True): node_id for node_id in self.node_ids}
         return {
-            int(0).to_bytes(1, "little"): "0",
+            self.gateway.packet_key_offset.to_bytes(1, "little"): "0",
             **nodes,
         }
 
