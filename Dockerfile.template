@@ -7,7 +7,7 @@ RUN install_packages git
 
 # Set our working directory and a data directory
 RUN mkdir -p /usr/aerosense/data-gateway
-RUN mkdir -p /usr/aerosense/local-data
+RUN mkdir -p /usr/aerosense/tmp-data
 WORKDIR /usr/aerosense/data-gateway
 
 # Copy requirements.txt first for better cache on later pushes
@@ -23,5 +23,5 @@ RUN pip install .
 # Enable udevd so that plugged dynamic hardware devices show up in our container.
 ENV UDEV=1
 
-# Keep the container alive after start
+# Keep the container alive after start, so we can ssh in and use the gateway
 CMD ["sleep", "infinity"]
