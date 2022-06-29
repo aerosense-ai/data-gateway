@@ -92,6 +92,8 @@ class PacketReader:
                     continue
 
                 # Get the ID of the node the packet is coming from.
+                print("SERIAL DATA", serial_data)
+                print("PACKET_KEY_MAP", self.config.packet_key_map)
                 if serial_data not in self.config.packet_key_map:
                     continue
 
@@ -399,7 +401,7 @@ class PacketReader:
 
         # TODO Analog sensor definitions
         if packet_type in {"Analog Kinetron", "Analog1", "Analog2"}:
-            logger.error("Received Analog packet. Not supported atm")
+            logger.error("Received Analog Kinetron, Analog1 or Analog2 packet. Not supported atm")
             raise exceptions.UnknownPacketTypeError(f"Packet of type {packet_type!r} is unknown.")
 
         if packet_type == "Analog Vbat":
@@ -483,11 +485,60 @@ class PacketReader:
 
             return
 
-        if information_type == "Info Message":
+        if information_type == "Local Info Message":
+            logger.warn("Received Timestamp Packet 0, handling not implemented yet")
+
+            # info_index = int.from_bytes(payload[0:1], ENDIAN, signed=False)
+            # print(local_info[info_index])
+            # if info_index == 130:
+            #     print(int.from_bytes(payload[1:3], ENDIAN, signed=False))
+            # if local_info[info_index] == "Time synchronization info":
+            #     info_type = int.from_bytes(payload[1:5], ENDIAN, signed=False)
+            #     if info_type == 0:
+            #         print("seq data")
+            #         for i in range(15):
+            #             seqDataFile.write(str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ",")
+            #         for i in range(15, 18):
+            #             seqDataFile.write(str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=True)) + ",")
+            #         seqDataFile.close()
+            #     elif info_type == 1:
+            #         print("central data")
+            #         for i in range(60):
+            #             centralDataFile.write(
+            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+            #             )
+            #             centralCnt = centralCnt + 1
+            #             if centralCnt == 187:
+            #                 centralDataFile.close()
+            #                 break
+            #     elif info_type == 2:
+            #         print("perif 0 data")
+            #         for i in range(61):
+            #             perif0DataFile.write(
+            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+            #             )
+            #         perif0DataFile.close()
+            #     elif info_type == 3:
+            #         print("perif 1 data")
+            #         for i in range(61):
+            #             perif1DataFile.write(
+            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+            #             )
+            #         perif1DataFile.close()
+            #     elif info_type == 4:
+            #         print("perif 2 data")
+            #         for i in range(61):
+            #             perif2DataFile.write(
+            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+            #             )
+            #         perif2DataFile.close()
+
+        if information_type == "Remote Info Message":
             info_index = str(int.from_bytes(payload[0:1], self.config.gateway.endian, signed=False))
-            info_type = node_config.info_type[info_index]
+            info_type = node_config.remote_info_type[info_index]
             logger.info(info_type)
 
+            # TODO store the voltage in results so that we'll be able to display it in the dashboard
             if info_type == "Battery info":
                 voltage = int.from_bytes(payload[1:5], self.config.gateway.endian, signed=False) / 1000000
                 cycle = int.from_bytes(payload[5:9], self.config.gateway.endian, signed=False) / 100
@@ -501,6 +552,22 @@ class PacketReader:
                 )
 
             return
+
+        if information_type == "Timestamp Packet 0":
+            logger.warning("Received Timestamp Packet 0, handling not implemented yet")
+            # print("timestamp packet", int(len / 4), len)
+            # for i in range(int(len / 4)):
+            #     files["ts" + str(packet_source)].write(
+            #         str(int.from_bytes(payload[i * 4 : (i + 1) * 4], ENDIAN, signed=False)) + ","
+            #     )
+
+        if information_type == "Timestamp Packet 1":
+            logger.warning("Received Timestamp Packet 1, handling not implemented yet")
+            # print("time elapse packet", int(len / 4), len)
+            # for i in range(int(len / 4)):
+            #     files["sampleElapse" + str(packet_source)].write(
+            #         str(int.from_bytes(payload[i * 4 : (i + 1) * 4], ENDIAN, signed=False)) + ","
+            #     )
 
     def _check_for_packet_loss(self, node_id, sensor_name, timestamp, previous_timestamp):
         """Check if a packet was lost by looking at the time interval between previous_timestamp and timestamp for

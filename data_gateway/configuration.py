@@ -28,7 +28,10 @@ DEFAULT_DEFAULT_HANDLES = {
     "52": "Constat",
     "54": "Cmd Decline",
     "56": "Sleep State",
-    "58": "Info Message",
+    "58": "Remote Info Message",
+    "60": "Timestamp Packet 0",
+    "62": "Timestamp Packet 1",
+    "64": "Local Info Message",
 }
 
 DEFAULT_DECLINE_REASONS = {
@@ -36,11 +39,27 @@ DEFAULT_DECLINE_REASONS = {
     "1": "Task already registered, cannot register again",
     "2": "Task is not registered, cannot de-register",
     "3": "Connection Parameter update unfinished",
+    "4": "Not ready to sleep",
+    "5": "Not in sleep",
 }
 
 DEFAULT_SLEEP_STATES = {"0": "Exiting sleep", "1": "Entering sleep"}
 
-DEFAULT_INFO_TYPES = {"0": "Battery info"}
+DEFAULT_REMOTE_INFO_TYPES = {"0": "Battery info"}
+
+DEFAULT_LOCAL_INFO_TYPES = {
+    "0": "Synchronization not ready as not every sensor node is connected",
+    "1": "Time synchronization info",
+    "2": "Time sync exception",
+    "4": "Time sync coarse data record error",
+    "8": "Time sync alignment error",
+    "16": "Time sync coarse data time diff error",
+    "32": "Device not connected",
+    "64": "Select message destination successful",
+    "128": "Time sync success",
+    "129": "Coarse sync finish",
+    "130": "Time sync msg sent",
+}
 
 DEFAULT_SAMPLES_PER_PACKET = {
     "Mics": 8,
@@ -89,7 +108,7 @@ DEFAULT_NUMBER_OF_SENSORS = {
     "Acc": 3,
     "Gyro": 3,
     "Mag": 3,
-    "Analog Vbat": 1,
+    "Analog Vbat": 2,
     "Constat": 4,
 }
 
@@ -161,7 +180,7 @@ class NodeConfiguration:
     :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO nobody seems to know...
-    :param dict|None info_type:
+    :param dict|None local_info_type: A map of labels to the type of information received from base station
     :param float mag_freq:
     :param float mics_freq: microphones sampling frequency
     :param float mics_bm: TODO nobody seems to know...
@@ -169,6 +188,7 @@ class NodeConfiguration:
     :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
     :param str node_firmware_version: The verison of the firmware on the node, if known.
     :param dict|None number_of_sensors: A map for each sensor, giving the number of samples expected from that sensor
+    :param dict|None remote_info_type: A map of labels to the type of information received from remote node
     :param dict|None samples_per_packet: A map for each sensor, giving the number of samples sent in a packet from that sensor
     :param dict|None sensor_commands:
     :param dict|None sensor_conversion_constants:
@@ -193,7 +213,7 @@ class NodeConfiguration:
         default_handles=None,
         gyro_freq=100,
         gyro_range=2000,
-        info_type=None,
+        local_info_type=None,
         mag_freq=12.5,
         mics_freq=15625,
         mics_bm=0x3FF,
@@ -201,6 +221,7 @@ class NodeConfiguration:
         max_period_drift=0.02,
         node_firmware_version="unknown",
         number_of_sensors=None,
+        remote_info_type=None,
         samples_per_packet=None,
         sensor_commands=None,
         sensor_conversion_constants=None,
@@ -231,7 +252,8 @@ class NodeConfiguration:
         # Set default dictionaries
         self.decline_reason = decline_reason or DEFAULT_DECLINE_REASONS
         self.default_handles = default_handles or DEFAULT_DEFAULT_HANDLES
-        self.info_type = info_type or DEFAULT_INFO_TYPES
+        self.remote_info_type = remote_info_type or DEFAULT_REMOTE_INFO_TYPES
+        self.local_info_type = local_info_type or DEFAULT_LOCAL_INFO_TYPES
         self.number_of_sensors = number_of_sensors or DEFAULT_NUMBER_OF_SENSORS
         self.samples_per_packet = samples_per_packet or DEFAULT_SAMPLES_PER_PACKET
         self.sensor_commands = sensor_commands or DEFAULT_SENSOR_COMMANDS
