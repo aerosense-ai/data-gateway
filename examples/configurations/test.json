@@ -1,7 +1,9 @@
 {
-  "gateway": {},
+  "gateway": {
+    "packet_key_offset": 253
+  },
   "nodes": {
-    "0": {}
+    "2": {}
   },
   "session": {
     "notes": "A basic session for integration testing. Data is likely totally meaningless."
