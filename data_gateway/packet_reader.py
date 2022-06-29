@@ -9,7 +9,7 @@ from octue.cloud import storage
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import exceptions, stop_gateway
-from data_gateway.configuration import DEFAULT_SENSOR_NAMES, Configuration
+from data_gateway.configuration import BASE_STATION_ID, DEFAULT_SENSOR_NAMES, Configuration
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
     BatchingFileWriter,
@@ -85,23 +85,25 @@ class PacketReader:
             )
 
             while stop_signal.value == 0:
-                serial_data = serial_port.read()
+
+                # Check the leading byte of the packet
+                leading_byte = serial_port.read()
 
                 # Handle no data on the serial port.
-                if len(serial_data) == 0:
+                if len(leading_byte) == 0:
                     continue
 
-                # Get the ID of the node the packet is coming from.
-                if serial_data not in self.config.packet_key_map:
+                # Get the ID of the packet origin
+                if leading_byte in self.config.leading_bytes_map:
+                    packet_origin = self.config.leading_bytes_map[leading_byte]
+                else:
                     logger.warning(
-                        "Unknown packet key %s (%s) . Configured packet keys are %s",
-                        int.from_bytes(serial_data, self.config.gateway.endian),
-                        serial_data,
-                        self.config.packet_key_map,
+                        "Unknown leading byte (packet key) %s (%s) . Allowable values are %s",
+                        int.from_bytes(leading_byte, self.config.gateway.endian),
+                        leading_byte,
+                        self.config.leading_bytes_map,
                     )
                     continue
-
-                node_id = self.config.packet_key_map[serial_data]
 
                 # Read the packet from the serial port.
                 packet_type = str(int.from_bytes(serial_port.read(), self.config.gateway.endian))
@@ -113,9 +115,9 @@ class PacketReader:
                     logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
                     continue
 
-                logger.info("Received packet type %s from node_id %s", packet_type, node_id)
+                logger.info("Received packet_type %s from packet_origin %s", packet_type, packet_origin)
 
-                packet_queue.put({"node_id": node_id, "packet_type": packet_type, "packet": packet})
+                packet_queue.put({"packet_origin": packet_origin, "packet_type": packet_type, "packet": packet})
 
         except KeyboardInterrupt:
             pass
@@ -185,16 +187,16 @@ class PacketReader:
                 with self.writer:
                     while stop_signal.value == 0:
                         try:
-                            node_id, packet_type, packet = packet_queue.get(timeout=timeout).values()
+                            packet_origin, packet_type, packet = packet_queue.get(timeout=timeout).values()
                         except queue.Empty:
                             if stop_when_no_more_data_after is not False:
                                 break
                             continue
 
-                        if node_id == "0":
-                            logger.warning("Processing packet with node_id=0, skipping for now")
+                        if packet_origin == BASE_STATION_ID:
+                            logger.warning("Processing base station packet, skipping for now")
                         else:
-
+                            node_id = packet_origin
                             node_config = self.config.nodes[node_id]
 
                             if packet_type == str(node_config.type_handle_def):

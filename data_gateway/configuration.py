@@ -3,6 +3,8 @@ import copy
 from data_gateway.exceptions import InvalidNodeIdError, WrongNumberOfSensorCoordinatesError
 
 
+BASE_STATION_ID = "base-station"
+
 DEFAULT_SENSOR_NAMES = [
     "Mics",
     "Baros_P",
@@ -125,7 +127,8 @@ class GatewayConfiguration:
     :param str installation_reference: A unique reference (id) for the current installation
     :param float latitude: The latitude of the turbine in WGS84 coordinate system
     :param float longitude: The longitude of the turbine in WGS84 coordinate system
-    :param int packet_key_offset: The value from which each node's packet key is calculated (packet_key = node_id + packet_key_offset)
+    :param int packet_key: The prefix value for packets received from the base station (i.e. not from a node)
+    :param int packet_key_offset: The base prefix value for packets received from nodes (node_packet_key = node_id + packet_key_offset)
     :param str receiver_firmware_version: The version of the firmware running on the gateway receiver, if known.
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
@@ -140,7 +143,8 @@ class GatewayConfiguration:
         installation_reference="unknown",
         latitude=0,
         longitude=0,
-        packet_key_offset=254,
+        packet_key=254,
+        packet_key_offset=245,
         receiver_firmware_version="unknown",
         serial_buffer_rx_size=4095,
         serial_buffer_tx_size=1280,
@@ -155,6 +159,7 @@ class GatewayConfiguration:
         self.serial_buffer_tx_size = serial_buffer_tx_size
         self.turbine_id = turbine_id
         self.receiver_firmware_version = receiver_firmware_version
+        self.packet_key = packet_key
         self.packet_key_offset = packet_key_offset
 
     def to_dict(self):
@@ -394,20 +399,6 @@ class Configuration:
             session=dictionary["session"],
         )
 
-    def get_packet_key(self, node_id, as_bytes=False):
-        """Return the packet key for a given node, computed from the packet key offset.
-
-        :param int node_id: The node ID for which you want the packet key
-        :param bool as_bytes: Convert the package key to the bytes representation
-        :return int|bytes: The packet key for a given node_id
-        """
-        packet_key = self.gateway.packet_key_offset + int(node_id)
-
-        if as_bytes:
-            packet_key = packet_key.to_bytes(1, self.gateway.endian)
-
-        return packet_key
-
     @property
     def node_ids(self):
         """Get the IDs of the nodes in the current configuration.
@@ -416,16 +407,26 @@ class Configuration:
         """
         return list(self.nodes)
 
-    @property
-    def packet_key_map(self):
-        """Access a dict that maps the packet keys (as bytes) to node ids.
-        Note that "0" is always a node_id, reserved for the base station.
+    def get_leading_byte(self, node_id=None):
+        """Get the leading byte for a given node_id or for base station packets by default
+        Uses the packet key and the packet key offset
+        :param int|str node_id: The node ID for which you want the packet key
+        :return bytes: The leading byte for packets from the given node or the base station
+        """
+        if node_id is None:
+            return self.gateway.packet_key.to_bytes(1, "little")
+        else:
+            node_packet_key = self.gateway.packet_key_offset + int(node_id)
+            return node_packet_key.to_bytes(1, self.gateway.endian)
 
+    @property
+    def leading_bytes_map(self):
+        """Access a dict that maps leading bytes to node_ids (or the base station id)
         :return dict:
         """
-        nodes = {self.get_packet_key(node_id, as_bytes=True): node_id for node_id in self.node_ids}
+        nodes = {self.get_leading_byte(node_id): node_id for node_id in self.node_ids}
         return {
-            self.gateway.packet_key_offset.to_bytes(1, "little"): "0",
+            self.get_leading_byte(): BASE_STATION_ID,
             **nodes,
         }
 
