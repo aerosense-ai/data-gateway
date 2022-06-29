@@ -191,65 +191,71 @@ class PacketReader:
                                 break
                             continue
 
-                        node_config = self.config.nodes[node_id]
+                        if node_id == 0:
+                            logger.warning("Processing packet with node_id=0, skipping for now")
+                        else:
 
-                        if packet_type == str(node_config.type_handle_def):
-                            logger.warning("Updating handles (not node-specific) for node %s.", node_id)
-                            self.update_handles(packet, node_id)
-                            continue
+                            node_config = self.config.nodes[node_id]
 
-                        if packet_type not in self.handles[node_id]:
-                            print(packet_type.__class__.__name__)
-                            logger.error("Received packet from node %s with unknown type: %s ", node_id, packet_type)
-                            continue
+                            if packet_type == str(node_config.type_handle_def):
+                                logger.warning("Updating handles (not node-specific) for node %s.", node_id)
+                                self.update_handles(packet, node_id)
+                                continue
 
-                        if len(packet) == 244:  # If the full data payload is received, proceed parsing it
-                            timestamp = (
-                                int.from_bytes(
-                                    packet[240:244],
-                                    self.config.gateway.endian,
-                                    signed=False,
+                            if packet_type not in self.handles[node_id]:
+                                print(packet_type.__class__.__name__)
+                                logger.error(
+                                    "Received packet from node %s with unknown type: %s ", node_id, packet_type
                                 )
-                                / 2**16
-                            )
+                                continue
 
-                            data, sensor_names = self._parse_sensor_packet_data(
-                                node_id=node_id,
-                                packet_type=self.handles[node_id][packet_type],
-                                payload=packet,
-                                data=data,
-                            )
+                            if len(packet) == 244:  # If the full data payload is received, proceed parsing it
+                                timestamp = (
+                                    int.from_bytes(
+                                        packet[240:244],
+                                        self.config.gateway.endian,
+                                        signed=False,
+                                    )
+                                    / 2**16
+                                )
 
-                            for sensor_name in sensor_names:
-                                self._check_for_packet_loss(
+                                data, sensor_names = self._parse_sensor_packet_data(
                                     node_id=node_id,
-                                    sensor_name=sensor_name,
-                                    timestamp=timestamp,
+                                    packet_type=self.handles[node_id][packet_type],
+                                    payload=packet,
+                                    data=data,
+                                )
+
+                                for sensor_name in sensor_names:
+                                    self._check_for_packet_loss(
+                                        node_id=node_id,
+                                        sensor_name=sensor_name,
+                                        timestamp=timestamp,
+                                        previous_timestamp=previous_timestamp,
+                                    )
+
+                                    self._timestamp_and_persist_data(
+                                        data=data,
+                                        node_id=node_id,
+                                        sensor_name=sensor_name,
+                                        timestamp=timestamp,
+                                        period=node_config.periods[sensor_name],
+                                    )
+
+                                continue
+
+                            if self.handles[node_id][packet_type] in [
+                                "Mic 1",
+                                "Cmd Decline",
+                                "Sleep State",
+                                "Info Message",
+                            ]:
+                                self._parse_info_packet(
+                                    node_id=node_id,
+                                    information_type=self.handles[node_id][packet_type],
+                                    payload=packet,
                                     previous_timestamp=previous_timestamp,
                                 )
-
-                                self._timestamp_and_persist_data(
-                                    data=data,
-                                    node_id=node_id,
-                                    sensor_name=sensor_name,
-                                    timestamp=timestamp,
-                                    period=node_config.periods[sensor_name],
-                                )
-
-                            continue
-
-                        if self.handles[node_id][packet_type] in [
-                            "Mic 1",
-                            "Cmd Decline",
-                            "Sleep State",
-                            "Info Message",
-                        ]:
-                            self._parse_info_packet(
-                                node_id=node_id,
-                                information_type=self.handles[node_id][packet_type],
-                                payload=packet,
-                                previous_timestamp=previous_timestamp,
-                            )
 
         except KeyboardInterrupt:
             pass
