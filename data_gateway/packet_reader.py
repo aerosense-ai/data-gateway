@@ -95,12 +95,12 @@ class PacketReader:
                 print("SERIAL DATA", serial_data)
                 print("PACKET_KEY_MAP", self.config.packet_key_map)
                 if serial_data not in self.config.packet_key_map:
-                    available_ints = [
-                        int.from_bytes(k, self.config.gateway.endian) for k in self.config.packet_key_map.keys()
+                    available = [
+                        str(int.from_bytes(k, self.config.gateway.endian) for k in self.config.packet_key_map.keys())
                     ]
                     serial_data_int = int.from_bytes(serial_data, self.config.gateway.endian)
                     logger.warning(
-                        f'Unknown packet key {serial_data_int}. Configured packet keys are {", ".join(available_ints)}'
+                        f'Unknown packet key {serial_data_int}. Configured packet keys are {", ".join(available)}'
                     )
                     continue
 
