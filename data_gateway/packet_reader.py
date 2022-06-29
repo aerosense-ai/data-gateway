@@ -92,15 +92,16 @@ class PacketReader:
                     continue
 
                 # Get the ID of the node the packet is coming from.
-                print("SERIAL DATA", serial_data)
-                print("PACKET_KEY_MAP", self.config.packet_key_map)
                 if serial_data not in self.config.packet_key_map:
-                    available = [
-                        str(int.from_bytes(k, self.config.gateway.endian) for k in self.config.packet_key_map.keys())
-                    ]
+                    packet_keys_int = ", ".join(self.config.packet_key_map.values())
+                    packet_keys_bytes = ", ".join(self.config.packet_key_map.keys())
                     serial_data_int = int.from_bytes(serial_data, self.config.gateway.endian)
                     logger.warning(
-                        f'Unknown packet key {serial_data_int}. Configured packet keys are {", ".join(available)}'
+                        "Unknown packet key %s (%s) . Configured packet keys are %s (%s)",
+                        serial_data_int,
+                        serial_data,
+                        packet_keys_int,
+                        packet_keys_bytes,
                     )
                     continue
 
@@ -542,11 +543,11 @@ class PacketReader:
 
         if information_type == "Remote Info Message":
             info_index = str(int.from_bytes(payload[0:1], self.config.gateway.endian, signed=False))
-            info_type = node_config.remote_info_type[info_index]
-            logger.info(info_type)
+            info_subtype = node_config.remote_info_type[info_index]
+            logger.info(info_subtype)
 
             # TODO store the voltage in results so that we'll be able to display it in the dashboard
-            if info_type == "Battery info":
+            if info_subtype == "Battery info":
                 voltage = int.from_bytes(payload[1:5], self.config.gateway.endian, signed=False) / 1000000
                 cycle = int.from_bytes(payload[5:9], self.config.gateway.endian, signed=False) / 100
                 state_of_charge = int.from_bytes(payload[9:13], self.config.gateway.endian, signed=False) / 256

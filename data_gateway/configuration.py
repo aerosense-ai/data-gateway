@@ -140,7 +140,7 @@ class GatewayConfiguration:
         installation_reference="unknown",
         latitude=0,
         longitude=0,
-        packet_key_offset=245,
+        packet_key_offset=254,
         receiver_firmware_version="unknown",
         serial_buffer_rx_size=4095,
         serial_buffer_tx_size=1280,
