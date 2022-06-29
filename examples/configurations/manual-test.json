@@ -4,7 +4,7 @@
     "packet_key_offset": 245
   },
   "nodes": {
-    "3": {}
+    "2": {}
   },
   "session": {
     "notes": "A basic session for integration testing. Data is likely totally meaningless."
