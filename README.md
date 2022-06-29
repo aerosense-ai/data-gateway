@@ -84,17 +84,9 @@ This will editably install `data-gateway` in a `poetry`-managed virtual environm
 - It won't be affected by changes to other python packages you have installed on your system, making development much
   easier and more deterministic
 
-You may also need to run:
-```shell
-sudo apt-get update
-sudo apt-get install libhdf5-dev libhdf5-serial-dev
-```
-
 #### Install on Raspberry Pi
 Run the following from the repository root:
 ```shell
-sudo apt-get update
-sudo apt-get install libhdf5-dev libhdf5-serial-dev
 pip install -r requirements-pi-dev.txt
 ```
 
@@ -120,6 +112,13 @@ poetry install
 Every time you enter the repo over powershell again, make sure to activate the venv using
 ```shell
 ./venv/Scripts/activate
+```
+
+#### Troubleshooting
+If there are problems reading the serial port, try running this (or the equivalent on non-Linux platforms) and retrying:
+```shell
+sudo apt-get update
+sudo apt-get install libhdf5-dev libhdf5-serial-dev
 ```
 
 ### Testing
