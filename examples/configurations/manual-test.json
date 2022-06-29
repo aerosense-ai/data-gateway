@@ -1,6 +1,7 @@
 {
   "gateway": {
-    "packet_key_offset": 254
+    "packet_key": 254,
+    "packet_key_offset": 245
   },
   "nodes": {
     "2": {}
