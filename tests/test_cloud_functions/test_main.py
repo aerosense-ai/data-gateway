@@ -120,7 +120,6 @@ class TestUploadWindow(BaseTestCase):
             mock_big_query_client.rows[0][0],
             {
                 "path": expected_microphone_cloud_path,
-                "project_name": "destination-project",
                 "node_id": "0",
                 "configuration_id": configuration_id,
                 "installation_reference": "aventa_turbine",

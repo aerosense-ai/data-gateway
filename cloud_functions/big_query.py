@@ -104,7 +104,6 @@ class BigQueryDataset:
     def record_microphone_data_location_and_metadata(
         self,
         path,
-        project_name,
         node_id,
         configuration_id,
         installation_reference,
@@ -113,7 +112,6 @@ class BigQueryDataset:
         """Record the file location and metadata for a window of microphone data.
 
         :param str path: the Google Cloud Storage path to the microphone data
-        :param str project_name: the name of the project the storage bucket belongs to
         :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the data
         :param str installation_reference: the reference for the installation that produced the data
@@ -126,7 +124,6 @@ class BigQueryDataset:
             rows=[
                 {
                     "path": path,
-                    "project_name": project_name,
                     "node_id": node_id,
                     "configuration_id": configuration_id,
                     "installation_reference": installation_reference,
