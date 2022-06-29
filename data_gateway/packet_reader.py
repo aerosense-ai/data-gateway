@@ -191,7 +191,7 @@ class PacketReader:
                                 break
                             continue
 
-                        if node_id == 0:
+                        if node_id == "0":
                             logger.warning("Processing packet with node_id=0, skipping for now")
                         else:
 
