@@ -93,15 +93,12 @@ class PacketReader:
 
                 # Get the ID of the node the packet is coming from.
                 if serial_data not in self.config.packet_key_map:
-                    packet_keys_int = ", ".join(self.config.packet_key_map.values())
-                    packet_keys_bytes = ", ".join(self.config.packet_key_map.keys())
                     serial_data_int = int.from_bytes(serial_data, self.config.gateway.endian)
                     logger.warning(
-                        "Unknown packet key %s (%s) . Configured packet keys are %s (%s)",
+                        "Unknown packet key %s (%s) . Configured packet keys are %s",
                         serial_data_int,
                         serial_data,
-                        packet_keys_int,
-                        packet_keys_bytes,
+                        self.config.packet_key_map,
                     )
                     continue
 
