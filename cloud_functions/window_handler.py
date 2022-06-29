@@ -134,7 +134,6 @@ class WindowHandler:
 
         self.dataset.record_microphone_data_location_and_metadata(
             path=microphone_file.cloud_path,
-            project_name=self.destination_project,
             node_id=node_id,
             configuration_id=configuration_id,
             installation_reference=installation_reference,
