@@ -408,23 +408,26 @@ class Configuration:
         return list(self.nodes)
 
     def get_leading_byte(self, node_id=None):
-        """Get the leading byte for a given node_id or for base station packets by default
-        Uses the packet key and the packet key offset
+        """Get the leading byte for a given node ID or for base station packets by default. Uses the packet key and the
+        packet key offset.
+
         :param int|str node_id: The node ID for which you want the packet key
         :return bytes: The leading byte for packets from the given node or the base station
         """
         if node_id is None:
             return self.gateway.packet_key.to_bytes(1, "little")
-        else:
-            node_packet_key = self.gateway.packet_key_offset + int(node_id)
-            return node_packet_key.to_bytes(1, self.gateway.endian)
+
+        node_packet_key = self.gateway.packet_key_offset + int(node_id)
+        return node_packet_key.to_bytes(1, self.gateway.endian)
 
     @property
     def leading_bytes_map(self):
         """Access a dict that maps leading bytes to node_ids (or the base station id)
+
         :return dict:
         """
         nodes = {self.get_leading_byte(node_id): node_id for node_id in self.node_ids}
+
         return {
             self.get_leading_byte(): BASE_STATION_ID,
             **nodes,
