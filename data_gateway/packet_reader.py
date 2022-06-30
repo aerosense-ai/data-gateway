@@ -205,7 +205,6 @@ class PacketReader:
                                 continue
 
                             if packet_type not in self.handles[node_id]:
-                                print(packet_type.__class__.__name__)
                                 logger.error(
                                     "Received packet from node %s with unknown type: %s ", node_id, packet_type
                                 )
