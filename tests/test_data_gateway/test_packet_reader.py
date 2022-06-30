@@ -111,7 +111,5 @@ class TestPacketReader(BaseTestCase):
                     ("Command declined, %s", "Connection Parameter update unfinished"),
                     ("\n%s\n", "Exiting sleep"),
                     ("\n%s\n", "Entering sleep"),
-                    ("Battery info",),
-                    ("Voltage : %fV\n Cycle count: %f\nState of charge: %f%%", 0.0, 0.0, 0.0),
                 ]:
                     self.assertIn(message, log_messages)
