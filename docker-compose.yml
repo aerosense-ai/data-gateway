@@ -4,5 +4,6 @@ volumes:
 services:
   main:
     build: .
+    privileged: true
     volumes:
       - "resin-data:/data"
