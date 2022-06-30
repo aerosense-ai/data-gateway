@@ -3,5 +3,6 @@ volumes:
   resin-data:
 services:
   main:
+    build: .
     volumes:
       - "resin-data:/data"
