@@ -28,22 +28,22 @@
     ["stopDiffBaros", 240.3],
 
     ["selMsgDest 2", 360],
-    ["stopBaros", 300.1],
-    ["stopIMU", 300.2],
-    ["selMsgDest 3", 300.3],
-    ["stopBaros", 300.4],
-    ["stopIMU", 300.5],
+    ["stopBaros", 360.1],
+    ["stopIMU", 360.2],
+    ["selMsgDest 3", 360.3],
+    ["stopBaros", 360.4],
+    ["stopIMU", 360.5],
 
-    ["stopSync", 305],
+    ["stopSync", 365],
 
-    ["selMsgDest 3", 310],
-    ["readSens", 310.1],
-    ["sleep", 610],
+    ["selMsgDest 3", 370],
+    ["readSens", 370.1],
+    ["sleep", 670],
 
-    ["selMsgDest 2", 615],
-    ["readSens", 615.1],
-    ["readMics", 675.0],
-    ["sleep", 975]
+    ["selMsgDest 2", 675],
+    ["readSens", 675.1],
+    ["readMics", 735.0],
+    ["sleep", 1075]
   ],
   "period": 1200
 }
