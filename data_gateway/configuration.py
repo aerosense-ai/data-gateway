@@ -1,6 +1,6 @@
 import copy
 
-from data_gateway.exceptions import InvalidNodeIdError, WrongNumberOfSensorCoordinatesError
+from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 
 
 BASE_STATION_ID = "base-station"
@@ -367,13 +367,9 @@ class Configuration:
         self.nodes = {}
 
         if nodes is None:
-            self.nodes["1"] = NodeConfiguration()
+            self.nodes["0"] = NodeConfiguration()
         else:
             for node_id, node in nodes.items():
-                if str(node_id) == "0":
-                    raise InvalidNodeIdError(
-                        "Configuration specifies node_id of 0, which is reserved for base station data packets"
-                    )
                 self.nodes[str(node_id)] = NodeConfiguration(**node)
 
         # Set up the session-specific data as empty.
