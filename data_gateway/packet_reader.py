@@ -195,6 +195,7 @@ class PacketReader:
 
                         if packet_origin == BASE_STATION_ID:
                             logger.warning("Processing base station packet, skipping for now")
+                            # TODO process and store local info packets
                         else:
                             node_id = packet_origin
                             node_config = self.config.nodes[node_id]
@@ -209,6 +210,13 @@ class PacketReader:
                                     "Received packet from node %s with unknown type: %s ", node_id, packet_type
                                 )
                                 continue
+                            else:
+                                logger.info(
+                                    "Processing packet from node %s with type %s (%s)",
+                                    node_id,
+                                    self.handles[node_id][packet_type],
+                                    packet_type,
+                                )
 
                             if len(packet) == 244:  # If the full data payload is received, proceed parsing it
                                 timestamp = (
