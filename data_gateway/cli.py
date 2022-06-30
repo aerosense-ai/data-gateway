@@ -293,23 +293,14 @@ def add_sensor_type(name, description, measuring_unit, metadata):
 
 
 @gateway_cli.command()
-@click.option(
-    "--config-file",
-    type=click.Path(),
-    default="config.json",
-    show_default=True,
-    help="Path to your Aerosense deployment configuration file.",
-)
-def supervisord_conf(config_file):
+def supervisord_conf():
     """Print conf entry for use with supervisord. Daemonising a process ensures it automatically restarts after a
     failure and on startup of the operating system failure.
     """
-    import os
-
     supervisord_conf_str = f"""
 
 [program:{SUPERVISORD_PROGRAM_NAME,}]
-command=gateway start --config-file {os.path.abspath(config_file)}"""
+command=gateway start"""
 
     print(supervisord_conf_str)
     return 0
