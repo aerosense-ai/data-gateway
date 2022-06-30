@@ -60,7 +60,7 @@ class DataGateway:
         serial_port,
         configuration_path="config.json",
         routine_path="routine.json",
-        stop_routine_path=None,
+        stop_routine_path="stop_routine.json",
         save_locally=False,
         upload_to_cloud=True,
         interactive=False,

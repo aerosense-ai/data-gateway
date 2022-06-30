@@ -76,7 +76,7 @@ def gateway_cli(logger_uri, log_level):
 @click.option(
     "--stop-routine-file",
     type=click.Path(dir_okay=False),
-    default=None,
+    default="stop_routine.json",
     show_default=True,
     help="Path to sensor command routine JSON file to be executed on exit of the gateway loop (i.e. a routine which will shut down the sensors after running the gateway). This value is overridden by the environment variable GATEWAY_ROUTINE_FILE if set",
 )
