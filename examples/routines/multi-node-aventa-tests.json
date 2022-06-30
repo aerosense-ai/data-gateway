@@ -1,0 +1,49 @@
+{
+  "commands": [
+    ["selMsgDest 2", 5],
+    ["wakeUp", 5.1],
+    ["selMsgDest 3", 5.2],
+    ["wakeUp", 5.3],
+
+    ["startSync", 30],
+
+    ["selMsgDest 2", 60],
+    ["getBattery", 60.1],
+    ["startBaros", 60.2],
+    ["startIMU", 60.3],
+
+    ["selMsgDest 3", 60.4],
+    ["getBattery", 60.5],
+    ["startBaros", 60.6],
+    ["startIMU", 60.7],
+
+    ["selMsgDest 2", 180],
+    ["startMics", 180.1],
+    ["selMsgDest 3", 180.2],
+    ["startDiffBaros", 180.3],
+
+    ["selMsgDest 2", 240],
+    ["stopMics", 240.1],
+    ["selMsgDest 3", 240.2],
+    ["stopDiffBaros", 240.3],
+
+    ["selMsgDest 2", 360],
+    ["stopBaros", 300.1],
+    ["stopIMU", 300.2],
+    ["selMsgDest 3", 300.3],
+    ["stopBaros", 300.4],
+    ["stopIMU", 300.5],
+
+    ["stopSync", 305],
+
+    ["selMsgDest 3", 310],
+    ["readSens", 310.1],
+    ["sleep", 610],
+
+    ["selMsgDest 2", 615],
+    ["readSens", 615.1],
+    ["readMics", 675.0],
+    ["sleep", 975]
+  ],
+  "period": 1200
+}

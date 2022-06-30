@@ -1,0 +1,11 @@
+{
+  "gateway": {},
+  "nodes": {
+    "2": {},
+    "3": {}
+  },
+  "session": {
+    "label": "aventa-test-setup",
+    "notes": "Aventa wind turbine tests setup (in the lab)"
+  }
+}
