@@ -97,12 +97,12 @@ class PacketReader:
                 if leading_byte in self.config.leading_bytes_map:
                     packet_origin = self.config.leading_bytes_map[leading_byte]
                 else:
-                    logger.warning(
-                        "Unknown leading byte (packet key) %s (%s) . Allowable values are %s",
-                        int.from_bytes(leading_byte, self.config.gateway.endian),
-                        leading_byte,
-                        self.config.leading_bytes_map,
-                    )
+                    # logger.warning(
+                    #     "Unknown leading byte (packet key) %s (%s) . Allowable values are %s",
+                    #     int.from_bytes(leading_byte, self.config.gateway.endian),
+                    #     leading_byte,
+                    #     self.config.leading_bytes_map,
+                    # )
                     continue
 
                 # Read the packet from the serial port.
@@ -195,6 +195,7 @@ class PacketReader:
 
                         if packet_origin == BASE_STATION_ID:
                             logger.warning("Processing base station packet, skipping for now")
+                            # TODO process and store local info packets
                         else:
                             node_id = packet_origin
                             node_config = self.config.nodes[node_id]
@@ -205,11 +206,17 @@ class PacketReader:
                                 continue
 
                             if packet_type not in self.handles[node_id]:
-                                print(packet_type.__class__.__name__)
                                 logger.error(
                                     "Received packet from node %s with unknown type: %s ", node_id, packet_type
                                 )
                                 continue
+                            else:
+                                logger.info(
+                                    "Processing packet from node %s with type %s (%s)",
+                                    node_id,
+                                    self.handles[node_id][packet_type],
+                                    packet_type,
+                                )
 
                             if len(packet) == 244:  # If the full data payload is received, proceed parsing it
                                 timestamp = (

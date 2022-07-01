@@ -5,6 +5,7 @@
     "installation_reference": "aventa_turbine",
     "latitude": 0,
     "longitude": 0,
+    "packet_key": 254,
     "packet_key_offset": 245,
     "receiver_firmware_version": "1.2.3",
     "serial_buffer_rx_size": 100000,
@@ -44,7 +45,20 @@
       },
       "gyro_freq": 100,
       "gyro_range": 2000,
-      "info_type": {
+      "local_info_type": {
+        "0": "Synchronization not ready as not every sensor node is connected",
+        "1": "Time synchronization info",
+        "2": "Time sync exception",
+        "4": "Time sync coarse data record error",
+        "8": "Time sync alignment error",
+        "16": "Time sync coarse data time diff error",
+        "32": "Device not connected",
+        "64": "Select message destination successful",
+        "128": "Time sync success",
+        "129": "Coarse sync finish",
+        "130": "Time sync msg sent"
+      },
+      "remote_info_type": {
         "0": "Battery info"
       },
       "mag_freq": 12.5,
