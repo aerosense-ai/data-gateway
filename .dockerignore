@@ -1,0 +1,9 @@
+**/.DS_Store
+.coverage
+.devcontainer/
+.env
+.pytest_cache/
+.tox/
+.venv/
+.vscode/
+*.wg.conf

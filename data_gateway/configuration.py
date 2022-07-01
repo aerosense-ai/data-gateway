@@ -40,7 +40,7 @@ DEFAULT_DECLINE_REASONS = {
     "0": "Bad block detection ongoing",
     "1": "Task already registered, cannot register again",
     "2": "Task is not registered, cannot de-register",
-    "3": "Connection Parameter update unfinished",
+    "3": "Connection parameter update unfinished",
     "4": "Not ready to sleep",
     "5": "Not in sleep",
 }

@@ -1,6 +1,6 @@
 {
   "commands": [
-    ["selMsgDest 2", 0.1],
+    ["selMsgDest 4", 0.1],
     ["wakeUp", 0.2],
     ["getBattery", 30],
     ["startBaros", 35],
