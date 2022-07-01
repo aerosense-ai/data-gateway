@@ -97,12 +97,12 @@ class PacketReader:
                 if leading_byte in self.config.leading_bytes_map:
                     packet_origin = self.config.leading_bytes_map[leading_byte]
                 else:
-                    logger.warning(
-                        "Unknown leading byte (packet key) %s (%s) . Allowable values are %s",
-                        int.from_bytes(leading_byte, self.config.gateway.endian),
-                        leading_byte,
-                        self.config.leading_bytes_map,
-                    )
+                    # logger.warning(
+                    #     "Unknown leading byte (packet key) %s (%s) . Allowable values are %s",
+                    #     int.from_bytes(leading_byte, self.config.gateway.endian),
+                    #     leading_byte,
+                    #     self.config.leading_bytes_map,
+                    # )
                     continue
 
                 # Read the packet from the serial port.
