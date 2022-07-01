@@ -108,3 +108,6 @@ ENV/
 
 # Wireguard credentials
 *.wg.conf
+
+# VSCode local settings
+.vscode
