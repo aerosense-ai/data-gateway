@@ -1,6 +1,3 @@
-.. ATTENTION::
-    This library is in experimental stages! Please pin deployments to a specific release, and consider every release as breaking.
-
 ============
 Data Gateway
 ============
@@ -20,14 +17,14 @@ The data flow from the aerosense sensor modules looks like this:
     ->  Receiver (bluetooth equipment in-nacelle)
     --->  Gateway (data manager and uploader on-nacelle)
     ----->  Ingress (Cloud Function to receive data on-cloud)
-    ------->  Digital Twin (data analysis and storage system)
+    ------->  Data Lake (database and stores)
+    --------->  Digital Twin (data analysis system)
 
 A ``Node`` streams data to the ``Receiver`` via bluetooth. The ``Receiver`` writes the bytestream directly to a serial
 port. The ``Gateway`` (this library) reads the bytestream from the serial port, decodes it and buffers it in local
-storage. The ``Gateway`` then is responsible for:
+storage.
 
-- establishing a connection (websocket) to ``Ingress`` and writing the buffered data, or
-- packaging the data into events and files which are posted to ``Ingress``.
+The ``Gateway`` then is responsible for batching the data (in time windows) the data into events and files which are posted to ``Ingress``.
 
 The ``Gateway`` is also responsible for managing the buffer and local storage to minimise data loss in the event of
 internet outages.

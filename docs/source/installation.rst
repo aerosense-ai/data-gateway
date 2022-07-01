@@ -4,13 +4,20 @@
 Installation
 ============
 
+.. _fleet:
+
+The device fleet
+================
+
+An organisation, 'aerosense', is set up on `balenaCloud <https://dashboard.balena-cloud.com/orgs/257900>`_. Within 
+
+
 .. _installing_on_a_raspberry_pi:
 
 Installing on a Raspberry Pi 4
 ==============================
 
-Although **data-gateway** can be run on a wide range of hardware, it's generally aimed at being run on a Raspberry Pi
-on board a turbine nacelle.
+Although **data-gateway** can be run on a wide range of hardware, it's generally aimed at being run on a Raspberry Pi.
 
 It's anticipated that you're using:
     - Raspberry Pi 4
@@ -40,6 +47,8 @@ Installing on Other Hardware
 
 There's no reason **data-gateway** can't be run on a wide range of hardware, although we've only tested it for the
 Raspberry Pi 4, which has a quad-core processor.
+
+BalenaCloud will manage a wide range of devices within your fleet.
 
 The main consideration when choosing other hardware is that a dual-core CPU is probably a conservative choice:
 **data-gateway** uses three processes and multiple threads. Additional vCPUs will always reduce the likelihood of the
