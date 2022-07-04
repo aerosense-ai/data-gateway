@@ -108,7 +108,7 @@ class TestPacketReader(BaseTestCase):
                     ("Command declined, %s", "Bad block detection ongoing"),
                     ("Command declined, %s", "Task already registered, cannot register again"),
                     ("Command declined, %s", "Task is not registered, cannot de-register"),
-                    ("Command declined, %s", "Connection Parameter update unfinished"),
+                    ("Command declined, %s", "Connection parameter update unfinished"),
                     ("\n%s\n", "Exiting sleep"),
                     ("\n%s\n", "Entering sleep"),
                 ]:
