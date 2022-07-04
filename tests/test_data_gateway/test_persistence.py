@@ -306,19 +306,23 @@ class TestBatchingUploader(BaseTestCase):
         """Test that metadata is added to uploaded files and can be retrieved."""
         node_id = "0"
 
-        uploader = BatchingUploader(
-            node_ids=[node_id],
-            bucket_name=TEST_BUCKET_NAME,
-            window_size=0.01,
-            output_directory=f"this-session-{uuid.uuid4()}",
-            metadata={"big": "rock"},
-        )
+        try:
+            uploader = BatchingUploader(
+                node_ids=[node_id],
+                bucket_name=TEST_BUCKET_NAME,
+                window_size=0.01,
+                output_directory=f"this-session-{uuid.uuid4()}",
+                metadata={"big": "rock"},
+            )
 
-        with uploader:
-            uploader.add_to_current_window(node_id=node_id, sensor_name="test", data="ping")
+            with uploader:
+                uploader.add_to_current_window(node_id=node_id, sensor_name="test", data="ping")
 
-        metadata = self.storage_client.get_metadata(
-            cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"),
-        )
+            metadata = self.storage_client.get_metadata(
+                cloud_path=storage.path.generate_gs_path(TEST_BUCKET_NAME, uploader.output_directory, "window-0.json"),
+            )
 
-        self.assertEqual(metadata["custom_metadata"], {"big": "rock"})
+            self.assertEqual(metadata["custom_metadata"], {"big": "rock"})
+
+        finally:
+            shutil.rmtree(uploader.output_directory)
