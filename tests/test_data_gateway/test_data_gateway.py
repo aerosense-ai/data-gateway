@@ -181,6 +181,64 @@ class TestDataGateway(BaseTestCase):
         finally:
             self._delete_temporary_output_directories()
 
+    def test_with_two_nodes(self):
+        """Test receiving data from different sensors on two separate nodes."""
+        serial_port = DummySerial(port="test")
+
+        packet_types = {
+            "0": (bytes([34]), bytes([36])),
+            "1": (bytes([38]), bytes([42]), bytes([44]), bytes([46])),
+        }
+
+        sensor_names = {
+            "0": ("Baros_P", "Baros_T", "Diff_Baros"),
+            "1": ("Mics", "Acc", "Gyro", "Mag"),
+        }
+
+        # Give both nodes the default node configuration.
+        configuration = Configuration()
+        configuration.nodes["1"] = configuration.nodes["0"]
+
+        for packet_type in packet_types["0"]:
+            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+
+        first_node_leading_byte = configuration.get_leading_byte(node_id="1")
+
+        for packet_type in packet_types["1"]:
+            serial_port.write(data=b"".join((first_node_leading_byte, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((first_node_leading_byte, packet_type, LENGTH, RANDOM_BYTES[1])))
+
+        try:
+            with patch("data_gateway.data_gateway.DataGateway._load_configuration", return_value=configuration):
+                data_gateway = DataGateway(
+                    serial_port,
+                    save_locally=True,
+                    output_directory=self._generate_temporary_output_directory_name(),
+                    window_size=self.WINDOW_SIZE,
+                    bucket_name=TEST_BUCKET_NAME,
+                    stop_sensors_on_exit=False,
+                )
+
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+
+            for node_id in packet_types.keys():
+                self._check_data_is_written_to_files(
+                    data_gateway.packet_reader.local_output_directory,
+                    node_id=node_id,
+                    sensor_names=sensor_names[node_id],
+                )
+
+                self._check_windows_are_uploaded_to_cloud(
+                    data_gateway.packet_reader.cloud_output_directory,
+                    node_id=node_id,
+                    sensor_names=sensor_names[node_id],
+                    number_of_windows_to_check=1,
+                )
+
+        finally:
+            self._delete_temporary_output_directories()
+
     def _generate_temporary_output_directory_name(self):
         """Generate a temporary output directory name. A regular `tempfile` temporary directory cannot be used as, on
         Windows, the path will contain a colon, which is invalid in a cloud path. The output directories are needed
