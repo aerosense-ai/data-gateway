@@ -12,7 +12,7 @@ from data_gateway.configuration import Configuration
 from data_gateway.data_gateway import DataGateway
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.persistence import TimeBatcher
-from tests import LENGTH, RANDOM_BYTES, TEST_BUCKET_NAME, ZEROTH_NODE_PACKET_KEY
+from tests import LENGTH, RANDOM_BYTES, TEST_BUCKET_NAME, ZEROTH_NODE_LEADING_BYTE
 from tests.base import BaseTestCase
 
 
@@ -39,8 +39,8 @@ class TestDataGateway(BaseTestCase):
         serial_port = DummySerial(port="test")
         packet_type = bytes([34])
 
-        serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         try:
             data_gateway = DataGateway(
@@ -77,8 +77,8 @@ class TestDataGateway(BaseTestCase):
                 (bytes([52]), "Constat"),
             ]:
                 with self.subTest(sensor_name=sensor_name):
-                    serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-                    serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+                    serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+                    serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
                     data_gateway = DataGateway(
                         serial_port,
@@ -115,11 +115,11 @@ class TestDataGateway(BaseTestCase):
         serial_port = DummySerial(port="test")
 
         # Enter sleep state
-        serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, bytes([56]), bytes([1]), bytes([1]))))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, bytes([56]), bytes([1]), bytes([1]))))
 
         packet_type = bytes([52])
-        serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             data_gateway = DataGateway(
@@ -150,8 +150,8 @@ class TestDataGateway(BaseTestCase):
         sensor_names = ("Baros_P", "Baros_T", "Diff_Baros", "Mics", "Acc", "Gyro", "Mag")
 
         for packet_type in packet_types:
-            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         try:
             data_gateway = DataGateway(
@@ -200,8 +200,8 @@ class TestDataGateway(BaseTestCase):
         configuration.nodes["1"] = configuration.nodes["0"]
 
         for packet_type in packet_types["0"]:
-            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-            serial_port.write(data=b"".join((ZEROTH_NODE_PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         first_node_leading_byte = configuration.get_leading_byte(node_id="1")
 

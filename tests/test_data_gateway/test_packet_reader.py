@@ -3,7 +3,7 @@ import tempfile
 from unittest.mock import patch
 
 from data_gateway.packet_reader import PacketReader
-from tests import LENGTH, RANDOM_BYTES, ZEROTH_NODE_PACKET_KEY
+from tests import LENGTH, RANDOM_BYTES, ZEROTH_NODE_LEADING_BYTE
 from tests.base import BaseTestCase
 
 
@@ -16,7 +16,7 @@ class TestPacketReader(BaseTestCase):
             {
                 "node_id": "0",
                 "packet_type": bytes([0]),
-                "packet": b"".join((ZEROTH_NODE_PACKET_KEY, bytes([0]), LENGTH, RANDOM_BYTES[0])),
+                "packet": b"".join((ZEROTH_NODE_LEADING_BYTE, bytes([0]), LENGTH, RANDOM_BYTES[0])),
             }
         )
 

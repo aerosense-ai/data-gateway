@@ -14,7 +14,7 @@ if os.name != "nt":
 
 
 TEST_BUCKET_NAME = "a-bucket-name"
-ZEROTH_NODE_PACKET_KEY = Configuration().get_leading_byte(0)
+ZEROTH_NODE_LEADING_BYTE = Configuration().get_leading_byte(0)
 LENGTH = bytes([244])
 
 RANDOM_BYTES = [
