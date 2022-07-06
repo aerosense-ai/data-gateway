@@ -1,17 +1,13 @@
 # Works with python 3.6.5
 
 
-import serial
-
+import os
+import sys
+import time
+from _thread import start_new_thread
 from datetime import datetime
 
-from _thread import start_new_thread
-
-import sys
-
-import os
-
-import time
+import serial
 
 
 MICS_FREQ = 15625
@@ -39,7 +35,7 @@ NUM_NODES = 6
 
 # for interaction with the base station
 
-mode = 1  # mode = 0: Linux, mode = 1: Windows
+mode = 0  # mode = 0: Linux, mode = 1: Windows
 
 
 # for interaction with the aerosense debug
