@@ -13,7 +13,6 @@
     ["startIMU", 60.3],
 
     ["selMsgDest 3", 60.4],
-    ["getBattery", 60.5],
     ["startBaros", 60.6],
     ["startIMU", 60.7],
 
