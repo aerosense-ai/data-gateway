@@ -118,7 +118,7 @@ def gateway_cli(logger_uri, log_level):
     type=click.STRING,
     default=None,
     show_default=True,
-    help="The name of the Google Cloud Platform (GCP) storage bucket to use.",
+    help="The name of the Google Cloud Platform (GCP) storage bucket to use. This value is overridden by the environment variable GATEWAY_GCP_BUCKET_NAME if set.",
 )
 @click.option(
     "--label",
@@ -174,6 +174,7 @@ def start(
     overridden_output_dir = os.environ.get("GATEWAY_OUTPUT_DIR", None) or output_dir
     overridden_routine_file = os.environ.get("GATEWAY_ROUTINE_FILE", None) or routine_file
     overridden_stop_routine_file = os.environ.get("GATEWAY_STOP_ROUTINE_FILE", None) or stop_routine_file
+    gcp_bucket_name = os.environ.get("GATEWAY_GCP_BUCKET_NAME", None) or gcp_bucket_name
 
     data_gateway = DataGateway(
         serial_port=serial_port,
