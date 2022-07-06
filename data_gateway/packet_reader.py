@@ -210,13 +210,13 @@ class PacketReader:
                                     "Received packet from node %s with unknown type: %s ", node_id, packet_type
                                 )
                                 continue
-                            else:
-                                logger.info(
-                                    "Processing packet from node %s with type %s (%s)",
-                                    node_id,
-                                    self.handles[node_id][packet_type],
-                                    packet_type,
-                                )
+                            # else:
+                            # logger.info(
+                            #     "Processing packet from node %s with type %s (%s)",
+                            #     node_id,
+                            #     self.handles[node_id][packet_type],
+                            #     packet_type,
+                            # )
 
                             if len(packet) == 244:  # If the full data payload is received, proceed parsing it
                                 timestamp = (
