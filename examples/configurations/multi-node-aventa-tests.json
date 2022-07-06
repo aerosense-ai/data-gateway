@@ -1,5 +1,7 @@
 {
-  "gateway": {},
+  "gateway": {
+    "installation_reference": "aventa-turbine-test"
+  },
   "nodes": {
     "2": {},
     "3": {}
