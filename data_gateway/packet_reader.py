@@ -250,7 +250,7 @@ class PacketReader:
                             node_config = self.config.nodes[node_id]
 
                             if packet_type == str(node_config.type_handle_def):
-                                logger.warning("Updating handles for node %s.", node_id)
+                                logger.warning("Node %s (re)connected, updating handles.", node_id)
                                 self.update_handles(packet, node_id)
                                 continue
 
