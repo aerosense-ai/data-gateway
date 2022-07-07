@@ -94,12 +94,18 @@ class BigQueryDataset:
                     }
                 )
 
-        errors = self.client.insert_rows(table=self.client.get_table(self.table_names["sensor_data"]), rows=rows)
+        if len(rows) > 0:
 
-        if errors:
-            raise ValueError(errors)
+            errors = self.client.insert_rows(table=self.client.get_table(self.table_names["sensor_data"]), rows=rows)
 
-        logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
+            if errors:
+                raise ValueError(errors)
+
+            logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
+
+        logger.warning(
+            "Received 0 samples of sensor data, skipping insert of data to BigQuery dataset %r", self.dataset_id
+        )
 
     def record_microphone_data_location_and_metadata(
         self,
