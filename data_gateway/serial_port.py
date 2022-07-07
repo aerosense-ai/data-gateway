@@ -31,8 +31,8 @@ def get_serial_port(serial_port, configuration, use_dummy_serial_port=False):
         # The buffer size can only be set on Windows.
         if os.name == "nt":
             serial_port.set_buffer_size(
-                rx_size=configuration.serial_buffer_rx_size,
-                tx_size=configuration.serial_buffer_tx_size,
+                rx_size=configuration.gateway.serial_buffer_rx_size,
+                tx_size=configuration.gateway.serial_buffer_tx_size,
             )
         else:
             logger.debug("Serial port buffer size can only be set on Windows.")

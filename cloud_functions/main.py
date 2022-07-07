@@ -35,13 +35,14 @@ def upload_window(event, context):
     )
 
     window, window_metadata = window_handler.get_window()
-
-    unix_timestamped_window = window_handler.convert_window_timestamps_to_unix_time(window)
-    window_handler.persist_window(unix_timestamped_window["sensor_data"], window_metadata)
+    window_handler.persist_window(window, window_metadata)
 
 
 def add_sensor_type(request):
-    """Add a new sensor type to the BigQuery dataset. This is the entrypoint for the `add-sensor-type` cloud function."""
+    """Add a new sensor type to the BigQuery dataset. This is the entrypoint for the `add-sensor-type` cloud function.
+
+    :return (dict, int):
+    """
     form = AddSensorTypeForm(meta={"csrf": False})
 
     if request.method != "POST":
@@ -87,6 +88,8 @@ def add_sensor_type(request):
 def create_installation(request):
     """Create a new installation in the BigQuery dataset. This is the entrypoint for the `create-installation` cloud
     function.
+
+    :return (dict, int):
     """
     form = CreateInstallationForm(meta={"csrf": False})
 
@@ -108,9 +111,7 @@ def create_installation(request):
             dataset.add_installation(
                 reference=form.reference.data,
                 turbine_id=form.turbine_id.data,
-                blade_id=form.blade_id.data,
-                hardware_version=form.hardware_version.data,
-                sensor_coordinates=form.sensor_coordinates.data,
+                receiver_firmware_version=form.receiver_firmware_version.data,
                 location=location,
             )
 

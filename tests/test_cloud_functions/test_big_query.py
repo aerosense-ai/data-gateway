@@ -39,6 +39,7 @@ class TestBigQueryDataset(BaseTestCase):
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_data(
                 data=data,
+                node_id="0",
                 configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
                 installation_reference="turbine-1",
                 label="my-test",
@@ -49,6 +50,7 @@ class TestBigQueryDataset(BaseTestCase):
         expected_rows = [
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "microphone",
                 "sensor_value": [1, 2, 3, 4],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -57,6 +59,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "barometer",
                 "sensor_value": [6, 7, 8, 9],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -65,6 +68,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "barometer_thermometer",
                 "sensor_value": [11, 12, 13, 14],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -73,6 +77,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "accelerometer",
                 "sensor_value": [16, 17, 18, 19],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -81,6 +86,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "gyroscope",
                 "sensor_value": [21, 22, 23, 24],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -89,6 +95,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "magnetometer",
                 "sensor_value": [26, 27, 28, 29],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -97,6 +104,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "battery_voltmeter",
                 "sensor_value": [31, 32, 33, 34],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -105,6 +113,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
+                "node_id": "0",
                 "sensor_type_reference": "connection_statistics",
                 "sensor_value": [36, 37, 38, 39],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
@@ -156,9 +165,7 @@ class TestBigQueryDataset(BaseTestCase):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
                 reference="my-installation",
                 turbine_id="my-turbine",
-                blade_id="my-blade",
-                hardware_version="1.0.0",
-                sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
+                receiver_firmware_version="1.0.0",
             )
 
         self.assertEqual(
@@ -166,9 +173,7 @@ class TestBigQueryDataset(BaseTestCase):
             {
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
-                "blade_id": "my-blade",
-                "hardware_version": "1.0.0",
-                "sensor_coordinates": '{"my-sensor": [[0, 1, 2], [3, 8, 7]]}',
+                "receiver_firmware_version": "1.0.0",
                 "location": None,
             },
         )
@@ -186,9 +191,7 @@ class TestBigQueryDataset(BaseTestCase):
                 dataset.add_installation(
                     reference="my-installation",
                     turbine_id="my-turbine",
-                    blade_id="my-blade",
-                    hardware_version="1.0.0",
-                    sensor_coordinates={"my-sensor": [[0, 1, 2], [3, 8, 7]]},
+                    receiver_firmware_version="1.0.0",
                 )
 
     def test_add_configuration(self):
@@ -199,7 +202,7 @@ class TestBigQueryDataset(BaseTestCase):
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_configuration(
-                configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
+                configuration={"nodes": {"0": {"blah": "blah"}}, "gateway": {"stuff": "data"}}
             )
 
         del mock_big_query_client.rows[0][0]["id"]
@@ -207,10 +210,10 @@ class TestBigQueryDataset(BaseTestCase):
         self.assertEqual(
             mock_big_query_client.rows[0][0],
             {
-                "software_configuration": '{"blah": "blah"}',
-                "software_configuration_hash": "68f975983c497fbf847a7b55deae52b4c44aeab40f28a23e765512a9d2990ec5",
-                "installation_data": '{"stuff": "data"}',
-                "installation_data_hash": "6076cf0f824bcf1a887a96c75c1a33ec720ea271776f03e8168df3feed983c91",
+                "nodes_configuration": '{"0": {"blah": "blah"}}',
+                "nodes_configuration_hash": "1aea08f4603f76a55d3267dd40c310e14787a8d64663a72cfc62f58152e44504",
+                "gateway_configuration": '{"stuff": "data"}',
+                "gateway_configuration_hash": "6076cf0f824bcf1a887a96c75c1a33ec720ea271776f03e8168df3feed983c91",
             },
         )
 
@@ -226,7 +229,7 @@ class TestBigQueryDataset(BaseTestCase):
 
             with self.assertRaises(ConfigurationAlreadyExists):
                 configuration_id = dataset.add_configuration(
-                    configuration={"blah": "blah", "installation_data": {"stuff": "data"}}
+                    configuration={"nodes": {"0": {"blah": "blah"}}, "gateway": {"stuff": "data"}}
                 )
 
                 self.assertEqual(configuration_id, existing_configuration_id)

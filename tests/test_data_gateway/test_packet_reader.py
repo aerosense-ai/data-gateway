@@ -3,7 +3,7 @@ import tempfile
 from unittest.mock import patch
 
 from data_gateway.packet_reader import PacketReader
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
+from tests import LENGTH, RANDOM_BYTES, ZEROTH_NODE_LEADING_BYTE
 from tests.base import BaseTestCase
 
 
@@ -11,7 +11,14 @@ class TestPacketReader(BaseTestCase):
     def test_error_is_logged_if_unknown_sensor_type_packet_is_received(self):
         """Test that an error is logged if an unknown sensor type packet is received."""
         queue = multiprocessing.Queue()
-        queue.put({"packet_type": bytes([0]), "packet": b"".join((PACKET_KEY, bytes([0]), LENGTH, RANDOM_BYTES[0]))})
+
+        queue.put(
+            {
+                "node_id": "0",
+                "packet_type": bytes([0]),
+                "packet": b"".join((ZEROTH_NODE_LEADING_BYTE, bytes([0]), LENGTH, RANDOM_BYTES[0])),
+            }
+        )
 
         packet_reader = PacketReader(
             save_locally=False,
@@ -26,7 +33,7 @@ class TestPacketReader(BaseTestCase):
                 stop_when_no_more_data_after=0.1,
             )
 
-        self.assertIn("Received packet with unknown type: ", mock_logger.method_calls[1].args[0])
+        self.assertIn("unknown type: ", mock_logger.method_calls[1].args[0])
 
     def test_update_handles_fails_if_start_and_end_handles_are_incorrect(self):
         """Test that an error is raised if the start and end handles are incorrect when trying to update handles."""
@@ -41,9 +48,9 @@ class TestPacketReader(BaseTestCase):
         )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
-            packet_reader.update_handles(packet)
+            packet_reader.update_handles(packet, 0)
 
-        self.assertIn("Handle error", mock_logger.method_calls[0].args[0])
+        self.assertIn("Error while updating handles for node", mock_logger.method_calls[0].args[0])
 
     def test_update_handles(self):
         """Test that the handles can be updated."""
@@ -57,7 +64,7 @@ class TestPacketReader(BaseTestCase):
         )
 
         with patch("data_gateway.packet_reader.logger") as mock_logger:
-            packet_reader.update_handles(packet)
+            packet_reader.update_handles(packet, 0)
 
         self.assertIn("Successfully updated handles", mock_logger.method_calls[0].args[0])
 
@@ -76,7 +83,7 @@ class TestPacketReader(BaseTestCase):
 
         for index, packet_type in enumerate(packet_types):
             for packet in packets[index]:
-                queue.put({"packet_type": str(int.from_bytes(packet_type, "little")), "packet": packet})
+                queue.put({"node_id": "0", "packet_type": str(int.from_bytes(packet_type, "little")), "packet": packet})
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -101,10 +108,8 @@ class TestPacketReader(BaseTestCase):
                     ("Command declined, %s", "Bad block detection ongoing"),
                     ("Command declined, %s", "Task already registered, cannot register again"),
                     ("Command declined, %s", "Task is not registered, cannot de-register"),
-                    ("Command declined, %s", "Connection Parameter update unfinished"),
+                    ("Command declined, %s", "Connection parameter update unfinished"),
                     ("\n%s\n", "Exiting sleep"),
                     ("\n%s\n", "Entering sleep"),
-                    ("Battery info",),
-                    ("Voltage : %fV\n Cycle count: %f\nState of charge: %f%%", 0.0, 0.0, 0.0),
                 ]:
                     self.assertIn(message, log_messages)

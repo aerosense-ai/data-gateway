@@ -1,0 +1,9 @@
+version: "2"
+volumes:
+  resin-data:
+services:
+  main:
+    build: .
+    privileged: true
+    volumes:
+      - "resin-data:/data"

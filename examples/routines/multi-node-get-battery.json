@@ -1,0 +1,10 @@
+{
+  "commands": [
+    ["selMsgDest 3", 0.1],
+    ["getBattery", 0.2],
+    ["selMsgDest 4", 1.1],
+    ["getBattery", 1.2],
+    ["selMsgDest 5", 2.1],
+    ["getBattery", 2.2]
+  ]
+}

@@ -57,7 +57,7 @@ repos:
         language_version: python3
         args:
           - "^main$"
-          - "^development$"
+          - "^test$"
           - "^devops/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
           - "^doc/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
           - "^feature/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
@@ -66,7 +66,6 @@ repos:
           - "^review/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
           - "^refactor/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
           - "^enhancement/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
-          - "^test/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
           - "^dependencies/([a-z][a-z0-9]*)(-[a-z0-9]+)*$"
 
   - repo: https://github.com/octue/pre-commit-hooks

@@ -1,16 +1,21 @@
-DEFAULT_SENSOR_NAMES = (
-    [
-        "Mics",
-        "Baros_P",
-        "Baros_T",
-        "Diff_Baros",
-        "Acc",
-        "Gyro",
-        "Mag",
-        "Analog Vbat",
-        "Constat",
-    ],
-)
+import copy
+
+from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
+
+
+BASE_STATION_ID = "base-station"
+
+DEFAULT_SENSOR_NAMES = [
+    "Mics",
+    "Baros_P",
+    "Baros_T",
+    "Diff_Baros",
+    "Acc",
+    "Gyro",
+    "Mag",
+    "Analog Vbat",
+    "Constat",
+]
 
 DEFAULT_DEFAULT_HANDLES = {
     "34": "Abs. baros",
@@ -25,19 +30,38 @@ DEFAULT_DEFAULT_HANDLES = {
     "52": "Constat",
     "54": "Cmd Decline",
     "56": "Sleep State",
-    "58": "Info Message",
+    "58": "Remote Info Message",
+    "60": "Timestamp Packet 0",
+    "62": "Timestamp Packet 1",
+    "64": "Local Info Message",
 }
 
 DEFAULT_DECLINE_REASONS = {
     "0": "Bad block detection ongoing",
     "1": "Task already registered, cannot register again",
     "2": "Task is not registered, cannot de-register",
-    "3": "Connection Parameter update unfinished",
+    "3": "Connection parameter update unfinished",
+    "4": "Not ready to sleep",
+    "5": "Not in sleep",
 }
 
 DEFAULT_SLEEP_STATES = {"0": "Exiting sleep", "1": "Entering sleep"}
 
-DEFAULT_INFO_TYPES = {"0": "Battery info"}
+DEFAULT_REMOTE_INFO_TYPES = {"0": "Battery info"}
+
+DEFAULT_LOCAL_INFO_TYPES = {
+    "0": "Synchronization not ready as not every sensor node is connected",
+    "1": "Time synchronization info",
+    "2": "Time sync exception",
+    "4": "Time sync coarse data record error",
+    "8": "Time sync alignment error",
+    "16": "Time sync coarse data time diff error",
+    "32": "Device not connected",
+    "64": "Select message destination successful",
+    "128": "Time sync success",
+    "129": "Coarse sync finish",
+    "130": "Time sync msg sent",
+}
 
 DEFAULT_SAMPLES_PER_PACKET = {
     "Mics": 8,
@@ -50,7 +74,6 @@ DEFAULT_SAMPLES_PER_PACKET = {
     "Analog Vbat": 60,
     "Constat": 24,
 }
-
 
 DEFAULT_SENSOR_CONVERSION_CONSTANTS = {
     "Mics": 1,
@@ -87,7 +110,7 @@ DEFAULT_NUMBER_OF_SENSORS = {
     "Acc": 3,
     "Gyro": 3,
     "Mag": 3,
-    "Analog Vbat": 1,
+    "Analog Vbat": 2,
     "Constat": 4,
 }
 
@@ -104,8 +127,9 @@ class GatewayConfiguration:
     :param str installation_reference: A unique reference (id) for the current installation
     :param float latitude: The latitude of the turbine in WGS84 coordinate system
     :param float longitude: The longitude of the turbine in WGS84 coordinate system
-    :param int packet_key_offset: The value from which each node's packet key is calculated (packet_key = node_id + packet_key_offset)
-    :param str receiver_firmware_version: The version ofthe firmware running on the gateway receiver, if known.
+    :param int packet_key: The prefix value for packets received from the base station (i.e. not from a node)
+    :param int packet_key_offset: The base prefix value for packets received from nodes (node_packet_key = node_id + packet_key_offset)
+    :param str receiver_firmware_version: The version of the firmware running on the gateway receiver, if known.
     :param int serial_buffer_rx_size: serial receiving buffer size in bytes
     :param int serial_buffer_tx_size: serial transmitting buffer size in bytes
     :param str turbine_id: A unique id for the turbine on which this is installed
@@ -119,6 +143,7 @@ class GatewayConfiguration:
         installation_reference="unknown",
         latitude=0,
         longitude=0,
+        packet_key=254,
         packet_key_offset=245,
         receiver_firmware_version="unknown",
         serial_buffer_rx_size=4095,
@@ -134,32 +159,48 @@ class GatewayConfiguration:
         self.serial_buffer_tx_size = serial_buffer_tx_size
         self.turbine_id = turbine_id
         self.receiver_firmware_version = receiver_firmware_version
+        self.packet_key = packet_key
         self.packet_key_offset = packet_key_offset
+
+    def to_dict(self):
+        """Convert the configuration to a dictionary.
+
+        :return dict:
+        """
+        return vars(self)
 
 
 class NodeConfiguration:
     """A data class containing configured/default values for a sensor node
+
     :param float acc_freq: accelerometers sampling frequency
     :param float acc_range: TODO nobody seems to know...
     :param float analog_freq: analog sensors sampling frequency
-    :param float baros_freq: barometers sampling frequency
     :param float baros_bm: TODO nobody seems to know...
-    :param float diff_baros_freq: differential barometers sampling frequency
+    :param float baros_freq: barometers sampling frequency
     :param str blade_id: The id of the blade on which the node is mounted, if known
     :param float constat_period: period of incoming connection statistic parameters in ms
+    :param dict|None decline_reason:
+    :param float diff_baros_freq: differential barometers sampling frequency
+    :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO nobody seems to know...
-    :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
-    :param float max_timestamp_slack: TODO   # 5ms
-    :param float mics_bm: TODO nobody seems to know...
+    :param dict|None local_info_type: A map of labels to the type of information received from base station
+    :param float mag_freq:
     :param float mics_freq: microphones sampling frequency
+    :param float mics_bm: TODO nobody seems to know...
+    :param float max_timestamp_slack: TODO   # 5ms
+    :param float max_period_drift: TODO   # 2% difference between IMU clock and CPU clock allowed
     :param str node_firmware_version: The verison of the firmware on the node, if known.
-    :param int type_handle_def: TODO
-    :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param dict|None number_of_sensors: A map for each sensor, giving the number of samples expected from that sensor
+    :param dict|None remote_info_type: A map of labels to the type of information received from remote node
     :param dict|None samples_per_packet: A map for each sensor, giving the number of samples sent in a packet from that sensor
     :param dict|None sensor_commands:
+    :param dict|None sensor_conversion_constants:
+    :param dict|None sensor_coordinates:
     :param list|None sensor_names: List of sensors present on the measurement node
+    :param dict|None sleep_state:
+    :param int type_handle_def: TODO
     :return None:
     """
 
@@ -177,7 +218,7 @@ class NodeConfiguration:
         default_handles=None,
         gyro_freq=100,
         gyro_range=2000,
-        info_type=None,
+        local_info_type=None,
         mag_freq=12.5,
         mics_freq=15625,
         mics_bm=0x3FF,
@@ -185,6 +226,7 @@ class NodeConfiguration:
         max_period_drift=0.02,
         node_firmware_version="unknown",
         number_of_sensors=None,
+        remote_info_type=None,
         samples_per_packet=None,
         sensor_commands=None,
         sensor_conversion_constants=None,
@@ -215,7 +257,8 @@ class NodeConfiguration:
         # Set default dictionaries
         self.decline_reason = decline_reason or DEFAULT_DECLINE_REASONS
         self.default_handles = default_handles or DEFAULT_DEFAULT_HANDLES
-        self.info_type = info_type or DEFAULT_INFO_TYPES
+        self.remote_info_type = remote_info_type or DEFAULT_REMOTE_INFO_TYPES
+        self.local_info_type = local_info_type or DEFAULT_LOCAL_INFO_TYPES
         self.number_of_sensors = number_of_sensors or DEFAULT_NUMBER_OF_SENSORS
         self.samples_per_packet = samples_per_packet or DEFAULT_SAMPLES_PER_PACKET
         self.sensor_commands = sensor_commands or DEFAULT_SENSOR_COMMANDS
@@ -226,14 +269,27 @@ class NodeConfiguration:
         # Set calculated defaults
         self.sensor_coordinates = sensor_coordinates or self._get_default_sensor_coordinates()
 
+        for sensor, coordinates in self.sensor_coordinates.items():
+            number_of_sensors = self.number_of_sensors[sensor]
+
+            if len(coordinates) != number_of_sensors:
+                raise WrongNumberOfSensorCoordinatesError(
+                    f"The number of sensors for the {sensor!r} sensor type is {number_of_sensors} but coordinates "
+                    f"were only given for {len(coordinates)} sensors. Coordinates must be given for every sensor."
+                )
+
         # Ensure conversion constants are consistent
         self._expand_sensor_conversion_constants()
 
         # Validate the final configuration
         self._check()
 
-    def get_periods(self):
-        """Return a dict of periods (in s) for each of the sensors, computed from the sensor frequencies"""
+    @property
+    def periods(self):
+        """Get the period in seconds for each sensor (computed from the sensor frequencies).
+
+        :return dict:
+        """
         return {
             "Mics": 1 / self.mics_freq,
             "Baros_P": 1 / self.baros_freq,
@@ -247,8 +303,11 @@ class NodeConfiguration:
         }
 
     def to_dict(self):
-        """Serialise the configuration to a dictionary."""
-        return vars(self)
+        """Serialise the configuration to a dictionary.
+
+        :return dict:
+        """
+        return {**vars(self), "periods": self.periods}
 
     def _get_default_sensor_coordinates(self):
         return {
@@ -294,14 +353,7 @@ class Configuration:
     :return None:
     """
 
-    def __init__(
-        self,
-        gateway=None,
-        nodes=None,
-        session=None,
-        **kwargs,
-    ):
-        # Set up the gateway configuration
+    def __init__(self, gateway=None, nodes=None, session=None, **kwargs):
         gateway_configuration = gateway or {}
         self.gateway = GatewayConfiguration(**gateway_configuration)
 
@@ -311,38 +363,79 @@ class Configuration:
                 "old-format configuration file?"
             )
 
-        # Set up a single-node default in the absence of any nodes at all
+        # Set up a single-node default in the absence of any nodes at all.
         self.nodes = {}
 
         if nodes is None:
-            self.nodes[0] = NodeConfiguration()
+            self.nodes["0"] = NodeConfiguration()
         else:
-            for key, value in nodes.items():
-                node_id = int(key)
-                self.nodes[node_id] = NodeConfiguration(**value)
+            for node_id, node in nodes.items():
+                self.nodes[str(node_id)] = NodeConfiguration(**node)
 
-        # Set up the session-specific data as empty
+        # Set up the session-specific data as empty.
         self.session = session or DEFAULT_SESSION
 
-    def get_packet_key(self, node_id, as_bytes=False):
-        """Return the packet key for a given node, computed from the packet key offset
-        :param int node_id: The node ID for which you want the packet key
-        :param bool as_bytes: Convert the package key to the bytes representation
-        :return int|bytes: The packet key for a given node_id
-        """
-        packet_key = self.gateway.packet_key_offset + node_id
-        if as_bytes:
-            packet_key = packet_key.to_bytes(1, self.gateway.endian)
+    @classmethod
+    def from_dict(cls, dictionary):
+        """Construct a configuration from a dictionary. Note that a dictionary for each sub-configurations is required
+        - the construction will fail if any are missing.
 
-        return packet_key
+        :param dict dictionary:
+        :return Configuration:
+        """
+        dictionary = copy.deepcopy(dictionary)
+
+        for node in dictionary["nodes"].values():
+            if "periods" in node:
+                node.pop("periods")
+
+        return cls(
+            gateway=dictionary["gateway"],
+            nodes=dictionary["nodes"],
+            session=dictionary["session"],
+        )
 
     @property
     def node_ids(self):
-        """Access a list of node ids in the current configuration
+        """Get the IDs of the nodes in the current configuration.
+
         :return list: A list of node ids
         """
         return list(self.nodes)
 
+    def get_leading_byte(self, node_id=None):
+        """Get the leading byte for a given node ID or for base station packets by default. Uses the packet key and the
+        packet key offset.
+
+        :param int|str node_id: The node ID for which you want the packet key
+        :return bytes: The leading byte for packets from the given node or the base station
+        """
+        if node_id is None:
+            return self.gateway.packet_key.to_bytes(1, "little")
+
+        node_packet_key = self.gateway.packet_key_offset + int(node_id)
+        return node_packet_key.to_bytes(1, self.gateway.endian)
+
+    @property
+    def leading_bytes_map(self):
+        """Access a dict that maps leading bytes to node_ids (or the base station id)
+
+        :return dict:
+        """
+        nodes = {self.get_leading_byte(node_id): node_id for node_id in self.node_ids}
+
+        return {
+            self.get_leading_byte(): BASE_STATION_ID,
+            **nodes,
+        }
+
     def to_dict(self):
-        """Serialise the configuration to a dictionary."""
-        return vars(self)
+        """Serialise the configuration to a dictionary.
+
+        :return dict:
+        """
+        return {
+            "gateway": self.gateway.to_dict(),
+            "nodes": {name: node.to_dict() for name, node in self.nodes.items()},
+            "session": self.session,
+        }
