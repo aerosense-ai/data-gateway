@@ -60,7 +60,7 @@ jobs:
           entry_point: upload_window
           runtime: python39
           region: europe-west6
-          credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
+          memory: 1GB
           env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined,DESTINATION_BUCKET_NAME=data-gateway-processed-data,SOURCE_PROJECT_NAME=aerosense-twined
           source_dir: cloud_functions
           event_trigger_type: google.storage.object.finalize
