@@ -58,7 +58,7 @@ class WindowHandler:
         logger.info("Downloaded window %r.", self.window_cloud_path)
 
         cloud_metadata = self.source_client.get_metadata(self.window_cloud_path)
-        logger.info("Custom metadata (logged for debugging upload race condition): %s", json.dumps(cloud_metadata))
+        logger.info("Custom metadata (logged for debugging upload race condition): %s", cloud_metadata)
         window_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
 
         logger.info("Downloaded metadata for window %r.", self.window_cloud_path)
