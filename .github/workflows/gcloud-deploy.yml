@@ -36,25 +36,28 @@ jobs:
         with:
           name: ${{ steps.prefix.outputs.name_prefix }}add-sensor-type
           description: Allows addition of a new sensor type whose values will be accepted into the database
+          entry_point: add_sensor_type
           runtime: python39
           region: europe-west6
           env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
           source_dir: cloud_functions
 
       - id: deploy-create-installation
-        uses: google-github-actions/deploy-cloud-functions@main
+        uses: google-github-actions/deploy-cloud-functions@v0
         with:
           name: ${{ steps.prefix.outputs.name_prefix }}create-installation
           description: Allows creation of a new installation
+          entry_point: create_installation
           runtime: python39
           region: europe-west6
           env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
           source_dir: cloud_functions
 
       - id: deploy-ingress-eu
-        uses: google-github-actions/deploy-cloud-functions@main
+        uses: google-github-actions/deploy-cloud-functions@v0
         with:
           name: ${{ steps.prefix.outputs.name_prefix }}ingress-eu
+          entry_point: upload_window
           runtime: python39
           region: europe-west6
           credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
