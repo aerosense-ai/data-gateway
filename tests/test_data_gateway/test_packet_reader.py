@@ -109,7 +109,7 @@ class TestPacketReader(BaseTestCase):
                     ("Command declined, %s", "Task already registered, cannot register again"),
                     ("Command declined, %s", "Task is not registered, cannot de-register"),
                     ("Command declined, %s", "Connection parameter update unfinished"),
-                    ("\n%s\n", "Exiting sleep"),
-                    ("\n%s\n", "Entering sleep"),
+                    ("Sleep state updated on node %s: %s", "0", "Exiting sleep"),
+                    ("Sleep state updated on node %s: %s", "0", "Entering sleep"),
                 ]:
                     self.assertIn(message, log_messages)
