@@ -1,0 +1,53 @@
+name: gcloud-deploy
+
+on:
+  push:
+    branches:
+      - main
+      - test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        uses: actions/checkout@v2
+
+      - name: Get prefix (test- or nothing for production)
+        id: prefix
+        run: |
+          if [ "${{ github.ref }}" = "main" ]; then
+            echo "::set-output name=name_prefix::"
+          else
+            echo "::set-output name=name_prefix::test-"
+          fi
+
+      - id: deploy-add-sensor-type
+        uses: google-github-actions/deploy-cloud-functions@main
+        with:
+          name: ${{ steps.prefix.outputs.name_prefix }}add-sensor-type
+          runtime: python39
+          region: europe-west6
+          credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
+          env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          source_dir: cloud_functions
+
+      - id: deploy-create-installation
+        uses: google-github-actions/deploy-cloud-functions@main
+        with:
+          name: ${{ steps.prefix.outputs.name_prefix }}create-installation
+          runtime: python39
+          region: europe-west6
+          credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
+          env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          source_dir: cloud_functions
+
+      - id: deploy-ingress-eu
+        uses: google-github-actions/deploy-cloud-functions@main
+        with:
+          name: ${{ steps.prefix.outputs.name_prefix }}ingress-eu
+          runtime: python39
+          region: europe-west6
+          credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
+          env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined,DESTINATION_BUCKET_NAME=data-gateway-processed-data,SOURCE_PROJECT_NAME=aerosense-twined
+          source_dir: cloud_functions
