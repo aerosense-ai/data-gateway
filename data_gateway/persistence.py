@@ -5,6 +5,7 @@ import json
 import multiprocessing
 import os
 import time
+from collections import defaultdict
 
 from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
@@ -40,7 +41,7 @@ class NoOperationContextManager:
 class TimeBatcher:
     """A batcher that groups the given data into time windows.
 
-    :param iter(str) sensor_names: names of sensors to group data for
+    :param iter(str) node_ids: the IDs of the nodes that data is being persisted for
     :param float window_size: length of time window in seconds
     :param str output_directory: directory to write windows to
     :return None:
@@ -48,11 +49,12 @@ class TimeBatcher:
 
     _file_prefix = "window"
 
-    def __init__(self, sensor_names, window_size, output_directory=DEFAULT_OUTPUT_DIRECTORY):
-        self.current_window = {"sensor_time_offset": None, "sensor_data": {name: [] for name in sensor_names}}
+    def __init__(self, node_ids, window_size, output_directory=DEFAULT_OUTPUT_DIRECTORY):
+        self._node_ids = node_ids
+        self.current_window = {node_id: defaultdict(list) for node_id in self._node_ids}
+        self.ready_window = {node_id: defaultdict(list) for node_id in self._node_ids}
         self.window_size = window_size
         self.output_directory = output_directory
-        self.ready_window = {"sensor_time_offset": None, "sensor_data": {}}
         self._start_time = time.perf_counter()
         self._window_number = 0
 
@@ -62,9 +64,10 @@ class TimeBatcher:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.force_persist()
 
-    def add_to_current_window(self, sensor_name, data):
+    def add_to_current_window(self, node_id, sensor_name, data):
         """Add data to the current window for the given sensor name.
 
+        :param str node_id: the ID of the node the data is from
         :param str sensor_name: name of sensor
         :param iter data: data to add to window
         :return None:
@@ -76,7 +79,7 @@ class TimeBatcher:
             self._prepare_for_next_window()
 
         # Then add data to the current/new window.
-        self.current_window["sensor_data"][sensor_name].append(data)
+        self.current_window[node_id][sensor_name].append(data)
 
     def finalise_current_window(self):
         """Finalise the current window for the given sensor name. This puts the current window into the queue of ready
@@ -84,10 +87,11 @@ class TimeBatcher:
 
         :return None:
         """
-        for sensor_name, data in self.current_window["sensor_data"].items():
-            if data:
-                self.ready_window["sensor_data"][sensor_name] = copy.deepcopy(data)
-                data.clear()
+        for node_id in self.current_window:
+            for sensor_name, data in self.current_window[node_id].items():
+                if data:
+                    self.ready_window[node_id][sensor_name] = copy.deepcopy(data)
+                    data.clear()
 
     def force_persist(self):
         """Persist all current windows, regardless of whether a complete time window has passed.
@@ -112,7 +116,7 @@ class TimeBatcher:
         :return None:
         """
         self._window_number += 1
-        self.ready_window["sensor_data"] = {}
+        self.ready_window = {node_id: defaultdict(list) for node_id in self._node_ids}
         self._start_time = time.perf_counter()
 
     @abc.abstractmethod
@@ -128,8 +132,9 @@ class TimeBatcher:
 class BatchingFileWriter(TimeBatcher):
     """A file writer that groups the given into time windows, saving each window to disk.
 
-    :param iter(str) sensor_names: names of sensors to make windows for
+    :param iter(str) node_ids: the IDs of the nodes that data is being persisted for
     :param float window_size: length of time window in seconds
+    :param bool save_csv_files:
     :param str output_directory: directory to write windows to
     :param int storage_limit: storage limit in bytes (default is 1 GB)
     :return None:
@@ -137,15 +142,15 @@ class BatchingFileWriter(TimeBatcher):
 
     def __init__(
         self,
-        sensor_names,
+        node_ids,
         window_size,
         save_csv_files=False,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
-        storage_limit=1024 ** 3,
+        storage_limit=1024**3,
     ):
         self._save_csv_files = save_csv_files
         self.storage_limit = storage_limit
-        super().__init__(sensor_names, window_size, output_directory)
+        super().__init__(node_ids, window_size, output_directory)
         os.makedirs(self.output_directory, exist_ok=True)
         logger.info("Windows will be saved to %r at intervals of %s seconds.", self.output_directory, self.window_size)
 
@@ -166,14 +171,15 @@ class BatchingFileWriter(TimeBatcher):
         logger.info("%s %d written to disk.", self._file_prefix.capitalize(), self._window_number)
 
         if self._save_csv_files:
-            for sensor in window["sensor_data"]:
-                csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
-                logger.info("Saving %s data to csv file.", sensor)
+            for node_id in window:
+                for sensor in window[node_id]:
+                    csv_path = os.path.join(os.path.dirname(window_path), f"{sensor}.csv")
+                    logger.info("Saving %s data to csv file.", sensor)
 
-                with open(csv_path, "w", newline="") as f:
-                    writer = csv.writer(f, delimiter=",")
-                    for row in self.ready_window["sensor_data"][sensor]:
-                        writer.writerow(row)
+                    with open(csv_path, "w", newline="") as f:
+                        writer = csv.writer(f, delimiter=",")
+                        for row in self.ready_window[node_id][sensor]:
+                            writer.writerow(row)
 
     def _manage_storage(self):
         """Check if the output directory has reached its storage limit and, if it has, delete the oldest window.
@@ -181,7 +187,7 @@ class BatchingFileWriter(TimeBatcher):
         :return None:
         """
         filter = lambda path: os.path.split(path)[-1].startswith("window")  # noqa
-        storage_limit_in_mb = self.storage_limit / 1024 ** 2
+        storage_limit_in_mb = self.storage_limit / 1024**2
 
         if calculate_disk_usage(self.output_directory, filter) >= self.storage_limit:
             oldest_window = get_oldest_file_in_directory(self.output_directory, filter)
@@ -211,7 +217,7 @@ class BatchingUploader(TimeBatcher):
     Storage.  If upload fails for a window, it will be written to the backup directory. If the `upload_backup_files`
     flag is `True`, its upload will then be reattempted after the upload of each subsequent window.
 
-    :param iter(str) sensor_names: names of sensors to group data for
+    :param iter(str) node_ids: the IDs of the nodes that data is being persisted for
     :param str bucket_name: name of Google Cloud bucket to upload to
     :param float window_size: length of time window in seconds
     :param str output_directory: directory to write windows to
@@ -222,7 +228,7 @@ class BatchingUploader(TimeBatcher):
 
     def __init__(
         self,
-        sensor_names,
+        node_ids,
         bucket_name,
         window_size,
         output_directory=DEFAULT_OUTPUT_DIRECTORY,
@@ -235,10 +241,10 @@ class BatchingUploader(TimeBatcher):
         self.metadata = metadata or {}
         self.upload_timeout = upload_timeout
         self.upload_backup_files = upload_backup_files
-        super().__init__(sensor_names, window_size, output_directory)
+        super().__init__(node_ids, window_size, output_directory)
 
         self._backup_directory = os.path.join(self.output_directory, ".backup")
-        self._backup_writer = BatchingFileWriter(sensor_names, window_size, output_directory=self._backup_directory)
+        self._backup_writer = BatchingFileWriter(node_ids, window_size, output_directory=self._backup_directory)
 
         logger.info(
             "Windows will be uploaded to %r at intervals of %s seconds.", self.output_directory, self.window_size
@@ -250,6 +256,9 @@ class BatchingUploader(TimeBatcher):
         :return None:
         """
         try:
+            logger.info(
+                "Uploading window to bucket_name %s with path %s", self.bucket_name, self._generate_window_path()
+            )
             self.client.upload_from_string(
                 string=json.dumps(self.ready_window),
                 cloud_path=storage.path.generate_gs_path(self.bucket_name, self._generate_window_path()),

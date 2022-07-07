@@ -23,9 +23,12 @@ You'll need to install Raspberry Pi OS (formerly "Raspbian", which was a much be
 When booted into your **pi**, use the following commands to install...
 
 .. code-block:: shell
+   sudo apt-get update
+   sudo apt-get install libhdf5-dev libhdf5-serial-dev
 
-   export GATEWAY_VERSION="0.11.8" # Or whatever release number you aim to use, check the latest available on GitHub
-   pip install git+https://github.com/aerosense-ai/data-gateway.git@${GATEWAY_VERSION}
+   git clone https://github.com/aerosense-ai/data-gateway.git
+   cd data-gateway
+   pip install -r requirements-pi.txt
 
 This installs the CLI :ref:`gateway_cli`, which enables you to start the gateway.
 

@@ -10,7 +10,7 @@ from octue.cloud import storage
 from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
-from data_gateway import MICROPHONE_SENSOR_NAME
+from data_gateway.configuration import DEFAULT_SENSOR_NAMES
 from tests.base import DatasetMixin
 
 
@@ -27,12 +27,12 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         """Test that a window can be uploaded to a cloud bucket, its data processed by the test cloud function, and the
         results uploaded to a test BigQuery instance.
         """
-        window = self.random_window(sensors=["Constat", MICROPHONE_SENSOR_NAME], window_duration=1)
+        window = self.random_window(sensors=["Constat", DEFAULT_SENSOR_NAMES[0]], window_duration=1)
         upload_path = storage.path.generate_gs_path(os.environ["TEST_BUCKET_NAME"], "window-0.json")
 
         test_label = f"test-{uuid.uuid4()}"
         configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        configuration["session_data"]["label"] = test_label
+        configuration["session"]["label"] = test_label
 
         self.storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),

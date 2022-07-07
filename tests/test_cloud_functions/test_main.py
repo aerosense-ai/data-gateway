@@ -77,7 +77,7 @@ class TestUploadWindow(BaseTestCase):
 
         # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        del expected_configuration["session_data"]
+        del expected_configuration["session"]
         self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
         self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
 
@@ -120,7 +120,7 @@ class TestUploadWindow(BaseTestCase):
             mock_big_query_client.rows[0][0],
             {
                 "path": expected_microphone_cloud_path,
-                "project_name": "destination-project",
+                "node_id": "0",
                 "configuration_id": configuration_id,
                 "installation_reference": "aventa_turbine",
                 "label": "my-test-1",
@@ -133,14 +133,14 @@ class TestUploadWindow(BaseTestCase):
             self.assertTrue(
                 np.equal(
                     np.array(f["dataset"])[:, 1:],
-                    window["sensor_data"][MICROPHONE_SENSOR_NAME][:, 1:],
+                    window["0"][MICROPHONE_SENSOR_NAME][:, 1:],
                 ).all()
             )
 
         # Check non-microphone sensor data was added to BigQuery.
         self.assertEqual(mock_big_query_client.rows[1][0]["sensor_type_reference"], "connection_statistics")
         self.assertEqual(mock_big_query_client.rows[1][0]["configuration_id"], configuration_id)
-        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["sensor_data"]["Constat"]))
+        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["0"]["Constat"]))
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
@@ -338,16 +338,20 @@ class TestCreateInstallation(BaseTestCase):
             with self.app.test_client() as client:
 
                 for expected_error_field, data in (
-                    ("reference", {"reference": "not slugified", "hardware_version": "0.0.1"}),
-                    ("reference", {"reference": None, "hardware_version": "0.0.1"}),
-                    ("hardware_version", {"reference": "is-slugified", "hardware_version": None}),
+                    ("reference", {"reference": "not slugified", "receiver_firmware_version": "0.0.1"}),
+                    ("reference", {"reference": None, "receiver_firmware_version": "0.0.1"}),
+                    ("receiver_firmware_version", {"reference": "is-slugified", "receiver_firmware_version": None}),
                     (
                         "longitude",
-                        {"reference": "is-slugified", "hardware_version": "0.0.1", "longitude": "not-a-number"},
+                        {
+                            "reference": "is-slugified",
+                            "receiver_firmware_version": "0.0.1",
+                            "longitude": "not-a-number",
+                        },
                     ),
                     (
                         "latitude",
-                        {"reference": "is-slugified", "hardware_version": "0.0.1", "latitude": "not-a-number"},
+                        {"reference": "is-slugified", "receiver_firmware_version": "0.0.1", "latitude": "not-a-number"},
                     ),
                 ):
                     with self.subTest(expected_error_field=expected_error_field, data=data):
@@ -368,9 +372,8 @@ class TestCreateInstallation(BaseTestCase):
                     response = client.post(
                         json={
                             "reference": "hello",
-                            "hardware_version": "0.0.1",
+                            "receiver_firmware_version": "0.0.1",
                             "turbine_id": "0",
-                            "blade_id": "0",
                             "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                         }
                     )
@@ -387,9 +390,8 @@ class TestCreateInstallation(BaseTestCase):
                 response = client.post(
                     json={
                         "reference": "hello",
-                        "hardware_version": "0.0.1",
+                        "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
-                        "blade_id": "0",
                         "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                     }
                 )
@@ -402,10 +404,8 @@ class TestCreateInstallation(BaseTestCase):
         """
         data = {
             "reference": "hello",
-            "hardware_version": "0.0.1",
+            "receiver_firmware_version": "0.0.1",
             "turbine_id": "0",
-            "blade_id": "0",
-            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
             "latitude": 0,
             "longitude": 1,
         }
@@ -426,9 +426,8 @@ class TestCreateInstallation(BaseTestCase):
                 response = client.post(
                     json={
                         "reference": "hello",
-                        "hardware_version": "0.0.1",
+                        "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
-                        "blade_id": "0",
                         "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
                     }
                 )

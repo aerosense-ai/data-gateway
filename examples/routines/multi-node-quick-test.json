@@ -1,0 +1,33 @@
+{
+  "commands": [
+    ["selMsgDest 2", 5],
+    ["wakeUp", 6],
+    ["selMsgDest 3", 7],
+    ["wakeUp", 8],
+
+    ["startSync", 60],
+
+    ["selMsgDest 2", 70],
+    ["getBattery", 71],
+    ["startBaros", 72],
+
+    ["selMsgDest 3", 73],
+    ["startBaros", 74],
+
+    ["selMsgDest 2", 75],
+    ["stopBaros", 76],
+
+    ["selMsgDest 3", 78],
+    ["stopBaros", 79],
+
+    ["stopSync", 85],
+
+    ["selMsgDest 2", 90],
+    ["readSens", 91],
+    ["sleep", 120],
+
+    ["selMsgDest 3", 121],
+    ["readSens", 125],
+    ["sleep", 155]
+  ]
+}

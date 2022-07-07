@@ -1,0 +1,68 @@
+name: gcloud-deploy
+
+on:
+  push:
+    branches:
+      - main
+      - test
+
+jobs:
+  deploy:
+    permissions:
+      contents: "read"
+      id-token: "write"
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        uses: actions/checkout@v2
+
+      - name: Get prefix (test- or nothing for production)
+        id: prefix
+        run: |
+          if [ "${{ github.ref }}" = "main" ]; then
+            echo "::set-output name=name_prefix::"
+          else
+            echo "::set-output name=name_prefix::test-"
+          fi
+
+      - id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          workload_identity_provider: "projects/885434704038/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
+          service_account: "data-gateway-ci-testing@aerosense-twined.iam.gserviceaccount.com"
+
+      - id: deploy-add-sensor-type
+        uses: google-github-actions/deploy-cloud-functions@v0
+        with:
+          name: ${{ steps.prefix.outputs.name_prefix }}add-sensor-type
+          description: Allows addition of a new sensor type whose values will be accepted into the database
+          entry_point: add_sensor_type
+          runtime: python39
+          region: europe-west6
+          env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          source_dir: cloud_functions
+
+      - id: deploy-create-installation
+        uses: google-github-actions/deploy-cloud-functions@v0
+        with:
+          name: ${{ steps.prefix.outputs.name_prefix }}create-installation
+          description: Allows creation of a new installation
+          entry_point: create_installation
+          runtime: python39
+          region: europe-west6
+          env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          source_dir: cloud_functions
+
+      - id: deploy-ingress-eu
+        uses: google-github-actions/deploy-cloud-functions@v0
+        with:
+          name: ${{ steps.prefix.outputs.name_prefix }}ingress-eu
+          entry_point: upload_window
+          runtime: python39
+          region: europe-west6
+          memory: 1GB
+          env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined,DESTINATION_BUCKET_NAME=data-gateway-processed-data,SOURCE_PROJECT_NAME=aerosense-twined
+          source_dir: cloud_functions
+          event_trigger_type: google.storage.object.finalize
+          event_trigger_resource: projects/_/buckets/${{ steps.prefix.outputs.name_prefix }}aerosense-ingress-eu
+          event_trigger_service: storage.googleapis.com

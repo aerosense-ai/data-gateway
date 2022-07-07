@@ -7,15 +7,14 @@ import sys
 import threading
 import time
 
-import serial
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import stop_gateway
 from data_gateway.configuration import Configuration
-from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
 from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
+from data_gateway.serial_port import get_serial_port
 
 
 logger = multiprocessing.get_logger()
@@ -42,6 +41,7 @@ class DataGateway:
     :param str|serial.Serial serial_port: the name of the serial port or a `serial.Serial` instance to read from
     :param str configuration_path: the path to a JSON configuration file for the packet reader
     :param str routine_path: the path to a JSON routine file containing sensor commands to be run automatically
+    :param str stop_routine_path: the path to a JSON routine file containing sensor commands to be run automatically on exiot of the gateway (e.g. safe shutdown)
     :param bool save_locally: if `True`, save data windows to disk locally
     :param bool upload_to_cloud: if `True`, upload data windows to Google Cloud Storage
     :param bool interactive: if `True`, allow commands entered into `stdin` to be sent to the sensors in real time
@@ -51,6 +51,7 @@ class DataGateway:
     :param str|None label: a label to be associated with the data collected in this run of the data gateway
     :param bool save_csv_files: if `True`, also save windows locally as CSV files for debugging
     :param bool use_dummy_serial_port: if `True` use a dummy serial port for testing
+    :param bool stop_sensors_on_exit: if true, and a `stop_routine_file` path is present, hte stop routine will be executed by the gateway main thread prior to quitting
     :return None:
     """
 
@@ -59,6 +60,7 @@ class DataGateway:
         serial_port,
         configuration_path="config.json",
         routine_path="routine.json",
+        stop_routine_path="stop_routine.json",
         save_locally=False,
         upload_to_cloud=True,
         interactive=False,
@@ -85,12 +87,15 @@ class DataGateway:
         self.interactive = interactive
 
         packet_reader_configuration = self._load_configuration(configuration_path=configuration_path)
-        packet_reader_configuration.session_data["label"] = label
+        packet_reader_configuration.session["label"] = label
 
-        self.serial_port = self._get_serial_port(
+        self.serial_port_name = serial_port
+        self.use_dummy_serial_port = use_dummy_serial_port
+
+        self.serial_port = get_serial_port(
             serial_port,
             configuration=packet_reader_configuration,
-            use_dummy_serial_port=use_dummy_serial_port,
+            use_dummy_serial_port=self.use_dummy_serial_port,
         )
 
         self.packet_reader = PacketReader(
@@ -104,6 +109,7 @@ class DataGateway:
         )
 
         self.routine = self._load_routine(routine_path=routine_path)
+        self.stop_routine = self._load_routine(routine_path=stop_routine_path)
         self.stop_sensors_on_exit = stop_sensors_on_exit
 
     def start(self, stop_when_no_more_data_after=False):
@@ -121,9 +127,10 @@ class DataGateway:
             name="Reader",
             target=self.packet_reader.read_packets,
             kwargs={
-                "serial_port": self.serial_port,
+                "serial_port_name": self.serial_port_name,
                 "packet_queue": packet_queue,
                 "stop_signal": stop_signal,
+                "use_dummy_serial_port": self.use_dummy_serial_port,
             },
             daemon=True,
         )
@@ -167,22 +174,24 @@ class DataGateway:
                 time.sleep(5)
 
         finally:
-            if not self.stop_sensors_on_exit:
-                return
+            if self.stop_sensors_on_exit:
+                if self.stop_routine is not None:
+                    logger.info(
+                        "Safely shutting down sensors using stop_routine. Press ctrl+c again to hard-exit (unsafe!)"
+                    )
+                    # Run a thread to execute the stop routine
+                    routine_thread = threading.Thread(
+                        name="RoutineCommandsThread",
+                        target=self.stop_routine.run,
+                        kwargs={"stop_signal": stop_signal},
+                        daemon=True,
+                    )
+                    routine_thread.start()
+                    # Wait a sensible amount of time for the stop signals to flush, then exit
+                    time.sleep(5)
 
-            sensor_stop_commands = self.packet_reader.config.sensor_commands.get("stop")
-
-            if not sensor_stop_commands:
-                logger.warning(
-                    "No sensor stop commands defined in configuration file - sensors cannot be automatically stopped."
-                )
-                return
-
-            # This should ensure that the `stopMics` command is run last.
-            for command in sensor_stop_commands:
-                self._send_command_to_sensors(command)
-                logger.info("Sent %r command.", command)
-                time.sleep(5)
+                else:
+                    logger.warning("No stop_routine file supplied - sensors cannot be automatically stopped.")
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.
@@ -200,32 +209,6 @@ class DataGateway:
         configuration = Configuration()
         logger.info("No configuration file provided - using default configuration.")
         return configuration
-
-    def _get_serial_port(self, serial_port, configuration, use_dummy_serial_port):
-        """Get the serial port or a dummy serial port if specified. If a serial port instance is provided, return that
-        as the serial port to use.
-
-        :param str|serial.Serial serial_port: the name of a serial port or a `serial.Serial` instance
-        :param data_gateway.configuration.Configuration configuration: the packet reader configuration
-        :param bool use_dummy_serial_port: if `True`, use a dummy serial port instead
-        :return serial.Serial|data_gateway.dummy_serial.DummySerial:
-        """
-        if isinstance(serial_port, str):
-            if not use_dummy_serial_port:
-                serial_port = serial.Serial(port=serial_port, baudrate=configuration.baudrate)
-            else:
-                serial_port = DummySerial(port=serial_port, baudrate=configuration.baudrate)
-
-            # The buffer size can only be set on Windows.
-            if os.name == "nt":
-                serial_port.set_buffer_size(
-                    rx_size=configuration.serial_buffer_rx_size,
-                    tx_size=configuration.serial_buffer_tx_size,
-                )
-            else:
-                logger.debug("Serial port buffer size can only be set on Windows.")
-
-        return serial_port
 
     def _load_routine(self, routine_path):
         """Load a sensor commands routine from the path if it exists, otherwise return no routine. If in interactive

@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 import unittest
@@ -32,7 +31,7 @@ class DatasetMixin:
         return random_data
 
     def random_window(self, sensors=None, window_duration=None):
-        """Generate a window dict. with random data for given sensors and duration of window_duration [sec.]
+        """Generate a window dict with random data for given sensors and duration of window_duration [sec.]
 
         :param list sensors: List with sensor names
         :param float window_duration: Unit: s
@@ -41,14 +40,16 @@ class DatasetMixin:
         """
         sensors = sensors or ["Constat"]
         window_duration = window_duration or 1
-        window = {"sensor_time_offset": datetime.datetime.now().timestamp(), "sensor_data": {}}
+        window = {"0": {}}
+
+        node_configuration = self.VALID_CONFIGURATION["nodes"]["0"]
 
         for sensor in sensors:
-            rows = int(window_duration // self.VALID_CONFIGURATION["period"][sensor]) + 1
-            cols = self.VALID_CONFIGURATION["number_of_sensors"][sensor]
+            rows = int(window_duration // node_configuration["periods"][sensor]) + 1
+            cols = node_configuration["number_of_sensors"][sensor]
             # Compute last sample time within the window duration
-            last_sample_time = (rows - 1) * self.VALID_CONFIGURATION["period"][sensor]
-            window["sensor_data"][sensor] = self.random_sensor_data(rows, cols, 0, last_sample_time)
+            last_sample_time = (rows - 1) * node_configuration["periods"][sensor]
+            window["0"][sensor] = self.random_sensor_data(rows, cols, 0, last_sample_time)
 
         return window
 

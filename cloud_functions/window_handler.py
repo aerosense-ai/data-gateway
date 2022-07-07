@@ -58,6 +58,7 @@ class WindowHandler:
         logger.info("Downloaded window %r.", self.window_cloud_path)
 
         cloud_metadata = self.source_client.get_metadata(self.window_cloud_path)
+        logger.info("Custom metadata (logged for debugging upload race condition): %s", cloud_metadata)
         window_metadata = cloud_metadata["custom_metadata"]["data_gateway__configuration"]
 
         logger.info("Downloaded metadata for window %r.", self.window_cloud_path)
@@ -70,43 +71,39 @@ class WindowHandler:
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
-        session_data = window_metadata.pop("session_data")
+        session_data = window_metadata.pop("session")
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)
         except ConfigurationAlreadyExists as e:
             configuration_id = e.args[1]
 
-        if MICROPHONE_SENSOR_NAME in window:
-            self._store_microphone_data(
-                data=window.pop(MICROPHONE_SENSOR_NAME),
+        for node_id, node_data in window.items():
+            if MICROPHONE_SENSOR_NAME in node_data:
+                self._store_microphone_data(
+                    data=node_data.pop(MICROPHONE_SENSOR_NAME),
+                    node_id=node_id,
+                    configuration_id=configuration_id,
+                    installation_reference=window_metadata["gateway"]["installation_reference"],
+                    label=session_data.get("label"),
+                )
+
+            self.dataset.add_sensor_data(
+                data=node_data,
+                node_id=node_id,
                 configuration_id=configuration_id,
-                installation_reference=window_metadata["installation_data"]["installation_reference"],
+                installation_reference=window_metadata["gateway"]["installation_reference"],
                 label=session_data.get("label"),
             )
 
-        self.dataset.add_sensor_data(
-            data=window,
-            configuration_id=configuration_id,
-            installation_reference=window_metadata["installation_data"]["installation_reference"],
-            label=session_data.get("label"),
-        )
-
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
-    def convert_window_timestamps_to_unix_time(self, window):
-        """Use sensor_time_offset, to convert sensor node internal clock timestamps into UNIX time for the window samples"""
-        for sensor in window["sensor_data"].keys():
-            for sample in window["sensor_data"][sensor]:
-                sample[0] += window["sensor_time_offset"]
-
-        return window
-
-    def _store_microphone_data(self, data, configuration_id, installation_reference, label):
+    def _store_microphone_data(self, data, node_id, configuration_id, installation_reference, label):
         """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
         metadata in a BigQuery table.
 
         :param list(list) data:
+        :param str node_id:
         :param str configuration_id:
         :param str installation_reference:
         :param str label:
@@ -120,19 +117,25 @@ class WindowHandler:
         else:
             labels = None
 
-        with Datafile(
+        microphone_file = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
-            tags={"configuration_id": configuration_id, "installation_reference": installation_reference},
+            tags={
+                "node_id": node_id,
+                "configuration_id": configuration_id,
+                "installation_reference": installation_reference,
+            },
             labels=labels,
-            mode="w",
-        ) as (datafile, f):
+            hypothetical=True,
+        )
+
+        with microphone_file.open("w") as f:
             f["dataset"] = data
 
-        logger.info(f"Uploaded {len(data)} microphone data entries to {datafile.cloud_path!r}.")
+        logger.info(f"Uploaded {len(data)} microphone data entries to {microphone_file.cloud_path!r}.")
 
         self.dataset.record_microphone_data_location_and_metadata(
-            path=datafile.cloud_path,
-            project_name=self.destination_project,
+            path=microphone_file.cloud_path,
+            node_id=node_id,
             configuration_id=configuration_id,
             installation_reference=installation_reference,
             label=label,

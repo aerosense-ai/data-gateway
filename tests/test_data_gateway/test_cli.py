@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import time
+import unittest
 from unittest import mock
 from unittest.mock import call
 
@@ -12,7 +13,7 @@ from data_gateway.cli import ADD_SENSOR_TYPE_CLOUD_FUNCTION_URL, CREATE_INSTALLA
 from data_gateway.configuration import Configuration
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.exceptions import DataMustBeSavedError
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES
+from tests import LENGTH, RANDOM_BYTES, ZEROTH_NODE_LEADING_BYTE
 from tests.base import BaseTestCase
 
 
@@ -193,13 +194,18 @@ class TestStart(BaseTestCase):
         self.assertIsNone(result.exception)
         self.assertEqual(result.exit_code, 0)
 
+    @unittest.skipIf(
+        condition=os.name == "nt",
+        reason="Unittest mock patches are needed across processes for this test to work. For that to happen, the "
+        "'fork' multiprocessing start method is needed, which isn't available on Windows.",
+    )
     def test_save_locally(self):
         """Ensure `--save-locally` mode writes data to disk."""
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             serial_port = DummySerial(port="test")
             sensor_type = bytes([34])
-            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[0])))
-            serial_port.write(data=b"".join((PACKET_KEY, sensor_type, LENGTH, RANDOM_BYTES[1])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, sensor_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, sensor_type, LENGTH, RANDOM_BYTES[1])))
 
             with tempfile.TemporaryDirectory() as temporary_directory:
                 with mock.patch("serial.Serial", return_value=serial_port):
@@ -223,9 +229,9 @@ class TestStart(BaseTestCase):
                 with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
                     data = json.loads(f.read())
 
-                self.assertEqual(len(data), 2)
-                self.assertTrue(len(data["sensor_data"]["Baros_P"][0]) > 1)
-                self.assertTrue(len(data["sensor_data"]["Baros_T"][0]) > 1)
+                self.assertEqual(len(data["0"]), 2)
+                self.assertTrue(len(data["0"]["Baros_P"][0]) > 1)
+                self.assertTrue(len(data["0"]["Baros_T"][0]) > 1)
 
             self.assertIsNone(result.exception)
             self.assertEqual(result.exit_code, 0)
@@ -264,12 +270,10 @@ class TestCreateInstallation(BaseTestCase):
                 with open(temporary_file.name, "w") as f:
                     json.dump(
                         {
-                            "installation_data": {
+                            "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
-                                "blade_id": 0,
-                                "hardware_version": "1.7.19",
-                                "sensor_coordinates": {},
+                                "receiver_firmware_version": "1.7.19",
                             }
                         },
                         f,
@@ -290,9 +294,7 @@ class TestCreateInstallation(BaseTestCase):
             json={
                 "reference": "my-installation-1",
                 "turbine_id": 0,
-                "blade_id": 0,
-                "hardware_version": "1.7.19",
-                "sensor_coordinates": "{}",
+                "receiver_firmware_version": "1.7.19",
             },
         )
 
@@ -303,12 +305,10 @@ class TestCreateInstallation(BaseTestCase):
                 with open(temporary_file.name, "w") as f:
                     json.dump(
                         {
-                            "installation_data": {
+                            "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
-                                "blade_id": 0,
-                                "hardware_version": "1.7.19",
-                                "sensor_coordinates": {},
+                                "receiver_firmware_version": "1.7.19",
                                 "longitude": 3.25604,
                                 "latitude": 178.24833,
                             }
@@ -318,7 +318,9 @@ class TestCreateInstallation(BaseTestCase):
 
             with mock.patch("requests.post", return_value=mock.Mock(status_code=200)) as mock_post:
                 result = CliRunner().invoke(
-                    gateway_cli, ["create-installation", f"--config-file={temporary_file.name}"], input="Y"
+                    gateway_cli,
+                    ["create-installation", f"--config-file={temporary_file.name}"],
+                    input="Y",
                 )
 
         self.assertIsNone(result.exception)
@@ -329,9 +331,7 @@ class TestCreateInstallation(BaseTestCase):
             json={
                 "reference": "my-installation-1",
                 "turbine_id": 0,
-                "blade_id": 0,
-                "hardware_version": "1.7.19",
-                "sensor_coordinates": "{}",
+                "receiver_firmware_version": "1.7.19",
                 "longitude": 3.25604,
                 "latitude": 178.24833,
             },
@@ -346,12 +346,10 @@ class TestCreateInstallation(BaseTestCase):
                 with open(temporary_file.name, "w") as f:
                     json.dump(
                         {
-                            "installation_data": {
+                            "gateway": {
                                 "installation_reference": "My Installation_1",
                                 "turbine_id": 0,
-                                "blade_id": 0,
-                                "hardware_version": "1.7.19",
-                                "sensor_coordinates": {},
+                                "receiver_firmware_version": "1.7.19",
                             }
                         },
                         f,

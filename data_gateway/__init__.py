@@ -2,7 +2,6 @@ from . import exceptions
 
 
 __all__ = ("exceptions",)
-MICROPHONE_SENSOR_NAME = "Mics"
 
 
 def stop_gateway(logger, stop_signal):

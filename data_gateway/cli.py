@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 
 import click
 import pkg_resources
@@ -63,14 +64,21 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(dir_okay=False),
     default="config.json",
     show_default=True,
-    help="Path to your Aerosense deployment configuration JSON file.",
+    help="Path to your Aerosense deployment configuration JSON file. This value is overridden by the environment variable GATEWAY_CONFIG_FILE if set",
 )
 @click.option(
     "--routine-file",
     type=click.Path(dir_okay=False),
     default="routine.json",
     show_default=True,
-    help="Path to sensor command routine JSON file.",
+    help="Path to sensor command routine JSON file. This value is overridden by the environment variable GATEWAY_ROUTINE_FILE if set",
+)
+@click.option(
+    "--stop-routine-file",
+    type=click.Path(dir_okay=False),
+    default="stop_routine.json",
+    show_default=True,
+    help="Path to sensor command routine JSON file to be executed on exit of the gateway loop (i.e. a routine which will shut down the sensors after running the gateway). This value is overridden by the environment variable GATEWAY_ROUTINE_FILE if set",
 )
 @click.option(
     "--save-locally", "-l", is_flag=True, default=False, show_default=True, help="Save output JSON data to disk."
@@ -96,7 +104,7 @@ def gateway_cli(logger_uri, log_level):
     type=click.Path(file_okay=False),
     default="data_gateway",
     show_default=True,
-    help="The directory in which to save data windows from the gateway.",
+    help="The directory in which to save data windows from the gateway. This value is overridden by the environment variable GATEWAY_OUTPUT_DIR if set",
 )
 @click.option(
     "--window-size",
@@ -108,9 +116,9 @@ def gateway_cli(logger_uri, log_level):
 @click.option(
     "--gcp-bucket-name",
     type=click.STRING,
-    default=None,
+    default="aerosense-ingress-eu",
     show_default=True,
-    help="The name of the Google Cloud Platform (GCP) storage bucket to use.",
+    help="The name of the Google Cloud Platform (GCP) storage bucket to use. This value is overridden by the environment variable GATEWAY_GCP_BUCKET_NAME if set.",
 )
 @click.option(
     "--label",
@@ -142,6 +150,7 @@ def start(
     serial_port,
     config_file,
     routine_file,
+    stop_routine_file,
     save_locally,
     no_upload_to_cloud,
     interactive,
@@ -160,16 +169,24 @@ def start(
     """
     from data_gateway.data_gateway import DataGateway
 
+    # Allow override of defaults from the environment
+    overridden_config_file = os.environ.get("GATEWAY_CONFIG_FILE", None) or config_file
+    overridden_output_dir = os.environ.get("GATEWAY_OUTPUT_DIR", None) or output_dir
+    overridden_routine_file = os.environ.get("GATEWAY_ROUTINE_FILE", None) or routine_file
+    overridden_stop_routine_file = os.environ.get("GATEWAY_STOP_ROUTINE_FILE", None) or stop_routine_file
+    overridden_gcp_bucket_name = os.environ.get("GATEWAY_GCP_BUCKET_NAME", None) or gcp_bucket_name
+
     data_gateway = DataGateway(
         serial_port=serial_port,
-        configuration_path=config_file,
-        routine_path=routine_file,
+        configuration_path=overridden_config_file,
+        routine_path=overridden_routine_file,
+        stop_routine_path=overridden_stop_routine_file,
         save_locally=save_locally,
         upload_to_cloud=not no_upload_to_cloud,
         interactive=interactive,
-        output_directory=output_dir,
+        output_directory=overridden_output_dir,
         window_size=window_size,
-        bucket_name=gcp_bucket_name,
+        bucket_name=overridden_gcp_bucket_name,
         label=label,
         save_csv_files=save_csv_files,
         use_dummy_serial_port=use_dummy_serial_port,
@@ -189,17 +206,15 @@ def start(
 )
 def create_installation(config_file):
     """Create an installation representing a collection of sensors that data can be collected from. The installation
-    information is read from the "installation_data" field of `configuration.json`.
+    information is read from the "gateway" field of `configuration.json`.
     """
     import json
-
-    from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
 
     with open(config_file or "configuration.json") as f:
         configuration = json.load(f)
 
-    installation_data = configuration["installation_data"]
-    slugified_reference = slugify(installation_data["installation_reference"])
+    gateway_configuration = configuration["gateway"]
+    slugified_reference = slugify(gateway_configuration["installation_reference"])
 
     while True:
         user_confirmation = input(f"Create installation with reference {slugified_reference!r}? [Y/n]\n")
@@ -210,31 +225,19 @@ def create_installation(config_file):
         if user_confirmation.upper() in {"Y", ""}:
             break
 
-    for sensor, coordinates in installation_data["sensor_coordinates"].items():
-        number_of_sensors = configuration["number_of_sensors"][sensor]
-
-        if len(coordinates) != number_of_sensors:
-            raise WrongNumberOfSensorCoordinatesError(
-                f"In the configuration file, the number of sensors for the {sensor!r} sensor type is "
-                f"{number_of_sensors} but coordinates were given for {len(coordinates)} sensors - these numbers must "
-                f"match."
-            )
-
     # Required parameters:
     parameters = {
         "reference": slugified_reference,
-        "turbine_id": installation_data["turbine_id"],
-        "blade_id": installation_data["blade_id"],
-        "hardware_version": installation_data["hardware_version"],
-        "sensor_coordinates": json.dumps(installation_data["sensor_coordinates"]),
+        "turbine_id": gateway_configuration["turbine_id"],
+        "receiver_firmware_version": gateway_configuration["receiver_firmware_version"],
     }
 
     # Optional parameters:
-    if installation_data.get("longitude"):
-        parameters["longitude"] = installation_data["longitude"]
+    if gateway_configuration.get("longitude"):
+        parameters["longitude"] = gateway_configuration["longitude"]
 
-    if installation_data.get("latitude"):
-        parameters["latitude"] = installation_data["latitude"]
+    if gateway_configuration.get("latitude"):
+        parameters["latitude"] = gateway_configuration["latitude"]
 
     print("Creating...")
 
@@ -301,23 +304,14 @@ def add_sensor_type(name, description, measuring_unit, metadata):
 
 
 @gateway_cli.command()
-@click.option(
-    "--config-file",
-    type=click.Path(),
-    default="config.json",
-    show_default=True,
-    help="Path to your Aerosense deployment configuration file.",
-)
-def supervisord_conf(config_file):
+def supervisord_conf():
     """Print conf entry for use with supervisord. Daemonising a process ensures it automatically restarts after a
     failure and on startup of the operating system failure.
     """
-    import os
-
     supervisord_conf_str = f"""
 
 [program:{SUPERVISORD_PROGRAM_NAME,}]
-command=gateway start --config-file {os.path.abspath(config_file)}"""
+command=gateway start"""
 
     print(supervisord_conf_str)
     return 0

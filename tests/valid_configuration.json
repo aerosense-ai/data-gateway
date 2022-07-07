@@ -1,138 +1,159 @@
 {
-  "mics_freq": 15625,
-  "mics_bm": 1023,
-  "baros_freq": 100,
-  "diff_baros_freq": 1000,
-  "baros_bm": 1023,
-  "acc_freq": 100,
-  "acc_range": 16,
-  "gyro_freq": 100,
-  "gyro_range": 2000,
-  "mag_freq": 12.5,
-  "analog_freq": 16384,
-  "constat_period": 45,
-  "serial_buffer_rx_size": 100000,
-  "serial_buffer_tx_size": 1280,
-  "baudrate": 2300000,
-  "endian": "little",
-  "max_timestamp_slack": 0.005,
-  "max_period_drift": 0.02,
-  "packet_key": 254,
-  "type_handle_def": 255,
-  "mics_samples_per_packet": 8,
-  "imu_samples_per_packet": 40,
-  "analog_samples_per_packet": 60,
-  "baros_samples_per_packet": 1,
-  "diff_baros_samples_per_packet": 24,
-  "constat_samples_per_packet": 24,
-  "sensor_names": [
-    "Mics",
-    "Baros_P",
-    "Baros_T",
-    "Diff_Baros",
-    "Acc",
-    "Gyro",
-    "Mag",
-    "Analog Vbat",
-    "Constat"
-  ],
-  "default_handles": {
-    "34": "Abs. baros",
-    "36": "Diff. baros",
-    "38": "Mic 0",
-    "40": "Mic 1",
-    "42": "IMU Accel",
-    "44": "IMU Gyro",
-    "46": "IMU Magnetometer",
-    "48": "Analog1",
-    "50": "Analog2",
-    "52": "Constat",
-    "54": "Cmd Decline",
-    "56": "Sleep State",
-    "58": "Info Message"
-  },
-  "decline_reason": {
-    "0": "Bad block detection ongoing",
-    "1": "Task already registered, cannot register again",
-    "2": "Task is not registered, cannot de-register",
-    "3": "Connection Parameter update unfinished"
-  },
-  "sleep_state": {
-    "0": "Exiting sleep",
-    "1": "Entering sleep"
-  },
-  "info_type": {
-    "0": "Battery info"
-  },
-  "samples_per_packet": {
-    "Mics": 8,
-    "Diff_Baros": 24,
-    "Baros_P": 1,
-    "Baros_T": 1,
-    "Acc": 40,
-    "Gyro": 40,
-    "Mag": 40,
-    "Analog Vbat": 60,
-    "Constat": 24
-  },
-  "number_of_sensors": {
-    "Mics": 10,
-    "Baros_P": 40,
-    "Baros_T": 40,
-    "Diff_Baros": 5,
-    "Acc": 3,
-    "Gyro": 3,
-    "Mag": 3,
-    "Analog Vbat": 1,
-    "Constat": 4
-  },
-  "sensor_conversion_constants":{
-    "Mics": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    "Diff_Baros": [1, 1, 1, 1, 1],
-    "Baros_P": [40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96],
-    "Baros_T": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
-    "Acc": [1, 1, 1],
-    "Gyro": [1, 1, 1],
-    "Mag": [1, 1, 1],
-    "Analog Vbat": [1],
-    "Constat": [1, 1, 1, 1]
-  },
-  "period": {
-    "Mics": 6.4e-05,
-    "Baros_P": 0.01,
-    "Baros_T": 0.01,
-    "Diff_Baros": 0.001,
-    "Acc": 0.01,
-    "Gyro": 0.01,
-    "Mag": 0.08,
-    "Analog Vbat": 6.103515625e-05,
-    "Constat": 0.045
-  },
-  "sensor_commands": {
-    "start": ["startBaros", "startDiffBaros", "startIMU", "startMics"],
-    "stop": ["stopBaros", "stopDiffBaros", "stopIMU", "stopMics"],
-    "configuration": ["configBaros", "configAccel", "configGyro", "configMics"],
-    "utilities": [
-      "getBattery",
-      "setConnInterval",
-      "tpcBoostIncrease",
-      "tpcBoostDecrease",
-      "tpcBoostHeapMemThr1",
-      "tpcBoostHeapMemThr2",
-      "tpcBoostHeapMemThr4"
-    ]
-  },
-  "installation_data": {
+  "gateway": {
+    "baudrate": 2300000,
+    "endian": "little",
     "installation_reference": "aventa_turbine",
-    "turbine_id": "0",
-    "blade_id": "0",
-    "hardware_version": "1.2.3",
-    "sensor_coordinates": {
-      "Mics": [[0, 0, 0], [0, 0, 1]],
-      "Baros_p": [[1, 0, 0], [1, 0, 1], [1, 2, 0]]
+    "latitude": 0,
+    "longitude": 0,
+    "packet_key": 254,
+    "packet_key_offset": 245,
+    "receiver_firmware_version": "1.2.3",
+    "serial_buffer_rx_size": 100000,
+    "serial_buffer_tx_size": 1280,
+    "turbine_id": "unknown"
+  },
+  "nodes": {
+    "0": {
+      "acc_freq": 100,
+      "acc_range": 16,
+      "analog_freq": 16384,
+      "baros_bm": 1023,
+      "baros_freq": 100,
+      "blade_id": "0",
+      "constat_period": 45,
+      "decline_reason": {
+        "0": "Bad block detection ongoing",
+        "1": "Task already registered, cannot register again",
+        "2": "Task is not registered, cannot de-register",
+        "3": "Connection Parameter update unfinished"
+      },
+      "diff_baros_freq": 1000,
+      "default_handles": {
+        "34": "Abs. baros",
+        "36": "Diff. baros",
+        "38": "Mic 0",
+        "40": "Mic 1",
+        "42": "IMU Accel",
+        "44": "IMU Gyro",
+        "46": "IMU Magnetometer",
+        "48": "Analog1",
+        "50": "Analog2",
+        "52": "Constat",
+        "54": "Cmd Decline",
+        "56": "Sleep State",
+        "58": "Info Message"
+      },
+      "gyro_freq": 100,
+      "gyro_range": 2000,
+      "local_info_type": {
+        "0": "Synchronization not ready as not every sensor node is connected",
+        "1": "Time synchronization info",
+        "2": "Time sync exception",
+        "4": "Time sync coarse data record error",
+        "8": "Time sync alignment error",
+        "16": "Time sync coarse data time diff error",
+        "32": "Device not connected",
+        "64": "Select message destination successful",
+        "128": "Time sync success",
+        "129": "Coarse sync finish",
+        "130": "Time sync msg sent"
+      },
+      "remote_info_type": {
+        "0": "Battery info"
+      },
+      "mag_freq": 12.5,
+      "mics_freq": 15625,
+      "mics_bm": 1023,
+      "max_timestamp_slack": 0.005,
+      "max_period_drift": 0.02,
+      "node_firmware_version": "unknown",
+      "number_of_sensors": {
+        "Mics": 10,
+        "Baros_P": 40,
+        "Baros_T": 40,
+        "Diff_Baros": 5,
+        "Acc": 3,
+        "Gyro": 3,
+        "Mag": 3,
+        "Analog Vbat": 1,
+        "Constat": 4
+      },
+      "periods": {
+        "Mics": 6.4e-05,
+        "Baros_P": 0.01,
+        "Baros_T": 0.01,
+        "Diff_Baros": 0.001,
+        "Acc": 0.01,
+        "Gyro": 0.01,
+        "Mag": 0.08,
+        "Analog Vbat": 6.103515625e-05,
+        "Constat": 0.045
+      },
+      "samples_per_packet": {
+        "Mics": 8,
+        "Diff_Baros": 24,
+        "Baros_P": 1,
+        "Baros_T": 1,
+        "Acc": 40,
+        "Gyro": 40,
+        "Mag": 40,
+        "Analog Vbat": 60,
+        "Constat": 24
+      },
+      "sensor_commands": {
+        "start": ["startBaros", "startDiffBaros", "startIMU", "startMics"],
+        "stop": ["stopBaros", "stopDiffBaros", "stopIMU", "stopMics"],
+        "configuration": ["configBaros", "configAccel", "configGyro", "configMics"],
+        "utilities": [
+          "getBattery",
+          "setConnInterval",
+          "tpcBoostIncrease",
+          "tpcBoostDecrease",
+          "tpcBoostHeapMemThr1",
+          "tpcBoostHeapMemThr2",
+          "tpcBoostHeapMemThr4"
+        ]
+      },
+      "sensor_conversion_constants": {
+        "Mics": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        "Diff_Baros": [1, 1, 1, 1, 1],
+        "Baros_P": [40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96, 40.96], "Baros_T": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+        "Acc": [1, 1, 1],
+        "Gyro": [1, 1, 1],
+        "Mag": [1, 1, 1],
+        "Analog Vbat": [1],
+        "Constat": [1, 1, 1, 1]
+      },
+      "sensor_coordinates": {
+        "Mics": [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Baros_P": [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Baros_T": [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Diff_Baros": [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Acc": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Gyro": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Mag": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "Analog Vbat": [[0, 0, 0]],
+        "Constat": [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
+      },
+      "sensor_names": [
+        "Mics",
+        "Baros_P",
+        "Baros_T",
+        "Diff_Baros",
+        "Acc",
+        "Gyro",
+        "Mag",
+        "Analog Vbat",
+        "Constat"
+      ],
+      "sleep_state": {
+        "0": "Exiting sleep",
+        "1": "Entering sleep"
+      },
+      "type_handle_def": 255
     }
   },
-  "session_data": {
+  "session": {
     "label": "my-test-1"
   }
 }

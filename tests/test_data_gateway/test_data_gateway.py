@@ -12,7 +12,7 @@ from data_gateway.configuration import Configuration
 from data_gateway.data_gateway import DataGateway
 from data_gateway.dummy_serial import DummySerial
 from data_gateway.persistence import TimeBatcher
-from tests import LENGTH, PACKET_KEY, RANDOM_BYTES, TEST_BUCKET_NAME
+from tests import LENGTH, RANDOM_BYTES, TEST_BUCKET_NAME, ZEROTH_NODE_LEADING_BYTE
 from tests.base import BaseTestCase
 
 
@@ -39,8 +39,8 @@ class TestDataGateway(BaseTestCase):
         serial_port = DummySerial(port="test")
         packet_type = bytes([34])
 
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         try:
             data_gateway = DataGateway(
@@ -77,8 +77,8 @@ class TestDataGateway(BaseTestCase):
                 (bytes([52]), "Constat"),
             ]:
                 with self.subTest(sensor_name=sensor_name):
-                    serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-                    serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+                    serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+                    serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
                     data_gateway = DataGateway(
                         serial_port,
@@ -92,11 +92,14 @@ class TestDataGateway(BaseTestCase):
                     data_gateway.start(stop_when_no_more_data_after=0.1)
 
                     self._check_data_is_written_to_files(
-                        data_gateway.packet_reader.local_output_directory, sensor_names=[sensor_name]
+                        data_gateway.packet_reader.local_output_directory,
+                        node_id="0",
+                        sensor_names=[sensor_name],
                     )
 
                     self._check_windows_are_uploaded_to_cloud(
                         data_gateway.packet_reader.cloud_output_directory,
+                        node_id="0",
                         sensor_names=[sensor_name],
                         number_of_windows_to_check=1,
                     )
@@ -112,11 +115,11 @@ class TestDataGateway(BaseTestCase):
         serial_port = DummySerial(port="test")
 
         # Enter sleep state
-        serial_port.write(data=b"".join((PACKET_KEY, bytes([56]), bytes([1]), bytes([1]))))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, bytes([56]), bytes([1]), bytes([1]))))
 
         packet_type = bytes([52])
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-        serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             data_gateway = DataGateway(
@@ -133,8 +136,11 @@ class TestDataGateway(BaseTestCase):
                 data_gateway.start(stop_when_no_more_data_after=0.1)
 
             self._check_data_is_written_to_files(
-                data_gateway.packet_reader.local_output_directory, sensor_names=["Constat"]
+                data_gateway.packet_reader.local_output_directory,
+                node_id="0",
+                sensor_names=["Constat"],
             )
+
             self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
@@ -144,8 +150,8 @@ class TestDataGateway(BaseTestCase):
         sensor_names = ("Baros_P", "Baros_T", "Diff_Baros", "Mics", "Acc", "Gyro", "Mag")
 
         for packet_type in packet_types:
-            serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[0])))
-            serial_port.write(data=b"".join((PACKET_KEY, packet_type, LENGTH, RANDOM_BYTES[1])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
         try:
             data_gateway = DataGateway(
@@ -160,14 +166,75 @@ class TestDataGateway(BaseTestCase):
             data_gateway.start(stop_when_no_more_data_after=0.1)
 
             self._check_data_is_written_to_files(
-                data_gateway.packet_reader.local_output_directory, sensor_names=sensor_names
+                data_gateway.packet_reader.local_output_directory,
+                node_id="0",
+                sensor_names=sensor_names,
             )
 
             self._check_windows_are_uploaded_to_cloud(
                 data_gateway.packet_reader.cloud_output_directory,
+                node_id="0",
                 sensor_names=sensor_names,
                 number_of_windows_to_check=1,
             )
+
+        finally:
+            self._delete_temporary_output_directories()
+
+    def test_with_two_nodes(self):
+        """Test receiving data from different sensors on two separate nodes."""
+        serial_port = DummySerial(port="test")
+
+        packet_types = {
+            "0": (bytes([34]), bytes([36])),
+            "1": (bytes([38]), bytes([42]), bytes([44]), bytes([46])),
+        }
+
+        sensor_names = {
+            "0": ("Baros_P", "Baros_T", "Diff_Baros"),
+            "1": ("Mics", "Acc", "Gyro", "Mag"),
+        }
+
+        # Give both nodes the default node configuration.
+        configuration = Configuration()
+        configuration.nodes["1"] = configuration.nodes["0"]
+
+        for packet_type in packet_types["0"]:
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
+
+        first_node_leading_byte = configuration.get_leading_byte(node_id="1")
+
+        for packet_type in packet_types["1"]:
+            serial_port.write(data=b"".join((first_node_leading_byte, packet_type, LENGTH, RANDOM_BYTES[0])))
+            serial_port.write(data=b"".join((first_node_leading_byte, packet_type, LENGTH, RANDOM_BYTES[1])))
+
+        try:
+            with patch("data_gateway.data_gateway.DataGateway._load_configuration", return_value=configuration):
+                data_gateway = DataGateway(
+                    serial_port,
+                    save_locally=True,
+                    output_directory=self._generate_temporary_output_directory_name(),
+                    window_size=self.WINDOW_SIZE,
+                    bucket_name=TEST_BUCKET_NAME,
+                    stop_sensors_on_exit=False,
+                )
+
+            data_gateway.start(stop_when_no_more_data_after=0.1)
+
+            for node_id in packet_types.keys():
+                self._check_data_is_written_to_files(
+                    data_gateway.packet_reader.local_output_directory,
+                    node_id=node_id,
+                    sensor_names=sensor_names[node_id],
+                )
+
+                self._check_windows_are_uploaded_to_cloud(
+                    data_gateway.packet_reader.cloud_output_directory,
+                    node_id=node_id,
+                    sensor_names=sensor_names[node_id],
+                    number_of_windows_to_check=1,
+                )
 
         finally:
             self._delete_temporary_output_directories()
@@ -194,8 +261,17 @@ class TestDataGateway(BaseTestCase):
             except FileNotFoundError:
                 pass
 
-    def _check_windows_are_uploaded_to_cloud(self, output_directory, sensor_names, number_of_windows_to_check=5):
-        """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage."""
+    def _check_windows_are_uploaded_to_cloud(
+        self,
+        output_directory,
+        node_id,
+        sensor_names,
+        number_of_windows_to_check=5,
+    ):
+        """Check that non-trivial windows from a packet reader for a particular sensor are uploaded to cloud storage.
+
+        :return None:
+        """
         window_paths = [
             blob.name
             for blob in self.storage_client.scandir(
@@ -212,11 +288,14 @@ class TestDataGateway(BaseTestCase):
             )
 
             for name in sensor_names:
-                lines = data["sensor_data"][name]
+                lines = data[node_id][name]
                 self.assertTrue(len(lines[0]) > 1)
 
-    def _check_data_is_written_to_files(self, output_directory, sensor_names):
-        """Check that non-trivial data is written to the given file."""
+    def _check_data_is_written_to_files(self, output_directory, node_id, sensor_names):
+        """Check that non-trivial data is written to the given file.
+
+        :return None:
+        """
         windows = [file for file in os.listdir(output_directory) if file.startswith(TimeBatcher._file_prefix)]
         self.assertTrue(len(windows) > 0)
 
@@ -225,5 +304,5 @@ class TestDataGateway(BaseTestCase):
                 data = json.load(f)
 
                 for name in sensor_names:
-                    lines = data["sensor_data"][name]
+                    lines = data[node_id][name]
                     self.assertTrue(len(lines[0]) > 1)
