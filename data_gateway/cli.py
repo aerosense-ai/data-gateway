@@ -116,7 +116,7 @@ def gateway_cli(logger_uri, log_level):
 @click.option(
     "--gcp-bucket-name",
     type=click.STRING,
-    default=None,
+    default="aerosense-ingress-eu",
     show_default=True,
     help="The name of the Google Cloud Platform (GCP) storage bucket to use. This value is overridden by the environment variable GATEWAY_GCP_BUCKET_NAME if set.",
 )
@@ -174,7 +174,7 @@ def start(
     overridden_output_dir = os.environ.get("GATEWAY_OUTPUT_DIR", None) or output_dir
     overridden_routine_file = os.environ.get("GATEWAY_ROUTINE_FILE", None) or routine_file
     overridden_stop_routine_file = os.environ.get("GATEWAY_STOP_ROUTINE_FILE", None) or stop_routine_file
-    gcp_bucket_name = os.environ.get("GATEWAY_GCP_BUCKET_NAME", None) or gcp_bucket_name
+    overridden_gcp_bucket_name = os.environ.get("GATEWAY_GCP_BUCKET_NAME", None) or gcp_bucket_name
 
     data_gateway = DataGateway(
         serial_port=serial_port,
@@ -186,7 +186,7 @@ def start(
         interactive=interactive,
         output_directory=overridden_output_dir,
         window_size=window_size,
-        bucket_name=gcp_bucket_name,
+        bucket_name=overridden_gcp_bucket_name,
         label=label,
         save_csv_files=save_csv_files,
         use_dummy_serial_port=use_dummy_serial_port,
