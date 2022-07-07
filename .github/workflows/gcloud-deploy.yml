@@ -22,13 +22,19 @@ jobs:
             echo "::set-output name=name_prefix::test-"
           fi
 
+      - id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          workload_identity_provider: "projects/885434704038/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
+          service_account: "data-gateway-ci-testing@aerosense-twined.iam.gserviceaccount.com"
+
       - id: deploy-add-sensor-type
-        uses: google-github-actions/deploy-cloud-functions@main
+        uses: google-github-actions/deploy-cloud-functions@v0
         with:
           name: ${{ steps.prefix.outputs.name_prefix }}add-sensor-type
+          description: Allows addition of a new sensor type whose values will be accepted into the database
           runtime: python39
           region: europe-west6
-          credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
           env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
           source_dir: cloud_functions
 
@@ -36,9 +42,9 @@ jobs:
         uses: google-github-actions/deploy-cloud-functions@main
         with:
           name: ${{ steps.prefix.outputs.name_prefix }}create-installation
+          description: Allows creation of a new installation
           runtime: python39
           region: europe-west6
-          credentials: ${{ secrets.GHA_CI_GCP_SERVICE_ACCOUNT }}
           env_vars: BIG_QUERY_DATASET_NAME=${{ steps.prefix.outputs.name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
           source_dir: cloud_functions
 
