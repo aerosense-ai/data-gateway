@@ -9,7 +9,7 @@ from octue.cloud import storage
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import exceptions, stop_gateway
-from data_gateway.configuration import BASE_STATION_ID, DEFAULT_SENSOR_NAMES, Configuration
+from data_gateway.configuration import BASE_STATION_ID, DEFAULT_LOCAL_INFO_TYPES, DEFAULT_SENSOR_NAMES, Configuration
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
     BatchingFileWriter,
@@ -115,7 +115,7 @@ class PacketReader:
                     logger.warning("Serial port buffer is full - buffer overflow may occur, resulting in data loss.")
                     continue
 
-                logger.info("Received packet_type %s from packet_origin %s", packet_type, packet_origin)
+                logger.debug("Received packet_type %s from packet_origin %s", packet_type, packet_origin)
 
                 packet_queue.put({"packet_origin": packet_origin, "packet_type": packet_type, "packet": packet})
 
@@ -194,14 +194,63 @@ class PacketReader:
                             continue
 
                         if packet_origin == BASE_STATION_ID:
-                            logger.warning("Processing base station packet, skipping for now")
-                            # TODO process and store local info packets
+
+                            local_info_key = int.from_bytes(packet[0:1], self.config.gateway.endian, signed=False)
+                            logger.info(
+                                "Received local (base-station) info packet: %s",
+                                DEFAULT_LOCAL_INFO_TYPES[local_info_key],
+                            )
+
+                            # TODO Store local info packets
+                            # if info_index == 130:
+                            #     print(int.from_bytes(payload[1:3], ENDIAN, signed=False))
+                            # if local_info[info_index] == "Time synchronization info":
+                            #     info_type = int.from_bytes(payload[1:5], ENDIAN, signed=False)
+                            #     if info_type == 0:
+                            #         print("seq data")
+                            #         for i in range(15):
+                            #             seqDataFile.write(str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ",")
+                            #         for i in range(15, 18):
+                            #             seqDataFile.write(str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=True)) + ",")
+                            #         seqDataFile.close()
+                            #     elif info_type == 1:
+                            #         print("central data")
+                            #         for i in range(60):
+                            #             centralDataFile.write(
+                            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+                            #             )
+                            #             centralCnt = centralCnt + 1
+                            #             if centralCnt == 187:
+                            #                 centralDataFile.close()
+                            #                 break
+                            #     elif info_type == 2:
+                            #         print("perif 0 data")
+                            #         for i in range(61):
+                            #             perif0DataFile.write(
+                            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+                            #             )
+                            #         perif0DataFile.close()
+                            #     elif info_type == 3:
+                            #         print("perif 1 data")
+                            #         for i in range(61):
+                            #             perif1DataFile.write(
+                            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+                            #             )
+                            #         perif1DataFile.close()
+                            #     elif info_type == 4:
+                            #         print("perif 2 data")
+                            #         for i in range(61):
+                            #             perif2DataFile.write(
+                            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
+                            #             )
+                            #         perif2DataFile.close()
+
                         else:
                             node_id = packet_origin
                             node_config = self.config.nodes[node_id]
 
                             if packet_type == str(node_config.type_handle_def):
-                                logger.warning("Updating handles (not node-specific) for node %s.", node_id)
+                                logger.warning("Updating handles for node %s.", node_id)
                                 self.update_handles(packet, node_id)
                                 continue
 
@@ -210,13 +259,13 @@ class PacketReader:
                                     "Received packet from node %s with unknown type: %s ", node_id, packet_type
                                 )
                                 continue
-                            # else:
-                            # logger.info(
-                            #     "Processing packet from node %s with type %s (%s)",
-                            #     node_id,
-                            #     self.handles[node_id][packet_type],
-                            #     packet_type,
-                            # )
+                            else:
+                                logger.debug(
+                                    "Processing packet from node %s with type %s (%s)",
+                                    node_id,
+                                    self.handles[node_id][packet_type],
+                                    packet_type,
+                                )
 
                             if len(packet) == 244:  # If the full data payload is received, proceed parsing it
                                 timestamp = (
@@ -236,12 +285,12 @@ class PacketReader:
                                 )
 
                                 for sensor_name in sensor_names:
-                                    self._check_for_packet_loss(
-                                        node_id=node_id,
-                                        sensor_name=sensor_name,
-                                        timestamp=timestamp,
-                                        previous_timestamp=previous_timestamp,
-                                    )
+                                    # self._check_for_packet_loss(
+                                    #     node_id=node_id,
+                                    #     sensor_name=sensor_name,
+                                    #     timestamp=timestamp,
+                                    #     previous_timestamp=previous_timestamp,
+                                    # )
 
                                     self._timestamp_and_persist_data(
                                         data=data,
@@ -257,12 +306,12 @@ class PacketReader:
                                 "Mic 1",
                                 "Cmd Decline",
                                 "Sleep State",
-                                "Info Message",
+                                "Remote Info Message",
                             ]:
-                                self._parse_info_packet(
+                                self._parse_remote_info_packet(
                                     node_id=node_id,
-                                    information_type=self.handles[node_id][packet_type],
-                                    payload=packet,
+                                    packet_type=self.handles[node_id][packet_type],
+                                    packet=packet,
                                     previous_timestamp=previous_timestamp,
                                 )
 
@@ -462,6 +511,14 @@ class PacketReader:
                     self.config.gateway.endian,
                     signed=False,
                 )
+                logger.debug(
+                    "Constats received from node %s: filtered_rssi=%s, raw_rssi=%s, tx_power=%s, allocated_heap_memory=%s",
+                    node_id,
+                    data[node_id]["Constat"][0][i],
+                    data[node_id]["Constat"][1][i],
+                    data[node_id]["Constat"][2][i],
+                    data[node_id]["Constat"][3][i],
+                )
 
             return data, ["Constat"]
 
@@ -469,34 +526,35 @@ class PacketReader:
             logger.error("Sensor of type %r is unknown.", packet_type)
             raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
 
-    def _parse_info_packet(self, node_id, information_type, payload, previous_timestamp):
+    def _parse_remote_info_packet(self, node_id, packet_type, packet, previous_timestamp):
         """Parse information type packet and send the information to logger.
 
         :param str node_id: the ID of the node the packet is from
-        :param str information_type: From packet handles, defines what information is stored in payload.
-        :param iter payload:
+        :param str packet_type: From packet handles, defines what information is stored in the packet.
+        :param iter packet: The packet
         :return None:
         """
         node_config = self.config.nodes[node_id]
 
-        if information_type == "Mic 1":
-            if payload[0] == 1:
+        if packet_type == "Mic 1":
+            if packet[0] == 1:
                 logger.info("Microphone data reading done")
-            elif payload[0] == 2:
+            elif packet[0] == 2:
                 logger.info("Microphone data erasing done")
-            elif payload[0] == 3:
+            elif packet[0] == 3:
                 logger.info("Microphones started ")
             return
 
-        if information_type == "Cmd Decline":
-            reason_index = str(int.from_bytes(payload, self.config.gateway.endian, signed=False))
+        if packet_type == "Cmd Decline":
+            reason_index = str(int.from_bytes(packet, self.config.gateway.endian, signed=False))
             logger.info("Command declined, %s", node_config.decline_reason[reason_index])
             return
 
-        if information_type == "Sleep State":
-            state_index = str(int.from_bytes(payload, self.config.gateway.endian, signed=False))
-            logger.info("\n%s\n", node_config.sleep_state[state_index])
+        if packet_type == "Sleep State":
+            state_index = str(int.from_bytes(packet, self.config.gateway.endian, signed=False))
+            logger.info("Sleep state updated on node %s: %s", node_id, node_config.sleep_state[state_index])
 
+            # TODO make this node-specific
             if bool(int(state_index)):
                 self.sleep = True
             else:
@@ -507,64 +565,16 @@ class PacketReader:
 
             return
 
-        if information_type == "Local Info Message":
-            logger.warn("Received Timestamp Packet 0, handling not implemented yet")
-
-            # info_index = int.from_bytes(payload[0:1], ENDIAN, signed=False)
-            # print(local_info[info_index])
-            # if info_index == 130:
-            #     print(int.from_bytes(payload[1:3], ENDIAN, signed=False))
-            # if local_info[info_index] == "Time synchronization info":
-            #     info_type = int.from_bytes(payload[1:5], ENDIAN, signed=False)
-            #     if info_type == 0:
-            #         print("seq data")
-            #         for i in range(15):
-            #             seqDataFile.write(str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ",")
-            #         for i in range(15, 18):
-            #             seqDataFile.write(str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=True)) + ",")
-            #         seqDataFile.close()
-            #     elif info_type == 1:
-            #         print("central data")
-            #         for i in range(60):
-            #             centralDataFile.write(
-            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
-            #             )
-            #             centralCnt = centralCnt + 1
-            #             if centralCnt == 187:
-            #                 centralDataFile.close()
-            #                 break
-            #     elif info_type == 2:
-            #         print("perif 0 data")
-            #         for i in range(61):
-            #             perif0DataFile.write(
-            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
-            #             )
-            #         perif0DataFile.close()
-            #     elif info_type == 3:
-            #         print("perif 1 data")
-            #         for i in range(61):
-            #             perif1DataFile.write(
-            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
-            #             )
-            #         perif1DataFile.close()
-            #     elif info_type == 4:
-            #         print("perif 2 data")
-            #         for i in range(61):
-            #             perif2DataFile.write(
-            #                 str(int.from_bytes(payload[5 + i * 4 : 9 + i * 4], ENDIAN, signed=False)) + ","
-            #             )
-            #         perif2DataFile.close()
-
-        if information_type == "Remote Info Message":
-            info_index = str(int.from_bytes(payload[0:1], self.config.gateway.endian, signed=False))
-            info_subtype = node_config.remote_info_type[info_index]
-            logger.info(info_subtype)
+        if packet_type == "Remote Info Message":
+            remote_info_key = str(int.from_bytes(packet[0:1], self.config.gateway.endian, signed=False))
+            info_subtype = node_config.remote_info_type[remote_info_key]
+            logger.info("Received remote info packet from node %s: %s", node_id, info_subtype)
 
             # TODO store the voltage in results so that we'll be able to display it in the dashboard
             if info_subtype == "Battery info":
-                voltage = int.from_bytes(payload[1:5], self.config.gateway.endian, signed=False) / 1000000
-                cycle = int.from_bytes(payload[5:9], self.config.gateway.endian, signed=False) / 100
-                state_of_charge = int.from_bytes(payload[9:13], self.config.gateway.endian, signed=False) / 256
+                voltage = int.from_bytes(packet[1:5], self.config.gateway.endian, signed=False) / 1000000
+                cycle = int.from_bytes(packet[5:9], self.config.gateway.endian, signed=False) / 100
+                state_of_charge = int.from_bytes(packet[9:13], self.config.gateway.endian, signed=False) / 256
 
                 logger.info(
                     "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
@@ -575,7 +585,7 @@ class PacketReader:
 
             return
 
-        if information_type == "Timestamp Packet 0":
+        if packet_type == "Timestamp Packet 0":
             logger.warning("Received Timestamp Packet 0, handling not implemented yet")
             # print("timestamp packet", int(len / 4), len)
             # for i in range(int(len / 4)):
@@ -583,7 +593,7 @@ class PacketReader:
             #         str(int.from_bytes(payload[i * 4 : (i + 1) * 4], ENDIAN, signed=False)) + ","
             #     )
 
-        if information_type == "Timestamp Packet 1":
+        if packet_type == "Timestamp Packet 1":
             logger.warning("Received Timestamp Packet 1, handling not implemented yet")
             # print("time elapse packet", int(len / 4), len)
             # for i in range(int(len / 4)):
