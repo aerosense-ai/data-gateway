@@ -308,8 +308,8 @@ class PacketReader:
                             ]:
 
                                 data, sensor_names = self._parse_sensor_packet_data(
-                                    node_id=packet_origin,
-                                    packet_type=packet_type_name,
+                                    packet_origin=packet_origin,
+                                    packet_type_name=packet_type_name,
                                     payload=packet,
                                     data=data,
                                 )
@@ -331,7 +331,7 @@ class PacketReader:
                             ]:
                                 self._parse_remote_info_packet(
                                     packet_origin=packet_origin,
-                                    packet_type=self.handles[packet_origin][packet_type],
+                                    packet_type_name=packet_type_name,
                                     packet=packet,
                                 )
 
@@ -456,30 +456,30 @@ class PacketReader:
         with open(os.path.join(self.local_output_directory, "configuration.json"), "w") as f:
             json.dump(self.config.to_dict(), f)
 
-    def _parse_sensor_packet_data(self, node_id, packet_type, payload, data):
+    def _parse_sensor_packet_data(self, packet_origin, packet_type_name, payload, data):
         """Parse sensor data type payloads.
 
-        :param str node_id: the ID of the node the packet is from
+        :param str packet_origin: the ID of the node the packet is from
         :param str packet_type: Type of the packet
         :param iter payload: Raw payload to be parsed
         :param dict data: Initialised data dict to be completed with parsed data
         :return dict data:
         """
-        node_config = self.config.nodes[node_id]
+        node_config = self.config.nodes[packet_origin]
 
-        if packet_type == "Abs. baros":
+        if packet_type_name == "Abs. baros":
             # Write the received payload to the data field
             # TODO bytes_per_sample should probably be in the configuration
             bytes_per_sample = 6
             for i in range(node_config.samples_per_packet["Baros_P"]):
                 for j in range(node_config.number_of_sensors["Baros_P"]):
-                    data[node_id]["Baros_P"][j][i] = int.from_bytes(
+                    data[packet_origin]["Baros_P"][j][i] = int.from_bytes(
                         payload[(bytes_per_sample * j) : (bytes_per_sample * j + 4)],
                         self.config.gateway.endian,
                         signed=False,
                     )
 
-                    data[node_id]["Baros_T"][j][i] = int.from_bytes(
+                    data[packet_origin]["Baros_T"][j][i] = int.from_bytes(
                         payload[(bytes_per_sample * j + 4) : (bytes_per_sample * j + 6)],
                         self.config.gateway.endian,
                         signed=True,
@@ -487,13 +487,13 @@ class PacketReader:
 
             return data, ["Baros_P", "Baros_T"]
 
-        if packet_type == "Diff. baros":
+        if packet_type_name == "Diff. baros":
             bytes_per_sample = 2
             number_of_diff_baros_sensors = node_config.number_of_sensors["Diff_Baros"]
 
             for i in range(node_config.samples_per_packet["Diff_Baros"]):
                 for j in range(number_of_diff_baros_sensors):
-                    data[node_id]["Diff_Baros"][j][i] = int.from_bytes(
+                    data[packet_origin]["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
                             (bytes_per_sample * (number_of_diff_baros_sensors * i + j)) : (
                                 bytes_per_sample * (number_of_diff_baros_sensors * i + j + 1)
@@ -505,7 +505,7 @@ class PacketReader:
 
             return data, ["Diff_Baros"]
 
-        if packet_type == "Mic 0":
+        if packet_type_name == "Mic 0":
             # Write the received payload to the data field
             bytes_per_sample = 3
 
@@ -514,22 +514,22 @@ class PacketReader:
 
                     index = j + 20 * i
 
-                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j][2 * i] = int.from_bytes(
+                    data[packet_origin][DEFAULT_SENSOR_NAMES[0]][j][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * index) : (bytes_per_sample * index + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j][2 * i + 1] = int.from_bytes(
+                    data[packet_origin][DEFAULT_SENSOR_NAMES[0]][j][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 5)) : (bytes_per_sample * (index + 5) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i] = int.from_bytes(
+                    data[packet_origin][DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 10)) : (bytes_per_sample * (index + 10) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
                     )
-                    data[node_id][DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i + 1] = int.from_bytes(
+                    data[packet_origin][DEFAULT_SENSOR_NAMES[0]][j + 5][2 * i + 1] = int.from_bytes(
                         payload[(bytes_per_sample * (index + 15)) : (bytes_per_sample * (index + 15) + 3)],
                         "big",  # Unlike the other sensors, the microphone data come in big-endian
                         signed=True,
@@ -537,31 +537,31 @@ class PacketReader:
 
             return data, [DEFAULT_SENSOR_NAMES[0]]
 
-        if packet_type.startswith("IMU"):
+        if packet_type_name.startswith("IMU"):
             imu_sensor_names = {"IMU Accel": "Acc", "IMU Gyro": "Gyro", "IMU Magnetometer": "Mag"}
-            imu_sensor = imu_sensor_names[packet_type]
+            imu_sensor = imu_sensor_names[packet_type_name]
 
             # Write the received payload to the data field
             for i in range(node_config.samples_per_packet["Acc"]):
                 index = 6 * i
 
-                data[node_id][imu_sensor][0][i] = int.from_bytes(
+                data[packet_origin][imu_sensor][0][i] = int.from_bytes(
                     payload[index : (index + 2)], self.config.gateway.endian, signed=True
                 )
-                data[node_id][imu_sensor][1][i] = int.from_bytes(
+                data[packet_origin][imu_sensor][1][i] = int.from_bytes(
                     payload[(index + 2) : (index + 4)], self.config.gateway.endian, signed=True
                 )
-                data[node_id][imu_sensor][2][i] = int.from_bytes(
+                data[packet_origin][imu_sensor][2][i] = int.from_bytes(
                     payload[(index + 4) : (index + 6)], self.config.gateway.endian, signed=True
                 )
 
             return data, [imu_sensor]
 
-        if packet_type in {"Analog Kinetron", "Analog1", "Analog2"}:
+        if packet_type_name in {"Analog Kinetron", "Analog1", "Analog2"}:
             logger.error("Received Analog Kinetron, Analog1 or Analog2 packet. Not supported atm")
-            raise exceptions.UnknownPacketTypeError(f"Packet of type {packet_type!r} is unknown.")
+            raise exceptions.UnknownPacketTypeError(f"Packet of type {packet_type_name!r} is unknown.")
 
-        if packet_type == "Analog Vbat":
+        if packet_type_name == "Analog Vbat":
 
             def val_to_v(val):
                 return val / 1e6
@@ -569,30 +569,30 @@ class PacketReader:
             for i in range(node_config.samples_per_packet["Analog Vbat"]):
                 index = 4 * i
 
-                data[node_id]["Analog Vbat"][0][i] = val_to_v(
+                data[packet_origin]["Analog Vbat"][0][i] = val_to_v(
                     int.from_bytes(payload[index : (index + 4)], self.config.gateway.endian, signed=False)
                 )
 
             return data, ["Analog Vbat"]
 
-        if packet_type == "Constat":
+        if packet_type_name == "Constat":
             bytes_per_sample = 10
             for i in range(node_config.samples_per_packet["Constat"]):
-                data[node_id]["Constat"][0][i] = struct.unpack(
+                data[packet_origin]["Constat"][0][i] = struct.unpack(
                     "<f" if self.config.gateway.endian == "little" else ">f",
                     payload[(bytes_per_sample * i) : (bytes_per_sample * i + 4)],
                 )[0]
-                data[node_id]["Constat"][1][i] = int.from_bytes(
+                data[packet_origin]["Constat"][1][i] = int.from_bytes(
                     payload[(bytes_per_sample * i + 4) : (bytes_per_sample * i + 5)],
                     self.config.gateway.endian,
                     signed=True,
                 )
-                data[node_id]["Constat"][2][i] = int.from_bytes(
+                data[packet_origin]["Constat"][2][i] = int.from_bytes(
                     payload[(bytes_per_sample * i + 5) : (bytes_per_sample * i + 6)],
                     self.config.gateway.endian,
                     signed=True,
                 )
-                data[node_id]["Constat"][3][i] = int.from_bytes(
+                data[packet_origin]["Constat"][3][i] = int.from_bytes(
                     payload[(bytes_per_sample * i + 6) : (bytes_per_sample * i + 10)],
                     self.config.gateway.endian,
                     signed=False,
@@ -601,24 +601,24 @@ class PacketReader:
                 if i == 0:
                     logger.debug(
                         "Constats received from node %s: filtered_rssi=%s, raw_rssi=%s, tx_power=%s, allocated_heap_memory=%s",
-                        node_id,
-                        data[node_id]["Constat"][0][i],
-                        data[node_id]["Constat"][1][i],
-                        data[node_id]["Constat"][2][i],
-                        data[node_id]["Constat"][3][i],
+                        packet_origin,
+                        data[packet_origin]["Constat"][0][i],
+                        data[packet_origin]["Constat"][1][i],
+                        data[packet_origin]["Constat"][2][i],
+                        data[packet_origin]["Constat"][3][i],
                     )
 
             return data, ["Constat"]
 
         else:  # if packet_type not in self.handles
-            logger.error("Sensor of type %r is unknown.", packet_type)
-            raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
+            logger.error("Sensor of type %r is unknown.", packet_type_name)
+            raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type_name!r} is unknown.")
 
     def _parse_remote_info_packet(self, packet_origin, packet_type_name, packet):
         """Parse information type packet and send the information to logger.
 
         :param str packet_origin: the ID of the node the packet is from
-        :param str packet_type: From packet handles, defines what information is stored in the packet.
+        :param str packet_type_name: From packet handles, defines what information is stored in the packet.
         :param iter packet: The packet
         :return None:
         """
@@ -626,11 +626,11 @@ class PacketReader:
 
         if packet_type_name == "Mic 1":
             if packet[0] == 1:
-                logger.info("Microphone data reading done")
+                logger.info("Sensor reading from flash done")
             elif packet[0] == 2:
-                logger.info("Microphone data erasing done")
+                logger.info("Flash erasing done")
             elif packet[0] == 3:
-                logger.info("Microphones started ")
+                logger.info("Sensor started")
 
         elif packet_type_name == "Cmd Decline":
             reason_index = str(int.from_bytes(packet, self.config.gateway.endian, signed=False))
