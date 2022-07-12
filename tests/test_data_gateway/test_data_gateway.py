@@ -125,6 +125,42 @@ class TestDataGateway(BaseTestCase):
         finally:
             self._delete_temporary_output_directories()
 
+    def test_no_data_written_if_no_time_offset(self):
+        """Test that if no constats are received prior to a data-containing packet, that no data is written
+        and an error is logged
+        """
+        serial_port = DummySerial(port="test")
+
+        packet_type = bytes([34])
+        serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
+
+        data_gateway = DataGateway(
+            serial_port,
+            save_locally=True,
+            upload_to_cloud=False,
+            output_directory=self._generate_temporary_output_directory_name(),
+            window_size=self.WINDOW_SIZE,
+            bucket_name=TEST_BUCKET_NAME,
+            stop_sensors_on_exit=False,
+        )
+
+        # TODO something to do with multiprocessing kills this patch so we can't test that a missing timestamp issues an error...
+        # We wish to make the following assertation:
+        # with patch("data_gateway.packet_reader.logger") as mock_logger:
+        #     # <start then check the sensor data>
+        #     self.assertIn(
+        #         "Unable to apply time offset to packet, skipped packet parsing (origin %s, type %s)",
+        #         mock_logger.method_calls[0].args[0],
+        #     )
+
+        data_gateway.start(stop_when_no_more_data_after=0.1)
+
+        self._check_sensor_data_is_not_written_to_files(
+            data_gateway.packet_reader.local_output_directory,
+            node_id="0",
+            sensor_names=["Abs. Baros"],
+        )
+
     def test_data_gateway_with_connections_statistics_in_sleep_mode(self):
         """Test that the data gateway works with the connection statistics "sensor" in sleep state. Normally,
         randomly generated payloads would trigger packet loss warning in logger. Check that this warning is suppressed
@@ -156,13 +192,13 @@ class TestDataGateway(BaseTestCase):
             with patch("data_gateway.packet_reader.logger") as mock_logger:
                 data_gateway.start(stop_when_no_more_data_after=0.1)
 
-            self._check_data_is_written_to_files(
-                data_gateway.packet_reader.local_output_directory,
-                node_id="0",
-                sensor_names=["Constat"],
-            )
+                self._check_data_is_written_to_files(
+                    data_gateway.packet_reader.local_output_directory,
+                    node_id="0",
+                    sensor_names=["Constat"],
+                )
 
-            self.assertEqual(0, mock_logger.warning.call_count)
+                self.assertEqual(0, mock_logger.warning.call_count)
 
     def test_all_sensors_together(self):
         """Test that the data gateway works with all sensors together."""
@@ -323,6 +359,7 @@ class TestDataGateway(BaseTestCase):
         :return None:
         """
         windows = [file for file in os.listdir(output_directory) if file.startswith(TimeBatcher._file_prefix)]
+
         self.assertTrue(len(windows) > 0)
 
         for window in windows:
@@ -332,3 +369,19 @@ class TestDataGateway(BaseTestCase):
                 for name in sensor_names:
                     lines = data[node_id][name]
                     self.assertTrue(len(lines[0]) > 1)
+
+    def _check_sensor_data_is_not_written_to_files(self, output_directory, node_id, sensor_names):
+        """Check that non-trivial data is written to the given file.
+
+        :return None:
+        """
+        windows = [file for file in os.listdir(output_directory) if file.startswith(TimeBatcher._file_prefix)]
+
+        self.assertTrue(len(windows) > 0)
+
+        for window in windows:
+            with open(os.path.join(output_directory, window)) as f:
+                data = json.load(f)
+
+                for name in sensor_names:
+                    self.assertNotIn(name, data.get(node_id, {}))

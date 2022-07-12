@@ -202,7 +202,6 @@ class PacketReader:
                             if stop_when_no_more_data_after is not False:
                                 break
                             continue
-
                         if packet_type == str(HANDLE_DEFINITION_PACKET_TYPE):
                             logger.warning(
                                 "Origin %s (re)connected, updating handles and re-setting time offsets.", packet_origin
@@ -231,7 +230,15 @@ class PacketReader:
                             timestamp = self._apply_time_offset(
                                 packet_origin, packet_type_name, packet, packet_timestamp
                             )
-                            if packet_type_name == "Local Info Message":
+
+                            if timestamp is None:
+                                logger.error(
+                                    "Unable to apply time offset to packet, skipped packet parsing (origin %s, type %s)",
+                                    packet_origin,
+                                    packet_timestamp,
+                                )
+
+                            elif packet_type_name == "Local Info Message":
 
                                 local_info_type = str(
                                     int.from_bytes(packet[0:1], self.config.gateway.endian, signed=False)
@@ -330,7 +337,7 @@ class PacketReader:
 
                             else:
                                 logger.error(
-                                    "Unprocessed packet of type %s from packet_origin %s - you are missing a parser routine",
+                                    "Unprocessed packet of type %s from packet_origin %s - check packet type names for a corresponding parser routine",
                                     packet_type_name,
                                     packet_origin,
                                 )
