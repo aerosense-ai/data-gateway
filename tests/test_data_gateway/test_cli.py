@@ -204,6 +204,7 @@ class TestStart(BaseTestCase):
         with EnvironmentVariableRemover("GOOGLE_APPLICATION_CREDENTIALS"):
             serial_port = DummySerial(port="test")
             sensor_type = bytes([34])
+            serial_port.write(self.random_constats_packet())
             serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, sensor_type, LENGTH, RANDOM_BYTES[0])))
             serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, sensor_type, LENGTH, RANDOM_BYTES[1])))
 
@@ -229,7 +230,7 @@ class TestStart(BaseTestCase):
                 with open(os.path.join(temporary_directory, session_subdirectory, "window-0.json")) as f:
                     data = json.loads(f.read())
 
-                self.assertEqual(len(data["0"]), 2)
+                self.assertEqual(len(data["0"]), 3)
                 self.assertTrue(len(data["0"]["Baros_P"][0]) > 1)
                 self.assertTrue(len(data["0"]["Baros_T"][0]) > 1)
 

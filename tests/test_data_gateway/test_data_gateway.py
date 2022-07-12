@@ -1,9 +1,7 @@
 import json
 import os
 import shutil
-import struct
 import tempfile
-from time import time
 from unittest.mock import patch
 
 import coolname
@@ -19,20 +17,6 @@ from tests.base import BaseTestCase
 
 
 temporary_output_directories = []
-
-
-def make_random_constats_packet(packet_origin="0", packet_timestamp=None, packet_type="52"):
-    """Mimic a constats packet with random data but a correct timestamp
-
-    Used to generate initial constats packets, which should be written to the serial port in order
-    to set time offsets on the packet parser prior to issuing any test data that will require the time offsets to be set
-    """
-    packet_timestamp = packet_timestamp or time()
-    current_time = int(packet_timestamp)
-    current_time_bytes = struct.pack(">i", current_time)
-    leading_byte = Configuration().get_leading_byte(int(packet_origin))
-    packet = b"".join((leading_byte, bytes([int(packet_type)]), LENGTH, RANDOM_BYTES[0][0:240], current_time_bytes))
-    return packet
 
 
 class TestDataGateway(BaseTestCase):
@@ -55,7 +39,7 @@ class TestDataGateway(BaseTestCase):
         serial_port = DummySerial(port="test")
         packet_type = bytes([34])
 
-        serial_port.write(data=make_random_constats_packet())
+        serial_port.write(data=self.random_constats_packet())
         serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
         serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
@@ -94,7 +78,7 @@ class TestDataGateway(BaseTestCase):
                 (bytes([52]), "Constat"),
             ]:
                 with self.subTest(sensor_name=sensor_name):
-                    serial_port.write(data=make_random_constats_packet())
+                    serial_port.write(data=self.random_constats_packet())
                     serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
                     serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
 
@@ -169,7 +153,7 @@ class TestDataGateway(BaseTestCase):
         serial_port = DummySerial(port="test")
 
         # Set the time offset for the node
-        serial_port.write(data=make_random_constats_packet())
+        serial_port.write(data=self.random_constats_packet())
 
         # Enter sleep state
         serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, bytes([56]), bytes([1]), bytes([1]))))
@@ -206,7 +190,7 @@ class TestDataGateway(BaseTestCase):
         packet_types = (bytes([34]), bytes([36]), bytes([38]), bytes([42]), bytes([44]), bytes([46]))
         sensor_names = ("Baros_P", "Baros_T", "Diff_Baros", "Mics", "Acc", "Gyro", "Mag")
 
-        serial_port.write(data=make_random_constats_packet())
+        serial_port.write(data=self.random_constats_packet())
         for packet_type in packet_types:
             serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))
             serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[1])))
@@ -258,8 +242,8 @@ class TestDataGateway(BaseTestCase):
         configuration.nodes["1"] = configuration.nodes["0"]
 
         # Set the time offset for the nodes
-        serial_port.write(data=make_random_constats_packet(packet_origin="0"))
-        serial_port.write(data=make_random_constats_packet(packet_origin="1"))
+        serial_port.write(data=self.random_constats_packet(packet_origin="0"))
+        serial_port.write(data=self.random_constats_packet(packet_origin="1"))
 
         for packet_type in packet_types["0"]:
             serial_port.write(data=b"".join((ZEROTH_NODE_LEADING_BYTE, packet_type, LENGTH, RANDOM_BYTES[0])))

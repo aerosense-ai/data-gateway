@@ -1,12 +1,15 @@
 import json
 import os
+import struct
 import unittest
 import warnings
+from time import time
 
 import numpy as np
 from octue.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
 
-from tests import TEST_BUCKET_NAME
+from data_gateway.configuration import Configuration
+from tests import LENGTH, RANDOM_BYTES, TEST_BUCKET_NAME
 
 
 class DatasetMixin:
@@ -26,8 +29,8 @@ class DatasetMixin:
         :return array random_data:
         """
         data = np.random.rand(rows, cols)
-        time = np.linspace(first_sample_time, last_sample_time, rows)
-        random_data = np.append(np.transpose([time]), data, axis=1)
+        sample_time = np.linspace(first_sample_time, last_sample_time, rows)
+        random_data = np.append(np.transpose([sample_time]), data, axis=1)
         return random_data
 
     def random_window(self, sensors=None, window_duration=None):
@@ -52,6 +55,19 @@ class DatasetMixin:
             window["0"][sensor] = self.random_sensor_data(rows, cols, 0, last_sample_time)
 
         return window
+
+    def random_constats_packet(self, packet_origin="0", packet_timestamp=None, packet_type="52"):
+        """Make a constats packet with random data but a correct timestamp
+
+        Used to generate initial constats packets, which should be written to the serial port in order
+        to set time offsets on the packet parser prior to issuing any test data that will require the time offsets to be set
+        """
+        packet_timestamp = packet_timestamp or time()
+        current_time = int(packet_timestamp)
+        current_time_bytes = struct.pack(">i", current_time)
+        leading_byte = Configuration().get_leading_byte(int(packet_origin))
+        packet = b"".join((leading_byte, bytes([int(packet_type)]), LENGTH, RANDOM_BYTES[0][0:240], current_time_bytes))
+        return packet
 
 
 class BaseTestCase(unittest.TestCase, DatasetMixin):
