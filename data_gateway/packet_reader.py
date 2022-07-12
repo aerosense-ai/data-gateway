@@ -3,6 +3,7 @@ import json
 import multiprocessing
 import os
 import queue
+import statistics
 import struct
 import time
 
@@ -359,32 +360,31 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.gateway.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.gateway.endian)
 
-        if end_handle - start_handle == 26:
-            self.handles[node_id] = {
-                str(start_handle + 2): "Abs. baros",
-                str(start_handle + 4): "Diff. baros",
-                str(start_handle + 6): "Mic 0",
-                str(start_handle + 8): "Mic 1",
-                str(start_handle + 10): "IMU Accel",
-                str(start_handle + 12): "IMU Gyro",
-                str(start_handle + 14): "IMU Magnetometer",
-                str(start_handle + 16): "Analog1",
-                str(start_handle + 18): "Analog2",
-                str(start_handle + 20): "Constat",
-                str(start_handle + 22): "Cmd Decline",
-                str(start_handle + 24): "Sleep State",
-                str(start_handle + 26): "Info message",
-            }
+        if end_handle - start_handle != 30:
+            logger.error(
+                "Error while updating handles for node %s: start handle is %s, end handle is %s.",
+                node_id,
+                start_handle,
+                end_handle,
+            )
 
-            logger.info("Successfully updated handles for node %s.", node_id)
-            return
+        self.handles[node_id] = {
+            str(start_handle + 2): "Abs. baros",
+            str(start_handle + 4): "Diff. baros",
+            str(start_handle + 6): "Mic 0",
+            str(start_handle + 8): "Mic 1",
+            str(start_handle + 10): "IMU Accel",
+            str(start_handle + 12): "IMU Gyro",
+            str(start_handle + 14): "IMU Magnetometer",
+            str(start_handle + 16): "Analog1",
+            str(start_handle + 18): "Analog2",
+            str(start_handle + 20): "Constat",
+            str(start_handle + 22): "Cmd Decline",
+            str(start_handle + 24): "Sleep State",
+            str(start_handle + 26): "Info message",
+        }
 
-        logger.error(
-            "Error while updating handles for node %s: start handle is %s, end handle is %s.",
-            node_id,
-            start_handle,
-            end_handle,
-        )
+        logger.info("Successfully updated handles for node %s.", node_id)
 
     def _apply_time_offset(self, packet_origin, packet_type_name, packet, packet_timestamp):
 
@@ -400,10 +400,26 @@ class PacketReader:
             )
             if packet_type_name == "Constat":
                 # Use the node_timestamp in the constats to update the offset (synchronise to the packet timestamp)
-                self.time_offsets[packet_origin] = packet_timestamp - node_timestamp
-                absolute_timestamp = packet_timestamp
+                current_offset = packet_timestamp - node_timestamp
+
+                # Store up to 10 historic entries of the time offset to enable median filtering, preventing jittering
+                # timestamps from corrupting data sequences
+                offset_history = self.time_offsets.get(packet_origin, [])
+                offset_history.append(current_offset)
+                if len(offset_history) > 10:
+                    offset_history.remove(0)
+                self.time_offsets[packet_origin] = offset_history
+
+                # Use the median to adjust timestamps even for the reference packets
+                median_offset = statistics.median(offset_history)
+                absolute_timestamp = node_timestamp + median_offset
+
                 logger.debug(
-                    "Updated time offset for packet_origin %s to %s", packet_origin, self.time_offsets[packet_origin]
+                    "Updated time offset for packet_origin %s to %s (current_offset = %s, median_offset = %s)",
+                    packet_origin,
+                    absolute_timestamp,
+                    current_offset,
+                    median_offset,
                 )
 
             elif self.time_offsets.get(packet_origin, None) is None:
@@ -418,7 +434,8 @@ class PacketReader:
 
             else:
                 # Convert the node timestamp in the packet to an absolute timestamp
-                absolute_timestamp = node_timestamp + self.time_offsets[packet_origin]
+                median_offset = statistics.median(self.time_offsets[packet_origin])
+                absolute_timestamp = node_timestamp + median_offset
 
         else:
             # No node timestamp, packet_timestamp is the best approximation
@@ -430,7 +447,7 @@ class PacketReader:
         """Set the time offset to the packet timestamp
         This should be issued on restart of a node (typically when the node_timestamp is assumed to be zero)
         """
-        self.time_offsets[packet_origin] = packet_timestamp - node_timestamp
+        self.time_offsets[packet_origin] = [packet_timestamp - node_timestamp]
 
     def _save_configuration_to_disk(self):
         """Save the configuration to disk as a JSON file.

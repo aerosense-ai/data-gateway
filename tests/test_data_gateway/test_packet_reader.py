@@ -58,7 +58,7 @@ class TestPacketReader(BaseTestCase):
         """Test that the handles can be updated."""
         packet = bytearray(RANDOM_BYTES[0])
         packet[0:1] = int(0).to_bytes(1, "little")
-        packet[2:3] = int(26).to_bytes(1, "little")
+        packet[2:3] = int(30).to_bytes(1, "little")
         packet_reader = PacketReader(
             save_locally=False,
             upload_to_cloud=False,
