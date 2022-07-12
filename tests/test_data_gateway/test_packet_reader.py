@@ -1,5 +1,6 @@
 import multiprocessing
 import tempfile
+import time
 from unittest.mock import patch
 
 from data_gateway.packet_reader import PacketReader
@@ -14,9 +15,10 @@ class TestPacketReader(BaseTestCase):
 
         queue.put(
             {
-                "node_id": "0",
+                "packet_origin": "0",
                 "packet_type": bytes([0]),
                 "packet": b"".join((ZEROTH_NODE_LEADING_BYTE, bytes([0]), LENGTH, RANDOM_BYTES[0])),
+                "packet_timestamp": time.time(),
             }
         )
 
@@ -33,7 +35,7 @@ class TestPacketReader(BaseTestCase):
                 stop_when_no_more_data_after=0.1,
             )
 
-        self.assertIn("unknown type: ", mock_logger.method_calls[1].args[0])
+        self.assertIn("unknown type", mock_logger.method_calls[1].args[0])
 
     def test_update_handles_fails_if_start_and_end_handles_are_incorrect(self):
         """Test that an error is raised if the start and end handles are incorrect when trying to update handles."""
@@ -56,7 +58,7 @@ class TestPacketReader(BaseTestCase):
         """Test that the handles can be updated."""
         packet = bytearray(RANDOM_BYTES[0])
         packet[0:1] = int(0).to_bytes(1, "little")
-        packet[2:3] = int(26).to_bytes(1, "little")
+        packet[2:3] = int(30).to_bytes(1, "little")
         packet_reader = PacketReader(
             save_locally=False,
             upload_to_cloud=False,
@@ -83,7 +85,14 @@ class TestPacketReader(BaseTestCase):
 
         for index, packet_type in enumerate(packet_types):
             for packet in packets[index]:
-                queue.put({"node_id": "0", "packet_type": str(int.from_bytes(packet_type, "little")), "packet": packet})
+                queue.put(
+                    {
+                        "packet_origin": "0",
+                        "packet_type": str(int.from_bytes(packet_type, "little")),
+                        "packet": packet,
+                        "packet_timestamp": time.time(),
+                    }
+                )
 
         with tempfile.TemporaryDirectory() as temporary_directory:
             packet_reader = PacketReader(
@@ -102,9 +111,9 @@ class TestPacketReader(BaseTestCase):
                 log_messages = [call_arg.args for call_arg in mock_logger.info.call_args_list]
 
                 for message in [
-                    ("Microphone data reading done",),
-                    ("Microphone data erasing done",),
-                    ("Microphones started ",),
+                    ("Sensor reading from flash done",),
+                    ("Flash erasing done",),
+                    ("Sensor started",),
                     ("Command declined, %s", "Bad block detection ongoing"),
                     ("Command declined, %s", "Task already registered, cannot register again"),
                     ("Command declined, %s", "Task is not registered, cannot de-register"),

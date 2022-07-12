@@ -17,7 +17,11 @@ DEFAULT_SENSOR_NAMES = [
     "Constat",
 ]
 
-DEFAULT_DEFAULT_HANDLES = {
+DEFAULT_INITIAL_GATEWAY_HANDLES = {
+    "64": "Local Info Message",
+}
+
+DEFAULT_INITIAL_NODE_HANDLES = {
     "34": "Abs. baros",
     "36": "Diff. baros",
     "38": "Mic 0",
@@ -118,6 +122,8 @@ DEFAULT_SESSION = {
     "label": None,
 }
 
+HANDLE_DEFINITION_PACKET_TYPE = 255  # 0xFF,
+
 
 class GatewayConfiguration:
     """A data class containing configured/default values for the gateway receiver
@@ -126,6 +132,7 @@ class GatewayConfiguration:
     :param Literal["little", "big"] endian: one of "little" or "big"
     :param str installation_reference: A unique reference (id) for the current installation
     :param float latitude: The latitude of the turbine in WGS84 coordinate system
+    :param dict|None local_info_types: A map of labels to the type of information received from base station
     :param float longitude: The longitude of the turbine in WGS84 coordinate system
     :param int packet_key: The prefix value for packets received from the base station (i.e. not from a node)
     :param int packet_key_offset: The base prefix value for packets received from nodes (node_packet_key = node_id + packet_key_offset)
@@ -140,8 +147,10 @@ class GatewayConfiguration:
         self,
         baudrate=2300000,
         endian="little",
+        initial_gateway_handles=None,
         installation_reference="unknown",
         latitude=0,
+        local_info_types=None,
         longitude=0,
         packet_key=254,
         packet_key_offset=245,
@@ -152,8 +161,10 @@ class GatewayConfiguration:
     ):
         self.baudrate = baudrate
         self.endian = endian
+        self.initial_gateway_handles = initial_gateway_handles or DEFAULT_INITIAL_GATEWAY_HANDLES
         self.installation_reference = installation_reference
         self.latitude = latitude
+        self.local_info_types = local_info_types or DEFAULT_LOCAL_INFO_TYPES
         self.longitude = longitude
         self.serial_buffer_rx_size = serial_buffer_rx_size
         self.serial_buffer_tx_size = serial_buffer_tx_size
@@ -182,10 +193,9 @@ class NodeConfiguration:
     :param float constat_period: period of incoming connection statistic parameters in ms
     :param dict|None decline_reason:
     :param float diff_baros_freq: differential barometers sampling frequency
-    :param dict|None default_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
+    :param dict|None initial_node_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
     :param float gyro_freq: gyrometers sampling frequency
     :param float gyro_range: TODO nobody seems to know...
-    :param dict|None local_info_type: A map of labels to the type of information received from base station
     :param float mag_freq:
     :param float mics_freq: microphones sampling frequency
     :param float mics_bm: TODO nobody seems to know...
@@ -200,7 +210,6 @@ class NodeConfiguration:
     :param dict|None sensor_coordinates:
     :param list|None sensor_names: List of sensors present on the measurement node
     :param dict|None sleep_state:
-    :param int type_handle_def: TODO
     :return None:
     """
 
@@ -215,10 +224,9 @@ class NodeConfiguration:
         constat_period=45,
         decline_reason=None,
         diff_baros_freq=1000,
-        default_handles=None,
+        initial_node_handles=None,
         gyro_freq=100,
         gyro_range=2000,
-        local_info_type=None,
         mag_freq=12.5,
         mics_freq=15625,
         mics_bm=0x3FF,
@@ -233,7 +241,6 @@ class NodeConfiguration:
         sensor_coordinates=None,
         sensor_names=None,
         sleep_state=None,
-        type_handle_def=0xFF,
     ):
         # Set kwargs as attributes directly
         self.acc_freq = acc_freq
@@ -252,13 +259,11 @@ class NodeConfiguration:
         self.mics_bm = mics_bm
         self.mics_freq = mics_freq
         self.node_firmware_version = node_firmware_version
-        self.type_handle_def = type_handle_def
 
         # Set default dictionaries
         self.decline_reason = decline_reason or DEFAULT_DECLINE_REASONS
-        self.default_handles = default_handles or DEFAULT_DEFAULT_HANDLES
+        self.initial_node_handles = initial_node_handles or DEFAULT_INITIAL_NODE_HANDLES
         self.remote_info_type = remote_info_type or DEFAULT_REMOTE_INFO_TYPES
-        self.local_info_type = local_info_type or DEFAULT_LOCAL_INFO_TYPES
         self.number_of_sensors = number_of_sensors or DEFAULT_NUMBER_OF_SENSORS
         self.samples_per_packet = samples_per_packet or DEFAULT_SAMPLES_PER_PACKET
         self.sensor_commands = sensor_commands or DEFAULT_SENSOR_COMMANDS

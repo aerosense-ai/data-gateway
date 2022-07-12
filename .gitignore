@@ -109,5 +109,8 @@ ENV/
 # Wireguard credentials
 *.wg.conf
 
+# Local gcp credentials
+gcp-credentials*
+
 # VSCode local settings
 .vscode
