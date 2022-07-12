@@ -71,7 +71,6 @@ class PacketReader:
         self.writer = None
         self.handles = {node_id: node_config.initial_node_handles for node_id, node_config in self.config.nodes.items()}
         self.handles[BASE_STATION_ID] = self.config.gateway.initial_gateway_handles
-        self.sleep = False
 
         self.time_offsets = {}
 
@@ -615,7 +614,7 @@ class PacketReader:
             logger.error("Sensor of type %r is unknown.", packet_type)
             raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type!r} is unknown.")
 
-    def _parse_remote_info_packet(self, packet_origin, packet_type, packet):
+    def _parse_remote_info_packet(self, packet_origin, packet_type_name, packet):
         """Parse information type packet and send the information to logger.
 
         :param str packet_origin: the ID of the node the packet is from
@@ -625,33 +624,23 @@ class PacketReader:
         """
         node_config = self.config.nodes[packet_origin]
 
-        if packet_type == "Mic 1":
+        if packet_type_name == "Mic 1":
             if packet[0] == 1:
                 logger.info("Microphone data reading done")
             elif packet[0] == 2:
                 logger.info("Microphone data erasing done")
             elif packet[0] == 3:
                 logger.info("Microphones started ")
-            return
 
-        if packet_type == "Cmd Decline":
+        elif packet_type_name == "Cmd Decline":
             reason_index = str(int.from_bytes(packet, self.config.gateway.endian, signed=False))
             logger.info("Command declined, %s", node_config.decline_reason[reason_index])
-            return
 
-        if packet_type == "Sleep State":
+        elif packet_type_name == "Sleep State":
             state_index = str(int.from_bytes(packet, self.config.gateway.endian, signed=False))
             logger.info("Sleep state updated on node %s: %s", packet_origin, node_config.sleep_state[state_index])
 
-            # TODO make this node-specific
-            if bool(int(state_index)):
-                self.sleep = True
-            else:
-                self.sleep = False
-
-            return
-
-        if packet_type == "Remote Info Message":
+        elif packet_type_name == "Remote Info Message":
             remote_info_key = str(int.from_bytes(packet[0:1], self.config.gateway.endian, signed=False))
             info_subtype = node_config.remote_info_type[remote_info_key]
             logger.info("Received remote info packet from node %s: %s", packet_origin, info_subtype)
@@ -669,9 +658,7 @@ class PacketReader:
                     state_of_charge,
                 )
 
-            return
-
-        if packet_type == "Timestamp Packet 0":
+        elif packet_type_name == "Timestamp Packet 0":
             # print("timestamp packet", int(len / 4), len)
             # for i in range(int(len / 4)):
             #     files["ts" + str(packet_source)].write(
@@ -679,7 +666,7 @@ class PacketReader:
             #     )
             logger.warning("Received Timestamp Packet 0, handling not implemented yet")
 
-        if packet_type == "Timestamp Packet 1":
+        elif packet_type_name == "Timestamp Packet 1":
             # print("time elapse packet", int(len / 4), len)
             # for i in range(int(len / 4)):
             #     files["sampleElapse" + str(packet_source)].write(
