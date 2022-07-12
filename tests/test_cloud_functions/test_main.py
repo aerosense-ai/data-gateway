@@ -84,7 +84,7 @@ class TestUploadWindow(BaseTestCase):
         # Check data was persisted.
         self.assertIn("add_sensor_data", mock_dataset.mock_calls[2][0])
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "aventa_turbine")
+        self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "my_installation_reference")
         self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my-test-1")
 
     def test_upload_window_with_microphone_data(self):
@@ -122,7 +122,7 @@ class TestUploadWindow(BaseTestCase):
                 "path": expected_microphone_cloud_path,
                 "node_id": "0",
                 "configuration_id": configuration_id,
-                "installation_reference": "aventa_turbine",
+                "installation_reference": "my_installation_reference",
                 "label": "my-test-1",
             },
         )
