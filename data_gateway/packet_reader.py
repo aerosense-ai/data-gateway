@@ -407,7 +407,7 @@ class PacketReader:
                 offset_history = self.time_offsets.get(packet_origin, [])
                 offset_history.append(current_offset)
                 if len(offset_history) > 10:
-                    offset_history.remove(0)
+                    offset_history.pop(0)
                 self.time_offsets[packet_origin] = offset_history
 
                 # Use the median to adjust timestamps even for the reference packets
