@@ -111,9 +111,9 @@ class TestPacketReader(BaseTestCase):
                 log_messages = [call_arg.args for call_arg in mock_logger.info.call_args_list]
 
                 for message in [
-                    ("Microphone data reading done",),
-                    ("Microphone data erasing done",),
-                    ("Microphones started ",),
+                    ("Sensor reading from flash done",),
+                    ("Flash erasing done",),
+                    ("Sensor started",),
                     ("Command declined, %s", "Bad block detection ongoing"),
                     ("Command declined, %s", "Task already registered, cannot register again"),
                     ("Command declined, %s", "Task is not registered, cannot de-register"),
