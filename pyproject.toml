@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "data-gateway"
-version = "0.13.0"
+version = "0.13.1"
 repository = "https://github.com/aerosense-ai/data-gateway"
 description = "A data gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud."
 readme = "README.md"
@@ -25,7 +25,7 @@ click = ">=7.1.2,<9"
 google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
-octue = "0.29.2"
+octue = "0.29.5"
 
 # On raspberry pi, using the pypi binary (which is built against glibc) fails with:
 #   https://stackoverflow.com/questions/72185264/glibc-2-29-not-found
