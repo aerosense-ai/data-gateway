@@ -19,7 +19,8 @@ jobs:
       - name: Get prefix (test- or nothing for production)
         id: prefix
         run: |
-          if [ "${{ github.ref }}" = "main" ]; then
+          echo ${{ github.ref }}
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "::set-output name=name_prefix::"
             echo "::set-output name=dataset_name_prefix::"
           else
