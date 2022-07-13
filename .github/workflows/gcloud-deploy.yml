@@ -43,12 +43,13 @@ jobs:
 
       - uses: google-github-actions/deploy-cloud-functions@v0
         with:
-          name: ${{ needs.get-prefix.outputs.name_prefix }}add-sensor-type
           description: Allows addition of a new sensor type whose values will be accepted into the database
           entry_point: add_sensor_type
+          env_vars: BIG_QUERY_DATASET_NAME=${{ needs.get-prefix.outputs.dataset_name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          name: ${{ needs.get-prefix.outputs.name_prefix }}add-sensor-type
           runtime: python39
           region: europe-west6
-          env_vars: BIG_QUERY_DATASET_NAME=${{ needs.get-prefix.outputs.dataset_name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          service_account_email: as-ingress@aerosense-twined.iam.gserviceaccount.com
           source_dir: cloud_functions
 
   deploy-create-installation:
@@ -69,12 +70,13 @@ jobs:
 
       - uses: google-github-actions/deploy-cloud-functions@v0
         with:
-          name: ${{ needs.get-prefix.outputs.name_prefix }}create-installation
           description: Allows creation of a new installation
           entry_point: create_installation
+          env_vars: BIG_QUERY_DATASET_NAME=${{ needs.get-prefix.outputs.dataset_name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          name: ${{ needs.get-prefix.outputs.name_prefix }}create-installation
           runtime: python39
           region: europe-west6
-          env_vars: BIG_QUERY_DATASET_NAME=${{ needs.get-prefix.outputs.dataset_name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined
+          service_account_email: as-ingress@aerosense-twined.iam.gserviceaccount.com
           source_dir: cloud_functions
 
   deploy-ingress-eu:
@@ -95,13 +97,14 @@ jobs:
 
       - uses: google-github-actions/deploy-cloud-functions@v0
         with:
-          name: ${{ needs.get-prefix.outputs.name_prefix }}ingress-eu
           entry_point: upload_window
-          runtime: python39
-          region: europe-west6
-          memory_mb: 1024
           env_vars: BIG_QUERY_DATASET_NAME=${{ needs.get-prefix.outputs.dataset_name_prefix }}greta,COMPUTE_PROVIDER=GOOGLE_CLOUD_FUNCTION,DESTINATION_PROJECT_NAME=aerosense-twined,DESTINATION_BUCKET_NAME=data-gateway-processed-data,SOURCE_PROJECT_NAME=aerosense-twined
-          source_dir: cloud_functions
           event_trigger_type: google.storage.object.finalize
           event_trigger_resource: projects/_/buckets/${{ needs.get-prefix.outputs.name_prefix }}aerosense-ingress-eu
           event_trigger_service: storage.googleapis.com
+          memory_mb: 1024
+          name: ${{ needs.get-prefix.outputs.name_prefix }}ingress-eu
+          region: europe-west6
+          runtime: python39
+          service_account_email: as-ingress@aerosense-twined.iam.gserviceaccount.com
+          source_dir: cloud_functions
