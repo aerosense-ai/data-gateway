@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "data-gateway"
-version = "0.13.1"
+version = "0.13.2"
 repository = "https://github.com/aerosense-ai/data-gateway"
 description = "A data gateway that runs on-nacelle for relaying data streams from aerosense nodes to cloud."
 readme = "README.md"
