@@ -201,7 +201,7 @@ class BatchingFileWriter(TimeBatcher):
             os.remove(oldest_window)
 
         elif calculate_disk_usage(self.output_directory, filter) >= 0.9 * self.storage_limit:
-            logger.warning("90% of storage limit reached - %s MB remaining.", 0.1 * storage_limit_in_mb)
+            logger.warning("90%% of storage limit reached - %s MB remaining.", 0.1 * storage_limit_in_mb)
 
     def _generate_window_path(self):
         """Generate the path that the window should be persisted to.
