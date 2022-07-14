@@ -109,7 +109,7 @@ def gateway_cli(logger_uri, log_level):
 @click.option(
     "--window-size",
     type=click.FLOAT,
-    default=600,
+    default=60,
     show_default=True,
     help="The window length in seconds that data is grouped into before being persisted locally or to the cloud.",
 )
