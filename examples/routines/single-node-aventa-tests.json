@@ -1,0 +1,18 @@
+{
+  "commands": [
+    ["selMsgDest 2", 5],
+    ["selMsgDest 2", 10],
+    ["wakeUp", 15],
+    ["getBattery", 75],
+    ["startBaros", 80],
+    ["startIMU", 85],
+    ["startMics", 180],
+    ["stopMics", 240],
+    ["stopBaros", 380],
+    ["stopIMU", 385],
+    ["readSens", 390],
+    ["readMics", 600],
+    ["sleep", 1200]
+  ],
+  "period": 3600
+}
