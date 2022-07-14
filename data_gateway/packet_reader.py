@@ -694,8 +694,8 @@ class PacketReader:
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
-            time = timestamp + i * period
-            sample = [time]
+            sample_time = timestamp + i * period
+            sample = [sample_time]
 
             for meas in data[node_id][sensor_name]:
                 sample.append(meas[i])
