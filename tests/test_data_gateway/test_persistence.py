@@ -162,13 +162,13 @@ class TestBatchingUploader(BaseTestCase):
                 uploader.add_to_current_window(node_id=node_id, sensor_name="test", data="pong")
                 self.assertEqual(len(uploader.current_window[node_id]["test"]), 2)
 
-                time.sleep(uploader.window_size)
+                time.sleep(0.1)
 
                 uploader.add_to_current_window(node_id=node_id, sensor_name="test", data="ding")
                 uploader.add_to_current_window(node_id=node_id, sensor_name="test", data="dong")
                 self.assertEqual(len(uploader.current_window[node_id]["test"]), 2)
 
-                time.sleep(uploader.window_size)
+                time.sleep(0.1)
 
             self.assertEqual(len(uploader.current_window[node_id]["test"]), 0)
 
