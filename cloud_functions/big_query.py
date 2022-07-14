@@ -103,9 +103,10 @@ class BigQueryDataset:
 
             logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
 
-        logger.warning(
-            "Received 0 samples of sensor data, skipping insert of data to BigQuery dataset %r", self.dataset_id
-        )
+        else:
+            logger.warning(
+                "Received 0 samples of sensor data, skipping insert of data to BigQuery dataset %r", self.dataset_id
+            )
 
     def record_microphone_data_location_and_metadata(
         self,

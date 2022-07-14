@@ -604,7 +604,7 @@ class PacketReader:
                 )
                 # Display only the first as an indication to avoid flooding logs
                 if i == 0:
-                    logger.debug(
+                    logger.info(
                         "Constats received from node %s: filtered_rssi=%s, raw_rssi=%s, tx_power=%s, allocated_heap_memory=%s",
                         packet_origin,
                         data[packet_origin]["Constat"][0][i],
