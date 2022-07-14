@@ -359,6 +359,8 @@ class PacketReader:
         start_handle = int.from_bytes(payload[0:1], self.config.gateway.endian)
         end_handle = int.from_bytes(payload[2:3], self.config.gateway.endian)
 
+        # TODO - resolve whether this actually ever gets updated or not (it always overwrites with the same)
+        # TODO resolve why there is a 30 difference between start and end handle, but there's a 32 difference in the handle range below
         if end_handle - start_handle != 30:
             logger.error(
                 "Error while updating handles for node %s: start handle is %s, end handle is %s.",
@@ -380,7 +382,10 @@ class PacketReader:
             str(start_handle + 20): "Constat",
             str(start_handle + 22): "Cmd Decline",
             str(start_handle + 24): "Sleep State",
-            str(start_handle + 26): "Info message",
+            str(start_handle + 26): "Remote Info Message",
+            str(start_handle + 28): "Timestamp Packet 0",
+            str(start_handle + 30): "Timestamp Packet 1",
+            str(start_handle + 32): "Local Info Message",
         }
 
         logger.info("Successfully updated handles for node %s.", node_id)
@@ -689,8 +694,8 @@ class PacketReader:
 
         # Iterate through all sample times.
         for i in range(number_of_samples):
-            time = timestamp + i * period
-            sample = [time]
+            sample_time = timestamp + i * period
+            sample = [sample_time]
 
             for meas in data[node_id][sensor_name]:
                 sample.append(meas[i])
