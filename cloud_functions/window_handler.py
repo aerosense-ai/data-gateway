@@ -117,8 +117,12 @@ class WindowHandler:
         else:
             labels = None
 
+        # Record the start time of this chunk of data, both for the octue file metadata and for the db ordering
+        window_timestamp = data[0][0]
+
         microphone_file = Datafile(
             path=storage.path.generate_gs_path(self.destination_bucket, "microphone", upload_path),
+            timestamp=window_timestamp,
             tags={
                 "node_id": node_id,
                 "configuration_id": configuration_id,
@@ -138,5 +142,6 @@ class WindowHandler:
             node_id=node_id,
             configuration_id=configuration_id,
             installation_reference=installation_reference,
+            timestamp=window_timestamp,
             label=label,
         )

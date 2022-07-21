@@ -121,6 +121,7 @@ class BigQueryDataset:
         node_id,
         configuration_id,
         installation_reference,
+        timestamp,
         label=None,
     ):
         """Record the file location and metadata for a window of microphone data.
@@ -129,6 +130,7 @@ class BigQueryDataset:
         :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the data
         :param str installation_reference: the reference for the installation that produced the data
+        :param float timestamp: The posix timestamp coinciding with the first entry in the window
         :param str|None label: the label applied to the gateway session that produced the data
         :raise ValueError: if the addition fails
         :return None:
@@ -137,6 +139,7 @@ class BigQueryDataset:
             table=self.client.get_table(self.table_names["microphone_data"]),
             rows=[
                 {
+                    "datetime": datetime.datetime.fromtimestamp(timestamp),
                     "path": path,
                     "node_id": node_id,
                     "configuration_id": configuration_id,
