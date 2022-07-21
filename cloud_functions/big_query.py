@@ -99,46 +99,23 @@ class BigQueryDataset:
 
             logger.info("Inserting %s rows into database in batches of %s", len(rows), INSERT_BATCH_SIZE)
 
-            # TODO remove this try/except and just use batches once the correct row size has been found
-            try:
+            batches = [rows[i : i + INSERT_BATCH_SIZE] for i in range(0, len(rows), INSERT_BATCH_SIZE)]
+            for batch in batches:
+
                 errors = self.client.insert_rows(
-                    table=self.client.get_table(self.table_names["sensor_data"]), rows=rows
+                    table=self.client.get_table(self.table_names["sensor_data"]), rows=batch
                 )
 
                 if errors:
                     raise ValueError(errors)
 
                 logger.info(
-                    "Inserted %d samples of sensor data from node %s to BigQuery dataset %r.",
+                    "Inserted %d of %d samples of sensor data from node %s to BigQuery dataset %r.",
+                    len(batch),
                     len(rows),
                     node_id,
                     self.dataset_id,
                 )
-
-            except Exception as e:
-                logger.error(
-                    "Could not insert %d samples of sensor data from node %s to BigQuery dataset %r - retrying as a batch. Error was %s",
-                    len(rows),
-                    node_id,
-                    self.dataset_id,
-                    str(e),
-                )
-                batches = [rows[i : i + INSERT_BATCH_SIZE] for i in range(0, len(rows), INSERT_BATCH_SIZE)]
-                for batch in batches:
-
-                    errors = self.client.insert_rows(
-                        table=self.client.get_table(self.table_names["sensor_data"]), rows=batch
-                    )
-
-                    if errors:
-                        raise ValueError(errors)
-
-                    logger.info(
-                        "Inserted %d samples of sensor data from node %s to BigQuery dataset %r.",
-                        len(rows),
-                        node_id,
-                        self.dataset_id,
-                    )
 
         else:
             logger.warning(
