@@ -101,11 +101,19 @@ class BigQueryDataset:
             if errors:
                 raise ValueError(errors)
 
-            logger.info("Uploaded %d samples of sensor data to BigQuery dataset %r.", len(rows), self.dataset_id)
+            logger.info(
+                "Inserted %d samples of sensor data from node %s to BigQuery dataset %r.",
+                len(rows),
+                node_id,
+                self.dataset_id,
+            )
 
-        logger.warning(
-            "Received 0 samples of sensor data, skipping insert of data to BigQuery dataset %r", self.dataset_id
-        )
+        else:
+            logger.warning(
+                "Received 0 samples of sensor data from node %s, skipping insert of data to BigQuery dataset %r",
+                node_id,
+                self.dataset_id,
+            )
 
     def record_microphone_data_location_and_metadata(
         self,

@@ -211,7 +211,7 @@ class PacketReader:
 
                         elif packet_type not in self.handles[packet_origin]:
                             logger.error(
-                                "Received packet from origin %s with unknown type %s at time %s",
+                                "Received packet from origin %s with unknown type %s at time %s. The most common cause of this is running two instances of the gateway.",
                                 packet_origin,
                                 packet_type,
                                 packet_timestamp,
@@ -604,7 +604,7 @@ class PacketReader:
                 )
                 # Display only the first as an indication to avoid flooding logs
                 if i == 0:
-                    logger.debug(
+                    logger.info(
                         "Constats received from node %s: filtered_rssi=%s, raw_rssi=%s, tx_power=%s, allocated_heap_memory=%s",
                         packet_origin,
                         data[packet_origin]["Constat"][0][i],

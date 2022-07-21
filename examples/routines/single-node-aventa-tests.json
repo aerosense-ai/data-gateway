@@ -11,8 +11,7 @@
     ["stopBaros", 380],
     ["stopIMU", 385],
     ["readSens", 390],
-    ["readMics", 600],
-    ["sleep", 1200]
+    ["readMics", 600]
   ],
   "period": 3600
 }
