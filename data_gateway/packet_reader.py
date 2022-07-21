@@ -211,7 +211,7 @@ class PacketReader:
 
                         elif packet_type not in self.handles[packet_origin]:
                             logger.error(
-                                "Received packet from origin %s with unknown type %s at time %s",
+                                "Received packet from origin %s with unknown type %s at time %s. The most common cause of this is running two instances of the gateway.",
                                 packet_origin,
                                 packet_type,
                                 packet_timestamp,
