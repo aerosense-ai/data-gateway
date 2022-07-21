@@ -31,6 +31,7 @@ else:
         "shows up in the production cloud function, it is a problem. Pip install blake3 to resume normal behaviour."
     )
 
+INSERT_BATCH_SIZE = 1000
 
 SENSOR_NAME_MAPPING = {
     "Mics": "microphone",
@@ -96,17 +97,48 @@ class BigQueryDataset:
 
         if len(rows) > 0:
 
-            errors = self.client.insert_rows(table=self.client.get_table(self.table_names["sensor_data"]), rows=rows)
+            logger.info("Inserting %s rows into database in batches of %s", len(rows), INSERT_BATCH_SIZE)
 
-            if errors:
-                raise ValueError(errors)
+            # TODO remove this try/except and just use batches once the correct row size has been found
+            try:
+                errors = self.client.insert_rows(
+                    table=self.client.get_table(self.table_names["sensor_data"]), rows=rows
+                )
 
-            logger.info(
-                "Inserted %d samples of sensor data from node %s to BigQuery dataset %r.",
-                len(rows),
-                node_id,
-                self.dataset_id,
-            )
+                if errors:
+                    raise ValueError(errors)
+
+                logger.info(
+                    "Inserted %d samples of sensor data from node %s to BigQuery dataset %r.",
+                    len(rows),
+                    node_id,
+                    self.dataset_id,
+                )
+
+            except Exception as e:
+                logger.error(
+                    "Could not insert %d samples of sensor data from node %s to BigQuery dataset %r - retrying as a batch. Error was %s",
+                    len(rows),
+                    node_id,
+                    self.dataset_id,
+                    str(e),
+                )
+                batches = [rows[i : i + INSERT_BATCH_SIZE] for i in range(0, len(rows), INSERT_BATCH_SIZE)]
+                for batch in batches:
+
+                    errors = self.client.insert_rows(
+                        table=self.client.get_table(self.table_names["sensor_data"]), rows=batch
+                    )
+
+                    if errors:
+                        raise ValueError(errors)
+
+                    logger.info(
+                        "Inserted %d samples of sensor data from node %s to BigQuery dataset %r.",
+                        len(rows),
+                        node_id,
+                        self.dataset_id,
+                    )
 
         else:
             logger.warning(
