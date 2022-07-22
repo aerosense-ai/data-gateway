@@ -1,6 +1,6 @@
 # This workflow tests and releases a new version of the package.
 
-name: Release the package on merge into main
+name: release
 
 # Only trigger when a pull request into main branch is closed.
 on:
@@ -10,6 +10,7 @@ on:
       - main
 
 jobs:
+  # CI should already be done but running tests on main is required for codecov and badges to have a base
   run-tests:
     if: "github.event.pull_request.merged == true"
     runs-on: ${{ matrix.os }}
