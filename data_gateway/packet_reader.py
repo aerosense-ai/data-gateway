@@ -171,7 +171,7 @@ class PacketReader:
         logger.info("Packet parser process (pid %s) started from main process.", process_id)
 
         try:
-            nice_value = os.nice(-15)
+            nice_value = os.nice(15)
             logger.info("Packet parser process prioritised with niceness %s", nice_value)
         except PermissionError:
             logger.warning("Could not increase priority of packet reader - PermissionError")
