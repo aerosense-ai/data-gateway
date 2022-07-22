@@ -100,8 +100,11 @@ class PacketReader:
             process_id = os.getpid()
             logger.info("Packet reader process (pid %s) started from main process.", process_id)
 
-            nice_value = os.nice(-15)
-            logger.info("Packet reader process prioritised with niceness %s", nice_value)
+            try:
+                nice_value = os.nice(-15)
+                logger.info("Packet reader process prioritised with niceness %s", nice_value)
+            except PermissionError:
+                logger.warning("Could not increase priority of packet reader - PermissionError")
 
             serial_port = get_serial_port(
                 serial_port=serial_port_name,
@@ -167,10 +170,11 @@ class PacketReader:
         process_id = os.getpid()
         logger.info("Packet parser process (pid %s) started from main process.", process_id)
 
-        nice_value = os.nice(15)
-        logger.info("Packet parser process prioritised with niceness %s", nice_value)
-
-        logger.info("Packet parser process started.")
+        try:
+            nice_value = os.nice(-15)
+            logger.info("Packet parser process prioritised with niceness %s", nice_value)
+        except PermissionError:
+            logger.warning("Could not increase priority of packet reader - PermissionError")
 
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
