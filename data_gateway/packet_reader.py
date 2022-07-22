@@ -57,7 +57,7 @@ class PacketReader:
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
-        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
+        self.session_subdirectory = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
 
         self.cloud_output_directory = storage.path.join(output_directory, self.session_subdirectory)
         self.local_output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
