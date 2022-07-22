@@ -84,7 +84,12 @@ class PacketReader:
         :return None:
         """
         try:
-            logger.info("Packet reader process started.")
+
+            process_id = os.getpid()
+            logger.info("Packet reader process (pid %s) started from main process.", process_id)
+
+            nice_value = os.nice(-15)
+            logger.info("Packet reader process prioritised with niceness %s", nice_value)
 
             serial_port = get_serial_port(
                 serial_port=serial_port_name,
@@ -147,6 +152,12 @@ class PacketReader:
         :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
         :return None:
         """
+        process_id = os.getpid()
+        logger.info("Packet parser process (pid %s) started from main process.", process_id)
+
+        nice_value = os.nice(15)
+        logger.info("Packet parser process prioritised with niceness %s", nice_value)
+
         logger.info("Packet parser process started.")
 
         if self.upload_to_cloud:
