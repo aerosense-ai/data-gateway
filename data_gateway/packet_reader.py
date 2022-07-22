@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import multiprocessing
 import os
 import queue
@@ -61,6 +62,12 @@ class PacketReader:
         self.cloud_output_directory = storage.path.join(output_directory, self.session_subdirectory)
         self.local_output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
         os.makedirs(self.local_output_directory, exist_ok=True)
+
+        self.local_log_file = os.path.abspath(os.path.join(output_directory, self.session_subdirectory, "gateway.log"))
+        handler = logging.handlers.RotatingFileHandler(
+            self.local_log_file, maxBytes=(1024 * 1024 * 1024), backupCount=1
+        )
+        logger.addHandler(handler)
 
         self.window_size = window_size
         self.bucket_name = bucket_name
