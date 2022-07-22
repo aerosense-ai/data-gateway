@@ -140,6 +140,12 @@ def gateway_cli(logger_uri, log_level):
     help="In interactive mode, also save sensor data as CSV files. This is useful for debugging.",
 )
 @click.option(
+    "--save-local-logs",
+    is_flag=True,
+    default=False,
+    help="Stream logs to a file in the session directory",
+)
+@click.option(
     "--use-dummy-serial-port",
     is_flag=True,
     default=False,
@@ -160,6 +166,7 @@ def start(
     label,
     no_stop_sensors_on_exit,
     save_csv_files,
+    save_local_logs,
     use_dummy_serial_port,
 ):
     """Begin reading and persisting data from the serial port for the sensors at the installation defined in
@@ -192,6 +199,7 @@ def start(
         use_dummy_serial_port=use_dummy_serial_port,
         log_level=global_cli_context["log_level"],
         stop_sensors_on_exit=not no_stop_sensors_on_exit,
+        save_local_logs=save_local_logs,
     )
 
     data_gateway.start()

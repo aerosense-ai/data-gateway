@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import multiprocessing
 import os
 import queue
@@ -41,6 +42,7 @@ class PacketReader:
     :param str|None bucket_name: name of Google Cloud bucket to upload to
     :param data_gateway.configuration.Configuration|None configuration: the configuration for reading and parsing data
     :param bool save_csv_files: save sensor data to .csv when in interactive mode
+    :param bool save_local_logs: Add a RotatingFileHandler to write logs to the local file system as well as stdout.
     :return None:
     """
 
@@ -53,14 +55,24 @@ class PacketReader:
         bucket_name=None,
         configuration=None,
         save_csv_files=False,
+        save_local_logs=False,
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
-        self.session_subdirectory = str(hash(datetime.datetime.now()))[1:7]
+        self.session_subdirectory = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
 
         self.cloud_output_directory = storage.path.join(output_directory, self.session_subdirectory)
         self.local_output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
         os.makedirs(self.local_output_directory, exist_ok=True)
+
+        if save_local_logs:
+            self.local_log_file = os.path.abspath(
+                os.path.join(output_directory, self.session_subdirectory, "gateway.log")
+            )
+            handler = logging.handlers.RotatingFileHandler(
+                self.local_log_file, maxBytes=(1024 * 1024 * 1024), backupCount=1
+            )
+            logger.addHandler(handler)
 
         self.window_size = window_size
         self.bucket_name = bucket_name
@@ -84,7 +96,15 @@ class PacketReader:
         :return None:
         """
         try:
-            logger.info("Packet reader process started.")
+
+            process_id = os.getpid()
+            logger.info("Packet reader process (pid %s) started from main process.", process_id)
+
+            try:
+                nice_value = os.nice(-15)
+                logger.info("Packet reader process prioritised with niceness %s", nice_value)
+            except PermissionError:
+                logger.warning("Could not increase priority of packet reader - PermissionError")
 
             serial_port = get_serial_port(
                 serial_port=serial_port_name,
@@ -147,7 +167,14 @@ class PacketReader:
         :param float|bool stop_when_no_more_data_after: the number of seconds after receiving no data to stop the gateway (mainly for testing); if `False`, no limit is applied
         :return None:
         """
-        logger.info("Packet parser process started.")
+        process_id = os.getpid()
+        logger.info("Packet parser process (pid %s) started from main process.", process_id)
+
+        try:
+            nice_value = os.nice(-15)
+            logger.info("Packet parser process prioritised with niceness %s", nice_value)
+        except PermissionError:
+            logger.warning("Could not increase priority of packet reader - PermissionError")
 
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
