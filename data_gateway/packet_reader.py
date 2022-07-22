@@ -42,6 +42,7 @@ class PacketReader:
     :param str|None bucket_name: name of Google Cloud bucket to upload to
     :param data_gateway.configuration.Configuration|None configuration: the configuration for reading and parsing data
     :param bool save_csv_files: save sensor data to .csv when in interactive mode
+    :param bool save_local_logs: Add a RotatingFileHandler to write logs to the local file system as well as stdout.
     :return None:
     """
 
@@ -54,6 +55,7 @@ class PacketReader:
         bucket_name=None,
         configuration=None,
         save_csv_files=False,
+        save_local_logs=False,
     ):
         self.save_locally = save_locally
         self.upload_to_cloud = upload_to_cloud
@@ -63,11 +65,14 @@ class PacketReader:
         self.local_output_directory = os.path.abspath(os.path.join(output_directory, self.session_subdirectory))
         os.makedirs(self.local_output_directory, exist_ok=True)
 
-        self.local_log_file = os.path.abspath(os.path.join(output_directory, self.session_subdirectory, "gateway.log"))
-        handler = logging.handlers.RotatingFileHandler(
-            self.local_log_file, maxBytes=(1024 * 1024 * 1024), backupCount=1
-        )
-        logger.addHandler(handler)
+        if save_local_logs:
+            self.local_log_file = os.path.abspath(
+                os.path.join(output_directory, self.session_subdirectory, "gateway.log")
+            )
+            handler = logging.handlers.RotatingFileHandler(
+                self.local_log_file, maxBytes=(1024 * 1024 * 1024), backupCount=1
+            )
+            logger.addHandler(handler)
 
         self.window_size = window_size
         self.bucket_name = bucket_name

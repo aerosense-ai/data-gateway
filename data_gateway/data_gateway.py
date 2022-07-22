@@ -52,6 +52,7 @@ class DataGateway:
     :param bool save_csv_files: if `True`, also save windows locally as CSV files for debugging
     :param bool use_dummy_serial_port: if `True` use a dummy serial port for testing
     :param bool stop_sensors_on_exit: if true, and a `stop_routine_file` path is present, hte stop routine will be executed by the gateway main thread prior to quitting
+    :param bool save_local_logs: Add a RotatingFileHandler to write logs to the local file system as well as stdout.
     :return None:
     """
 
@@ -72,6 +73,7 @@ class DataGateway:
         use_dummy_serial_port=False,
         log_level=logging.INFO,
         stop_sensors_on_exit=True,
+        save_local_logs=False,
     ):
         # Set `multiprocessing` logger level.
         logger.setLevel(log_level)
@@ -106,6 +108,7 @@ class DataGateway:
             bucket_name=bucket_name,
             configuration=packet_reader_configuration,
             save_csv_files=save_csv_files,
+            save_local_logs=save_local_logs,
         )
 
         self.routine = self._load_routine(routine_path=routine_path)
