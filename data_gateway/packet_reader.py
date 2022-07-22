@@ -120,6 +120,8 @@ class PacketReader:
                 use_dummy_serial_port=use_dummy_serial_port,
             )
 
+            packet_count = 0
+
             while stop_signal.value == 0:
 
                 # Check the leading byte of the packet
@@ -158,6 +160,11 @@ class PacketReader:
                         "packet_timestamp": packet_timestamp,
                     }
                 )
+
+                # Log progress at info level so we know it's not gone dead during long reads
+                packet_count += 1
+                if packet_count % 200 == 0:
+                    logger.info("Total packets read: %d", packet_count)
 
         except KeyboardInterrupt:
             pass
