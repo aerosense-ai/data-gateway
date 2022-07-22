@@ -66,12 +66,16 @@ class PacketReader:
         os.makedirs(self.local_output_directory, exist_ok=True)
 
         if save_local_logs:
+            level = logger.handlers[0].level
+            formatter = logger.handlers[0].formatter
             self.local_log_file = os.path.abspath(
                 os.path.join(output_directory, self.session_subdirectory, "gateway.log")
             )
             handler = logging.handlers.RotatingFileHandler(
                 self.local_log_file, maxBytes=(1024 * 1024 * 1024), backupCount=1
             )
+            handler.setLevel(level)
+            handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         self.window_size = window_size
@@ -105,6 +109,10 @@ class PacketReader:
                 logger.info("Packet reader process prioritised with niceness %s", nice_value)
             except PermissionError:
                 logger.warning("Could not increase priority of packet reader - PermissionError")
+            except AttributeError:
+                logger.warning(
+                    "Could not increase priority of packet reader - AttributeError. Note: os.nice() is not available on some systems eg windows"
+                )
 
             serial_port = get_serial_port(
                 serial_port=serial_port_name,
@@ -171,10 +179,14 @@ class PacketReader:
         logger.info("Packet parser process (pid %s) started from main process.", process_id)
 
         try:
-            nice_value = os.nice(-15)
+            nice_value = os.nice(15)
             logger.info("Packet parser process prioritised with niceness %s", nice_value)
         except PermissionError:
-            logger.warning("Could not increase priority of packet reader - PermissionError")
+            logger.warning("Could not increase priority of packet parser - PermissionError")
+        except AttributeError:
+            logger.warning(
+                "Could not increase priority of packet parser - AttributeError. Note: os.nice() is not available on some systems eg windows"
+            )
 
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
