@@ -66,12 +66,16 @@ class PacketReader:
         os.makedirs(self.local_output_directory, exist_ok=True)
 
         if save_local_logs:
+            level = logger.handlers[0].level
+            formatter = logger.handlers[0].formatter
             self.local_log_file = os.path.abspath(
                 os.path.join(output_directory, self.session_subdirectory, "gateway.log")
             )
             handler = logging.handlers.RotatingFileHandler(
                 self.local_log_file, maxBytes=(1024 * 1024 * 1024), backupCount=1
             )
+            handler.setLevel(level)
+            handler.setFormatter(formatter)
             logger.addHandler(handler)
 
         self.window_size = window_size
