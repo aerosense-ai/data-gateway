@@ -109,6 +109,10 @@ class PacketReader:
                 logger.info("Packet reader process prioritised with niceness %s", nice_value)
             except PermissionError:
                 logger.warning("Could not increase priority of packet reader - PermissionError")
+            except AttributeError:
+                logger.warning(
+                    "Could not increase priority of packet reader - AttributeError. Note: os.nice() is not available on some systems eg windows"
+                )
 
             serial_port = get_serial_port(
                 serial_port=serial_port_name,
@@ -178,7 +182,11 @@ class PacketReader:
             nice_value = os.nice(15)
             logger.info("Packet parser process prioritised with niceness %s", nice_value)
         except PermissionError:
-            logger.warning("Could not increase priority of packet reader - PermissionError")
+            logger.warning("Could not increase priority of packet parser - PermissionError")
+        except AttributeError:
+            logger.warning(
+                "Could not increase priority of packet parser - AttributeError. Note: os.nice() is not available on some systems eg windows"
+            )
 
         if self.upload_to_cloud:
             self.uploader = BatchingUploader(
