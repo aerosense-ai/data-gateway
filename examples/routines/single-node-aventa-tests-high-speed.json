@@ -1,0 +1,21 @@
+{
+  "commands": [
+    ["selMsgDest 2", 5],
+    ["selMsgDest 2", 10],
+    ["getBattery", 15],
+    ["startBaros", 20],
+    ["startIMU", 25],
+    ["startMics", 120],
+    ["stopMics", 180],
+    ["stopBaros", 300],
+    ["stopIMU", 305],
+    ["enterHighSpeed", 315],
+    ["selDevice 2", 320],
+    ["readSens", 340],
+    ["readMics", 600],
+    ["exitHighSpeed", 1200],
+    ["selMsgDest 2", 1205],
+    ["selMsgDest 2", 1210]
+  ],
+  "period": 3600
+}
