@@ -248,7 +248,7 @@ class TestBigQueryDataset(BaseTestCase):
         }
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
-            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_session(session_data=session_data)
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_or_update_session(session_data)
 
         self.assertEqual(
             mock_big_query_client.rows[0][0],
@@ -285,7 +285,7 @@ class TestBigQueryDataset(BaseTestCase):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
 
             with self.assertLogs(level=logging.INFO) as logging_context:
-                dataset.add_session(session_data=session_data)
+                dataset.add_or_update_session(session_data=session_data)
 
         self.assertEqual(logging_context.records[0].message, f"Session {existing_session_reference!r} already exists.")
         self.assertEqual(mock_big_query_client.rows, [])

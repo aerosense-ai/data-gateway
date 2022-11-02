@@ -72,7 +72,7 @@ class WindowHandler:
         :return None:
         """
         session_data = window_metadata.pop("session")
-        self.dataset.add_session(session_data)
+        self.dataset.add_or_update_session(session_data)
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)

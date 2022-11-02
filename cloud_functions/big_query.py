@@ -300,8 +300,8 @@ class BigQueryDataset:
         logger.info("Added configuration %r to BigQuery dataset %r.", configuration_id, self.dataset_id)
         return configuration_id
 
-    def add_session(self, session_data):
-        """Add a session to the BigQuery dataset.
+    def add_or_update_session(self, session_data):
+        """Add a session to the BigQuery dataset or, if it already exists, update its end time.
 
         :param dict session_data:
         :return None:
@@ -314,7 +314,23 @@ class BigQueryDataset:
         )
 
         if session_reference:
-            logger.info("Session %r already exists.", session_data["reference"])
+            logger.info("Session %r already exists - updating session end time.", session_data["reference"])
+
+            query_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("end_time", "DATETIME", session_data["end_time"]),
+                    bigquery.ScalarQueryParameter("session_reference", "STRING", session_data["reference"]),
+                ]
+            )
+
+            self.client.query(
+                f"""
+                UPDATE {self.table_names["session"]}
+                SET end_time = @end_time
+                WHERE reference = @session_reference;
+                """,
+                job_config=query_config,
+            )
             return
 
         errors = self.client.insert_rows(table=self.client.get_table(self.table_names["session"]), rows=[session_data])
