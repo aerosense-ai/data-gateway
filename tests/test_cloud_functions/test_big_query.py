@@ -1,9 +1,11 @@
 import datetime
+import logging
 import os
 import sys
 import types
 from unittest.mock import Mock, patch
 
+from data_gateway.configuration import DEFAULT_SENSOR_NAMES
 from tests.base import BaseTestCase
 from tests.test_cloud_functions import REPOSITORY_ROOT
 from tests.test_cloud_functions.mocks import MockBigQueryClient
@@ -233,3 +235,57 @@ class TestBigQueryDataset(BaseTestCase):
                 )
 
                 self.assertEqual(configuration_id, existing_configuration_id)
+
+    def test_add_session(self):
+        """Test that sessions can be added."""
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+
+        session_data = {
+            "reference": "effervescent-slug-of-doom",
+            "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
+            "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
+            **{sensor_name: True for sensor_name in DEFAULT_SENSOR_NAMES},
+        }
+
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_session(session_data=session_data)
+
+        self.assertEqual(
+            mock_big_query_client.rows[0][0],
+            {
+                "reference": "effervescent-slug-of-doom",
+                "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
+                "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
+                "Mics": True,
+                "Baros_P": True,
+                "Baros_T": True,
+                "Diff_Baros": True,
+                "Acc": True,
+                "Gyro": True,
+                "Mag": True,
+                "Analog Vbat": True,
+                "Constat": True,
+            },
+        )
+
+    def test_add_session_when_session_already_exists_does_not_add_session_again(self):
+        """Test that a session with an existing reference doesn't get added again and causes a log message to be issued."""
+        existing_session_reference = "howling-piranha-of-heaven"
+
+        session_data = {
+            "reference": existing_session_reference,
+            "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
+            "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
+            **{sensor_name: True for sensor_name in DEFAULT_SENSOR_NAMES},
+        }
+
+        mock_big_query_client = MockBigQueryClient(expected_query_result=[Mock(reference=existing_session_reference)])
+
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
+
+            with self.assertLogs(level=logging.INFO) as logging_context:
+                dataset.add_session(session_data=session_data)
+
+        self.assertEqual(logging_context.records[0].message, f"Session {existing_session_reference!r} already exists.")
+        self.assertEqual(mock_big_query_client.rows, [])

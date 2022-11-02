@@ -306,6 +306,17 @@ class BigQueryDataset:
         :param dict session_data:
         :return None:
         """
+        session_reference = self._get_field_if_exists(
+            table_name=self.table_names["session"],
+            field_name="reference",
+            comparison_field_name="reference",
+            value=session_data["reference"],
+        )
+
+        if session_reference:
+            logger.info("Session %r already exists.", session_data["reference"])
+            return
+
         errors = self.client.insert_rows(table=self.client.get_table(self.table_names["session"]), rows=[session_data])
 
         if errors:
