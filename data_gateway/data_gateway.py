@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import multiprocessing
@@ -149,6 +150,8 @@ class DataGateway:
             daemon=True,
         )
 
+        self.packet_reader.config.session["start_time"] = datetime.datetime.now()
+
         reader_process.start()
         parser_process.start()
 
@@ -177,24 +180,7 @@ class DataGateway:
                 time.sleep(5)
 
         finally:
-            if self.stop_sensors_on_exit:
-                if self.stop_routine is not None:
-                    logger.info(
-                        "Safely shutting down sensors using stop_routine. Press ctrl+c again to hard-exit (unsafe!)"
-                    )
-                    # Run a thread to execute the stop routine
-                    routine_thread = threading.Thread(
-                        name="RoutineCommandsThread",
-                        target=self.stop_routine.run,
-                        kwargs={"stop_signal": stop_signal},
-                        daemon=True,
-                    )
-                    routine_thread.start()
-                    # Wait a sensible amount of time for the stop signals to flush, then exit
-                    time.sleep(5)
-
-                else:
-                    logger.warning("No stop_routine file supplied - sensors cannot be automatically stopped.")
+            self._stop(stop_signal)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.
@@ -278,3 +264,30 @@ class DataGateway:
         except Exception as e:
             stop_gateway(logger, stop_signal)
             raise e
+
+    def _stop(self, stop_signal):
+        """Stop the data gateway.
+
+        :param multiprocessing.Value stop_signal: a value of 0 means don't stop; a value of 1 means stop
+        :return None:
+        """
+        self.packet_reader.config.session["end_time"] = datetime.datetime.now()
+
+        if self.stop_sensors_on_exit:
+            if self.stop_routine is not None:
+                logger.info(
+                    "Safely shutting down sensors using stop_routine. Press ctrl+c again to hard-exit (unsafe!)"
+                )
+                # Run a thread to execute the stop routine
+                routine_thread = threading.Thread(
+                    name="RoutineCommandsThread",
+                    target=self.stop_routine.run,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
+                routine_thread.start()
+                # Wait a sensible amount of time for the stop signals to flush, then exit
+                time.sleep(5)
+
+            else:
+                logger.warning("No stop_routine file supplied - sensors cannot be automatically stopped.")
