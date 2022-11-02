@@ -20,7 +20,7 @@ class MockBigQueryClient:
         """
         self.rows.append(rows)
 
-    def query(self, query):
+    def query(self, query, *args, **kwargs):
         """Return the `self.expected_query_result` attribute in a `MockQueryResult` instance.
 
         :param str query:
