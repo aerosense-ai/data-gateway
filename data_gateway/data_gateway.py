@@ -11,7 +11,7 @@ import time
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import stop_gateway
-from data_gateway.configuration import Configuration
+from data_gateway.configuration import DEFAULT_SENSOR_NAMES, Configuration
 from data_gateway.exceptions import DataMustBeSavedError
 from data_gateway.packet_reader import PacketReader
 from data_gateway.routine import Routine
@@ -150,8 +150,7 @@ class DataGateway:
             daemon=True,
         )
 
-        self.packet_reader.config.session["start_time"] = datetime.datetime.now()
-
+        self._add_mandatory_session_data(self.packet_reader.config.session)
         reader_process.start()
         parser_process.start()
 
@@ -223,6 +222,21 @@ class DataGateway:
                 "No routine was provided and interactive mode is off - no commands will be sent to the sensors in this "
                 "session."
             )
+
+    def _add_mandatory_session_data(self, session_data):
+        """Add the session start time and a boolean for each of the default sensors types indicating whether they are
+        present on the node.
+
+        :param dict session_data: the session data dictionary to add this information to
+        :return None:
+        """
+        session_data["start_time"] = datetime.datetime.now()
+
+        # Mark available sensors as present in the session.
+        zeroth_node_id = self.packet_reader.config.node_ids[0]
+
+        for sensor_name in DEFAULT_SENSOR_NAMES:
+            session_data[sensor_name] = sensor_name in self.packet_reader.config.nodes[zeroth_node_id].sensor_names
 
     def _send_command_to_sensors(self, command):
         """Send a textual command to the sensors.
