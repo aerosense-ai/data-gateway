@@ -288,8 +288,6 @@ class DataGateway:
         :param multiprocessing.Value stop_signal: a value of 0 means don't stop; a value of 1 means stop
         :return None:
         """
-        self.packet_reader.config.session["end_time"] = datetime.datetime.now()
-
         if self.stop_sensors_on_exit:
             if self.stop_routine is not None:
                 logger.info(

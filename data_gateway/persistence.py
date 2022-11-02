@@ -1,6 +1,7 @@
 import abc
 import copy
 import csv
+import datetime
 import json
 import multiprocessing
 import os
@@ -257,8 +258,12 @@ class BatchingUploader(TimeBatcher):
         """
         window_path = self._generate_window_path()
 
+        # Update the session end time in case this is the last window upload.
+        self.metadata["session"]["end_time"] = datetime.datetime.now()
+
         try:
             logger.info("Uploading window to bucket_name %s with path %s", self.bucket_name, window_path)
+
             self.client.upload_from_string(
                 string=json.dumps(self.ready_window),
                 cloud_path=storage.path.generate_gs_path(self.bucket_name, window_path),
