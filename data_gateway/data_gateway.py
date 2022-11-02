@@ -234,7 +234,7 @@ class DataGateway:
         session_data["reference"] = coolname.generate_slug(4)
         session_data["start_time"] = datetime.datetime.now()
 
-        # Mark available sensors as present in the session.
+        # Mark available sensors on the first node as present in the session.
         zeroth_node_id = self.packet_reader.config.node_ids[0]
 
         for sensor_name in DEFAULT_SENSOR_NAMES:

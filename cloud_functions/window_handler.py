@@ -85,7 +85,7 @@ class WindowHandler:
                     node_id=node_id,
                     configuration_id=configuration_id,
                     installation_reference=window_metadata["gateway"]["installation_reference"],
-                    label=session_data.get("label"),
+                    session_reference=session_data["reference"],
                 )
 
             self.dataset.add_sensor_data(
@@ -93,12 +93,12 @@ class WindowHandler:
                 node_id=node_id,
                 configuration_id=configuration_id,
                 installation_reference=window_metadata["gateway"]["installation_reference"],
-                label=session_data.get("label"),
+                session_reference=session_data["reference"],
             )
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
-    def _store_microphone_data(self, data, node_id, configuration_id, installation_reference, label):
+    def _store_microphone_data(self, data, node_id, configuration_id, installation_reference, session_reference):
         """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
         metadata in a BigQuery table.
 
@@ -106,16 +106,11 @@ class WindowHandler:
         :param str node_id:
         :param str configuration_id:
         :param str installation_reference:
-        :param str label:
+        :param str session_reference:
         :return None:
         """
         _, upload_path = storage.path.split_bucket_name_from_cloud_path(self.window_cloud_path)
         upload_path = os.path.splitext(upload_path)[0] + ".hdf5"
-
-        if label:
-            labels = [label]
-        else:
-            labels = None
 
         # Record the start time of this chunk of data, both for the octue file metadata and for the db ordering
         window_timestamp = data[0][0]
@@ -127,8 +122,8 @@ class WindowHandler:
                 "node_id": node_id,
                 "configuration_id": configuration_id,
                 "installation_reference": installation_reference,
+                "session_reference": session_reference,
             },
-            labels=labels,
             hypothetical=True,
         )
 
@@ -143,5 +138,5 @@ class WindowHandler:
             configuration_id=configuration_id,
             installation_reference=installation_reference,
             timestamp=window_timestamp,
-            label=label,
+            session_reference=session_reference,
         )

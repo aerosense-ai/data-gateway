@@ -66,14 +66,14 @@ class BigQueryDataset:
             "microphone_data": f"{self.dataset_id}.microphone_data",
         }
 
-    def add_sensor_data(self, data, node_id, configuration_id, installation_reference, label=None):
+    def add_sensor_data(self, data, node_id, configuration_id, installation_reference, session_reference):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data: data from the sensors - the keys are the sensor names and the values are samples in the form of lists of lists
         :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the given data
         :param str installation_reference: the reference (name) of the installation that produced the data
-        :param str|None label: an optional label relevant to the given data
+        :param str session_reference:
         :raise ValueError: if the insertion fails
         :return None:
         """
@@ -91,7 +91,7 @@ class BigQueryDataset:
                         "sensor_value": sample[1:],
                         "configuration_id": configuration_id,
                         "installation_reference": installation_reference,
-                        "label": label,
+                        "session_reference": session_reference,
                     }
                 )
 
@@ -131,7 +131,7 @@ class BigQueryDataset:
         configuration_id,
         installation_reference,
         timestamp,
-        label=None,
+        session_reference,
     ):
         """Record the file location and metadata for a window of microphone data.
 
@@ -140,7 +140,7 @@ class BigQueryDataset:
         :param str configuration_id: the UUID of the configuration used to produce the data
         :param str installation_reference: the reference for the installation that produced the data
         :param float timestamp: The posix timestamp coinciding with the first entry in the window
-        :param str|None label: the label applied to the gateway session that produced the data
+        :param str session_reference:
         :raise ValueError: if the addition fails
         :return None:
         """
@@ -153,7 +153,7 @@ class BigQueryDataset:
                     "node_id": node_id,
                     "configuration_id": configuration_id,
                     "installation_reference": installation_reference,
-                    "label": label,
+                    "session_reference": session_reference,
                 }
             ],
         )
