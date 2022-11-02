@@ -259,7 +259,7 @@ class BatchingUploader(TimeBatcher):
         window_path = self._generate_window_path()
 
         # Update the session end time in case this is the last window upload.
-        self.metadata["data_gateway__configuration"].session["end_time"] = datetime.datetime.now()
+        self.metadata["data_gateway__configuration"]["session"]["end_time"] = datetime.datetime.now()
 
         try:
             logger.info("Uploading window to bucket_name %s with path %s", self.bucket_name, window_path)
