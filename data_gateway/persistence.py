@@ -255,13 +255,13 @@ class BatchingUploader(TimeBatcher):
 
         :return None:
         """
+        window_path = self._generate_window_path()
+
         try:
-            logger.info(
-                "Uploading window to bucket_name %s with path %s", self.bucket_name, self._generate_window_path()
-            )
+            logger.info("Uploading window to bucket_name %s with path %s", self.bucket_name, window_path)
             self.client.upload_from_string(
                 string=json.dumps(self.ready_window),
-                cloud_path=storage.path.generate_gs_path(self.bucket_name, self._generate_window_path()),
+                cloud_path=storage.path.generate_gs_path(self.bucket_name, window_path),
                 metadata=self.metadata,
                 timeout=self.upload_timeout,
             )
