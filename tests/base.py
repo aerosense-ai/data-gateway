@@ -7,7 +7,7 @@ import warnings
 from time import time
 
 import numpy as np
-from octue.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
+from octue.cloud.emulators.cloud_storage import GoogleCloudStorageEmulatorTestResultModifier
 
 from data_gateway.configuration import DEFAULT_SENSOR_NAMES, Configuration
 from tests import LENGTH, RANDOM_BYTES, TEST_BUCKET_NAME

@@ -25,7 +25,7 @@ click = ">=7.1.2,<9"
 google-cloud-storage = "^1.35"
 pyserial = "^3.5"
 python-slugify = "^5"
-octue = "0.29.5"
+octue = "0.41.0"
 
 # On raspberry pi, using the pypi binary (which is built against glibc) fails with:
 #   https://stackoverflow.com/questions/72185264/glibc-2-29-not-found

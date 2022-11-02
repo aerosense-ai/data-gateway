@@ -125,7 +125,7 @@ class WindowHandler:
                 "installation_reference": installation_reference,
                 "session_reference": session_reference,
             },
-            hypothetical=True,
+            ignore_stored_metadata=True,
         )
 
         with microphone_file.open("w") as f:

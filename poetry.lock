@@ -657,7 +657,7 @@ python-versions = ">=3.7,<3.11"
 
 [[package]]
 name = "octue"
-version = "0.29.5"
+version = "0.41.0"
 description = "A package providing template applications for data services, and a python SDK to the Octue API."
 category = "main"
 optional = false
@@ -673,13 +673,13 @@ google-cloud-secret-manager = ">=2.3,<3.0"
 google-cloud-storage = ">=1.35.1,<3"
 google-crc32c = ">=1.1,<2.0"
 gunicorn = ">=20.1,<21.0"
-packaging = ">=21.3,<22.0"
+packaging = ">=20.4,<22"
 python-dateutil = ">=2.8,<3.0"
 pyyaml = ">=6,<7"
-twined = ">=0.5.0,<0.6.0"
+twined = ">=0.5.1,<0.6.0"
 
 [package.extras]
-dataflow = ["apache-beam[gcp] (>=2.37,<3.0)"]
+dataflow = ["apache-beam (>=2.37,<3.0)", "cachetools (>=3.1.0,<5)", "google-apitools (>=0.5.31,<0.5.32)", "google-auth-httplib2 (>=0.1.0,<0.2.0)", "google-cloud-datastore (>=1.8.0,<2)"]
 hdf5 = ["h5py (>=3.6,<4.0)"]
 
 [[package]]
@@ -1134,7 +1134,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.10"
-content-hash = "c3970f99169ffd41edb42cc199dd932dbf902a626d9fda218a4c21caa26c372b"
+content-hash = "71dabe45de24d85bbb56c6bfc39fd0c9f6f5f19117635d591c603d12cd116327"
 
 [metadata.files]
 appdirs = [
@@ -1633,8 +1633,8 @@ numpy = [
     {file = "numpy-1.21.6.zip", hash = "sha256:ecb55251139706669fdec2ff073c98ef8e9a84473e51e716211b41aa0f18e656"},
 ]
 octue = [
-    {file = "octue-0.29.5-py3-none-any.whl", hash = "sha256:2eda93a37576287b41aa6208516a51ff44bfdc824b384f965398d97bd65ef7e7"},
-    {file = "octue-0.29.5.tar.gz", hash = "sha256:0f735e2060c8639a03a1f114ea69cc84b5835bb5f7c3801b598542038caafc99"},
+    {file = "octue-0.41.0-py3-none-any.whl", hash = "sha256:30cd52d96d91102c80208a42fd54290f37e41708d45755a78473edd5c30f63b7"},
+    {file = "octue-0.41.0.tar.gz", hash = "sha256:2980bf696c2cef10115385d3bd2d09087b04e741e741f1543cfef26f50a29c38"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
