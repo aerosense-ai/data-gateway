@@ -91,7 +91,7 @@ class DataGateway:
         self.interactive = interactive
 
         packet_reader_configuration = self._load_configuration(configuration_path=configuration_path)
-        packet_reader_configuration.session["label"] = label
+        self._label = label
 
         self.serial_port_name = serial_port
         self.use_dummy_serial_port = use_dummy_serial_port
@@ -232,6 +232,7 @@ class DataGateway:
         :return None:
         """
         session_data["reference"] = coolname.generate_slug(4)
+        session_data["label"] = self._label
         session_data["start_time"] = datetime.datetime.now()
 
         # Mark available sensors on the first node as present in the session.
