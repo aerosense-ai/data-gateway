@@ -123,7 +123,7 @@ class TestUploadWindow(BaseTestCase):
                 "path": expected_microphone_cloud_path,
                 "node_id": "0",
                 "configuration_id": configuration_id,
-                "datetime": datetime.datetime(1970, 1, 1, 0, 0),
+                "datetime": datetime.datetime.fromtimestamp(0),
                 "installation_reference": "my_installation_reference",
                 "label": "my-test-1",
             },
