@@ -59,6 +59,7 @@ class BigQueryDataset:
         self.dataset_id = f"{project_name}.{dataset_name}"
 
         self.table_names = {
+            "session": f"{self.dataset_id}.session",
             "configuration": f"{self.dataset_id}.configuration",
             "installation": f"{self.dataset_id}.installation",
             "sensor_type": f"{self.dataset_id}.sensor_type",
@@ -298,6 +299,19 @@ class BigQueryDataset:
 
         logger.info("Added configuration %r to BigQuery dataset %r.", configuration_id, self.dataset_id)
         return configuration_id
+
+    def add_session(self, session_data):
+        """Add a session to the BigQuery dataset.
+
+        :param dict session_data:
+        :return None:
+        """
+        errors = self.client.insert_rows(table=self.client.get_table(self.table_names["session"]), rows=[session_data])
+
+        if errors:
+            raise ValueError(errors)
+
+        logger.info("Added session %r to BigQuery dataset %r.", session_data["reference"], self.dataset_id)
 
     def _get_field_if_exists(self, table_name, field_name, comparison_field_name, value):
         """Get the value of the given field for the row of the given table for which the comparison field has the
