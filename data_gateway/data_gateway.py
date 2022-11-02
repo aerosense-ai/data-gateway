@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 
+import coolname
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import stop_gateway
@@ -230,6 +231,7 @@ class DataGateway:
         :param dict session_data: the session data dictionary to add this information to
         :return None:
         """
+        session_data["reference"] = coolname.generate_slug(4)
         session_data["start_time"] = datetime.datetime.now()
 
         # Mark available sensors as present in the session.
