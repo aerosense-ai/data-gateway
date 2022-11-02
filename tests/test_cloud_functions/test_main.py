@@ -79,14 +79,20 @@ class TestUploadWindow(BaseTestCase):
         # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
         del expected_configuration["session"]
-        self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
-        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
+
+        self.assertIn("add_session", mock_dataset.mock_calls[1][0])
+        self.assertIn("add_configuration", mock_dataset.mock_calls[2][0])
+        self.assertEqual(mock_dataset.mock_calls[2].args[0], expected_configuration)
 
         # Check data was persisted.
-        self.assertIn("add_sensor_data", mock_dataset.mock_calls[2][0])
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "my_installation_reference")
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my-test-1")
+        self.assertIn("add_sensor_data", mock_dataset.mock_calls[3][0])
+        self.assertEqual(mock_dataset.mock_calls[3].kwargs["data"].keys(), {"Constat"})
+        self.assertEqual(mock_dataset.mock_calls[3].kwargs["installation_reference"], "my_installation_reference")
+
+        self.assertEqual(
+            mock_dataset.mock_calls[3].kwargs["session_reference"],
+            self.VALID_CONFIGURATION["session"]["reference"],
+        )
 
     def test_upload_window_with_microphone_data(self):
         """Test that, if present, microphone data is uploaded to cloud storage and its location is recorded in BigQuery."""
@@ -118,14 +124,14 @@ class TestUploadWindow(BaseTestCase):
 
         # Check location of microphone data has been recorded in BigQuery.
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.rows[1][0],
             {
                 "path": expected_microphone_cloud_path,
                 "node_id": "0",
                 "configuration_id": configuration_id,
                 "datetime": datetime.datetime.fromtimestamp(0),
                 "installation_reference": "my_installation_reference",
-                "label": "my-test-1",
+                "session_reference": self.VALID_CONFIGURATION["session"]["reference"],
             },
         )
 
@@ -140,9 +146,9 @@ class TestUploadWindow(BaseTestCase):
             )
 
         # Check non-microphone sensor data was added to BigQuery.
-        self.assertEqual(mock_big_query_client.rows[1][0]["sensor_type_reference"], "connection_statistics")
-        self.assertEqual(mock_big_query_client.rows[1][0]["configuration_id"], configuration_id)
-        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["0"]["Constat"]))
+        self.assertEqual(mock_big_query_client.rows[2][0]["sensor_type_reference"], "connection_statistics")
+        self.assertEqual(mock_big_query_client.rows[2][0]["configuration_id"], configuration_id)
+        self.assertEqual(len(mock_big_query_client.rows[2]), len(window["0"]["Constat"]))
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
@@ -166,9 +172,8 @@ class TestUploadWindow(BaseTestCase):
                 "window_handler.BigQueryDataset.add_configuration",
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
-                with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
-                    with patch("big_query.bigquery.Client"):
-                        main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                with patch("cloud_functions.big_query.bigquery.Client", return_value=MockBigQueryClient()):
+                    main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():

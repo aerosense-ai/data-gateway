@@ -42,7 +42,7 @@ class TestBigQueryDataset(BaseTestCase):
                 node_id="0",
                 configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
                 installation_reference="turbine-1",
-                label="my-test",
+                session_reference="my-session",
             )
 
         self.assertEqual(len(mock_big_query_client.rows[0]), 8)
@@ -55,7 +55,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [1, 2, 3, 4],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -64,7 +64,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [6, 7, 8, 9],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -73,7 +73,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [11, 12, 13, 14],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -82,7 +82,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [16, 17, 18, 19],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -91,7 +91,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [21, 22, 23, 24],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -100,7 +100,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [26, 27, 28, 29],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -109,7 +109,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [31, 32, 33, 34],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -118,7 +118,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [36, 37, 38, 39],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "session_reference": "my-session",
             },
         ]
 
