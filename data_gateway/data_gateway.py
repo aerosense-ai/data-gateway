@@ -226,7 +226,8 @@ class DataGateway:
 
     def _add_mandatory_session_data(self, session_data):
         """Add the session start time and a boolean for each of the default sensors types indicating whether they are
-        present on the node.
+        present on the node. Note that the session end time is not added here but instead updated on each data window
+        upload.
 
         :param dict session_data: the session data dictionary to add this information to
         :return None:

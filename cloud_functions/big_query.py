@@ -74,7 +74,7 @@ class BigQueryDataset:
         :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the given data
         :param str installation_reference: the reference (name) of the installation that produced the data
-        :param str session_reference:
+        :param str session_reference: the reference of the session that produced the data
         :raise ValueError: if the insertion fails
         :return None:
         """
@@ -141,7 +141,7 @@ class BigQueryDataset:
         :param str configuration_id: the UUID of the configuration used to produce the data
         :param str installation_reference: the reference for the installation that produced the data
         :param float timestamp: The posix timestamp coinciding with the first entry in the window
-        :param str session_reference:
+        :param str session_reference: the reference of the session that produced the data
         :raise ValueError: if the addition fails
         :return None:
         """
@@ -303,7 +303,7 @@ class BigQueryDataset:
     def add_or_update_session(self, session_data):
         """Add a session to the BigQuery dataset or, if it already exists, update its end time.
 
-        :param dict session_data:
+        :param dict session_data: the session data including the session reference, start time, end time, and available sensors
         :return None:
         """
         session_reference = self._get_field_if_exists(
