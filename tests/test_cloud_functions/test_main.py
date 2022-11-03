@@ -76,11 +76,14 @@ class TestUploadWindow(BaseTestCase):
                 with patch("window_handler.BigQueryDataset") as mock_dataset:
                     main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
-        # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        del expected_configuration["session"]
+        expected_session = expected_configuration.pop("session")
 
+        # Check that a session was added.
         self.assertIn("add_or_update_session", mock_dataset.mock_calls[1][0])
+        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_session)
+
+        # Check configuration was added.
         self.assertIn("add_configuration", mock_dataset.mock_calls[2][0])
         self.assertEqual(mock_dataset.mock_calls[2].args[0], expected_configuration)
 
@@ -88,11 +91,7 @@ class TestUploadWindow(BaseTestCase):
         self.assertIn("add_sensor_data", mock_dataset.mock_calls[3][0])
         self.assertEqual(mock_dataset.mock_calls[3].kwargs["data"].keys(), {"Constat"})
         self.assertEqual(mock_dataset.mock_calls[3].kwargs["installation_reference"], "my_installation_reference")
-
-        self.assertEqual(
-            mock_dataset.mock_calls[3].kwargs["session_reference"],
-            self.VALID_CONFIGURATION["session"]["reference"],
-        )
+        self.assertEqual(mock_dataset.mock_calls[3].kwargs["session_reference"], expected_session["reference"])
 
     def test_upload_window_with_microphone_data(self):
         """Test that, if present, microphone data is uploaded to cloud storage and its location is recorded in BigQuery."""
