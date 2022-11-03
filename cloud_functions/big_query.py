@@ -324,8 +324,7 @@ class BigQueryDataset:
             )
 
             self.client.query(
-                f"""
-                UPDATE {self.table_names["session"]}
+                f"""UPDATE {self.table_names["session"]}
                 SET end_time = @end_time
                 WHERE reference = @session_reference;
                 """,
