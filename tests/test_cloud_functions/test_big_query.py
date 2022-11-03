@@ -237,7 +237,7 @@ class TestBigQueryDataset(BaseTestCase):
                 self.assertEqual(configuration_id, existing_configuration_id)
 
     def test_add_or_update_session(self):
-        """Test that sessions can be added."""
+        """Test that new sessions can be added."""
         mock_big_query_client = MockBigQueryClient()
 
         session_data = {
@@ -253,9 +253,9 @@ class TestBigQueryDataset(BaseTestCase):
         self.assertEqual(
             mock_big_query_client.rows[0][0],
             {
-                "reference": "effervescent-slug-of-doom",
-                "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
-                "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
+                "reference": session_data["reference"],
+                "start_time": session_data["start_time"],
+                "end_time": session_data["end_time"],
                 "Mics": True,
                 "Baros_P": True,
                 "Baros_T": True,
