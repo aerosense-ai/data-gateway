@@ -13,6 +13,7 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
 from octue.utils.encoders import OctueJSONEncoder
 
+from data_gateway.persistence import METADATA_CONFIGURATION_KEY
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
@@ -61,7 +62,7 @@ class TestUploadWindow(BaseTestCase):
         GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={METADATA_CONFIGURATION_KEY: self.VALID_CONFIGURATION},
         )
 
         with patch.dict(
@@ -103,7 +104,7 @@ class TestUploadWindow(BaseTestCase):
         storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={METADATA_CONFIGURATION_KEY: self.VALID_CONFIGURATION},
         )
 
         configuration_id = "0ee0f88e-166f-4b9b-9bf1-43f6ff84063a"
@@ -157,7 +158,7 @@ class TestUploadWindow(BaseTestCase):
         GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={METADATA_CONFIGURATION_KEY: self.VALID_CONFIGURATION},
         )
 
         with patch.dict(

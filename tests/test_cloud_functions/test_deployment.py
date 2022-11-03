@@ -11,6 +11,7 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.utils.encoders import OctueJSONEncoder
 
 from data_gateway.configuration import DEFAULT_SENSOR_NAMES
+from data_gateway.persistence import METADATA_CONFIGURATION_KEY
 from tests.base import DatasetMixin
 
 
@@ -37,7 +38,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         self.storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=upload_path,
-            metadata={"data_gateway__configuration": configuration},
+            metadata={METADATA_CONFIGURATION_KEY: configuration},
         )
 
         bigquery_client = bigquery.Client()

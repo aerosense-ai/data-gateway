@@ -21,6 +21,7 @@ from data_gateway.configuration import (
 )
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
+    METADATA_CONFIGURATION_KEY,
     BatchingFileWriter,
     BatchingUploader,
     NoOperationContextManager,
@@ -202,7 +203,7 @@ class PacketReader:
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
                 output_directory=self.cloud_output_directory,
-                metadata={"data_gateway__configuration": self.config.to_dict()},
+                metadata={METADATA_CONFIGURATION_KEY: self.config.to_dict()},
             )
         else:
             self.uploader = NoOperationContextManager()

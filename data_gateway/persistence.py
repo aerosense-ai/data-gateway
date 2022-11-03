@@ -16,6 +16,7 @@ from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_dir
 logger = multiprocessing.get_logger()
 
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
+METADATA_CONFIGURATION_KEY = "data_gateway__configuration"
 
 
 class NoOperationContextManager:
@@ -259,7 +260,13 @@ class BatchingUploader(TimeBatcher):
         window_path = self._generate_window_path()
 
         # Update the session end time in case this is the last window upload.
-        self.metadata["data_gateway__configuration"]["session"]["end_time"] = datetime.datetime.now()
+        if self.metadata.get(METADATA_CONFIGURATION_KEY):
+            self.metadata[METADATA_CONFIGURATION_KEY]["session"]["end_time"] = datetime.datetime.now()
+        else:
+            logger.warning(
+                f"Session end time could not be added to metadata as the {METADATA_CONFIGURATION_KEY!r} key was not "
+                "present."
+            )
 
         try:
             logger.info("Uploading window to bucket_name %s with path %s", self.bucket_name, window_path)
