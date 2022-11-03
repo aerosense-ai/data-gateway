@@ -128,7 +128,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_new_sensor_type(self):
         """Test that new sensor types can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(
@@ -150,7 +150,7 @@ class TestBigQueryDataset(BaseTestCase):
     def test_add_new_sensor_type_raises_error_if_sensor_type_already_exists(self):
         """Test that an error is raised if attempting to add a new sensor type that already exists."""
         mock_big_query_client = MockBigQueryClient(
-            expected_query_result=[types.SimpleNamespace(reference="my-sensor-type")]
+            expected_query_results=[[types.SimpleNamespace(reference="my-sensor-type")]]
         )
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
@@ -161,7 +161,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation(self):
         """Test that installations can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
@@ -183,7 +183,7 @@ class TestBigQueryDataset(BaseTestCase):
     def test_add_installation_raises_error_if_installation_already_exists(self):
         """Test that an error is raised if attempting to add an installation that already exists."""
         mock_big_query_client = MockBigQueryClient(
-            expected_query_result=[types.SimpleNamespace(reference="my-installation")]
+            expected_query_results=[[types.SimpleNamespace(reference="my-installation")]]
         )
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
@@ -200,7 +200,7 @@ class TestBigQueryDataset(BaseTestCase):
         """Test that a configuration can be added. The sha256 hash is used in the tests but blake3 is used in
         production. This is to avoid the need to install rust to install blake3 as a development dependency.
         """
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_configuration(
@@ -224,7 +224,7 @@ class TestBigQueryDataset(BaseTestCase):
         existing configuration is returned.
         """
         existing_configuration_id = "0846401a-89fb-424e-89e6-039063e0ee6d"
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[Mock(id=existing_configuration_id)])
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(id=existing_configuration_id)]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -236,9 +236,9 @@ class TestBigQueryDataset(BaseTestCase):
 
                 self.assertEqual(configuration_id, existing_configuration_id)
 
-    def test_add_session(self):
+    def test_add_or_update_session(self):
         """Test that sessions can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
 
         session_data = {
             "reference": "effervescent-slug-of-doom",
@@ -268,7 +268,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
         )
 
-    def test_add_session_when_session_already_exists_does_not_add_session_again(self):
+    def test_add_or_update_session_when_session_already_exists_does_not_add_session_again(self):
         """Test that a session with an existing reference doesn't get added again and causes a log message to be issued."""
         existing_session_reference = "howling-piranha-of-heaven"
 
@@ -279,7 +279,12 @@ class TestBigQueryDataset(BaseTestCase):
             **{sensor_name: True for sensor_name in DEFAULT_SENSOR_NAMES},
         }
 
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[Mock(reference=existing_session_reference)])
+        mock_big_query_client = MockBigQueryClient(
+            expected_query_results=[
+                [Mock(reference=existing_session_reference)],
+                [Mock(reference=existing_session_reference)],
+            ]
+        )
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -287,5 +292,12 @@ class TestBigQueryDataset(BaseTestCase):
             with self.assertLogs(level=logging.INFO) as logging_context:
                 dataset.add_or_update_session(session_data=session_data)
 
-        self.assertEqual(logging_context.records[0].message, f"Session {existing_session_reference!r} already exists.")
+        self.assertEqual(
+            logging_context.records[0].message,
+            f"Session {existing_session_reference!r} already exists - updating session end time.",
+        )
+
+        # Check existing session row has been updated.
+
+        # Check no rows have been inserted.
         self.assertEqual(mock_big_query_client.rows, [])
