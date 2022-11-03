@@ -268,8 +268,8 @@ class TestBigQueryDataset(BaseTestCase):
             },
         )
 
-    def test_add_or_update_session_when_session_already_exists_does_not_add_session_again(self):
-        """Test that a session with an existing reference doesn't get added again and causes a log message to be issued."""
+    def test_add_or_update_session_when_session_already_exists_just_updates_session_row(self):
+        """Test that trying to add a session with an existing reference just updates the existing session row."""
         existing_session_reference = "howling-piranha-of-heaven"
 
         session_data = {
@@ -282,7 +282,7 @@ class TestBigQueryDataset(BaseTestCase):
         mock_big_query_client = MockBigQueryClient(
             expected_query_results=[
                 [Mock(reference=existing_session_reference)],
-                [Mock(reference=existing_session_reference)],
+                [],
             ]
         )
 
@@ -298,6 +298,7 @@ class TestBigQueryDataset(BaseTestCase):
         )
 
         # Check existing session row has been updated.
+        self.assertIn("UPDATE my-project.my-dataset.session", mock_big_query_client.queries[1])
 
         # Check no rows have been inserted.
         self.assertEqual(mock_big_query_client.rows, [])

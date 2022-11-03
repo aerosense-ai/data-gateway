@@ -1,8 +1,9 @@
 class MockBigQueryClient:
     def __init__(self, expected_query_results=None):
         self.expected_query_results = expected_query_results or [[]]
-        self._next_query_index = 0
         self.rows = []
+        self.queries = []
+        self._next_query_result_index = 0
 
     def get_table(self, name):
         """Do nothing.
@@ -27,14 +28,16 @@ class MockBigQueryClient:
         :param str query:
         :return MockQueryResult:
         """
-        self._query = query
+        self.queries.append(query)
+
         try:
-            result = MockQueryResult(result=self.expected_query_results[self._next_query_index])
+            result = MockQueryResult(result=self.expected_query_results[self._next_query_result_index])
         except IndexError:
             raise ValueError(
                 "More mock queries have been run than mock query results given - make sure you've given enough."
             )
-        self._next_query_index += 1
+
+        self._next_query_result_index += 1
         return result
 
 
