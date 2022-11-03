@@ -1,7 +1,7 @@
 class MockBigQueryClient:
     def __init__(self, expected_query_results=None):
         self.expected_query_results = expected_query_results or [[]]
-        self.rows = []
+        self.inserted_rows = []
         self.queries = []
         self._next_query_result_index = 0
 
@@ -14,13 +14,13 @@ class MockBigQueryClient:
         pass
 
     def insert_rows(self, table, rows):
-        """Store the given rows in the `self.rows` attribute.
+        """Append the given rows to the `inserted_rows` attribute.
 
         :param str table:
         :param list(dict) rows:
         :return None:
         """
-        self.rows.append(rows)
+        self.inserted_rows.append(rows)
 
     def query(self, query, *args, **kwargs):
         """Return the next value in the `expected_query_results` attribute as a `MockQueryResult` instance.

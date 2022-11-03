@@ -131,7 +131,7 @@ class TestUploadWindow(BaseTestCase):
 
         # Check location of microphone data has been recorded in BigQuery.
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "path": expected_microphone_cloud_path,
                 "node_id": "0",
@@ -153,9 +153,9 @@ class TestUploadWindow(BaseTestCase):
             )
 
         # Check non-microphone sensor data was added to BigQuery.
-        self.assertEqual(mock_big_query_client.rows[1][0]["sensor_type_reference"], "connection_statistics")
-        self.assertEqual(mock_big_query_client.rows[1][0]["configuration_id"], configuration_id)
-        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["0"]["Constat"]))
+        self.assertEqual(mock_big_query_client.inserted_rows[1][0]["sensor_type_reference"], "connection_statistics")
+        self.assertEqual(mock_big_query_client.inserted_rows[1][0]["configuration_id"], configuration_id)
+        self.assertEqual(len(mock_big_query_client.inserted_rows[1]), len(window["0"]["Constat"]))
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""

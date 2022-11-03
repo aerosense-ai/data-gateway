@@ -47,7 +47,7 @@ class TestBigQueryDataset(BaseTestCase):
                 session_reference="my-session",
             )
 
-        self.assertEqual(len(mock_big_query_client.rows[0]), 8)
+        self.assertEqual(len(mock_big_query_client.inserted_rows[0]), 8)
 
         expected_rows = [
             {
@@ -124,7 +124,7 @@ class TestBigQueryDataset(BaseTestCase):
             },
         ]
 
-        self.assertEqual(mock_big_query_client.rows[0], expected_rows)
+        self.assertEqual(mock_big_query_client.inserted_rows[0], expected_rows)
 
     def test_add_new_sensor_type(self):
         """Test that new sensor types can be added."""
@@ -137,7 +137,7 @@ class TestBigQueryDataset(BaseTestCase):
             )
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "reference": "my-sensor-name",
                 "name": "My sensor_Name",
@@ -171,7 +171,7 @@ class TestBigQueryDataset(BaseTestCase):
             )
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
@@ -207,10 +207,10 @@ class TestBigQueryDataset(BaseTestCase):
                 configuration={"nodes": {"0": {"blah": "blah"}}, "gateway": {"stuff": "data"}}
             )
 
-        del mock_big_query_client.rows[0][0]["id"]
+        del mock_big_query_client.inserted_rows[0][0]["id"]
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "nodes_configuration": '{"0": {"blah": "blah"}}',
                 "nodes_configuration_hash": "1aea08f4603f76a55d3267dd40c310e14787a8d64663a72cfc62f58152e44504",
@@ -251,7 +251,7 @@ class TestBigQueryDataset(BaseTestCase):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_or_update_session(session_data)
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "reference": session_data["reference"],
                 "start_time": session_data["start_time"],
@@ -301,4 +301,4 @@ class TestBigQueryDataset(BaseTestCase):
         self.assertIn("UPDATE my-project.my-dataset.session", mock_big_query_client.queries[1])
 
         # Check no rows have been inserted.
-        self.assertEqual(mock_big_query_client.rows, [])
+        self.assertEqual(mock_big_query_client.inserted_rows, [])
