@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 import sys
-import types
 from unittest.mock import Mock, patch
 
 from data_gateway.configuration import DEFAULT_SENSOR_NAMES
@@ -149,9 +148,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_new_sensor_type_raises_error_if_sensor_type_already_exists(self):
         """Test that an error is raised if attempting to add a new sensor type that already exists."""
-        mock_big_query_client = MockBigQueryClient(
-            expected_query_results=[[types.SimpleNamespace(reference="my-sensor-type")]]
-        )
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(reference="my-sensor-type")]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -182,9 +179,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation_raises_error_if_installation_already_exists(self):
         """Test that an error is raised if attempting to add an installation that already exists."""
-        mock_big_query_client = MockBigQueryClient(
-            expected_query_results=[[types.SimpleNamespace(reference="my-installation")]]
-        )
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(reference="my-installation")]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -300,5 +295,5 @@ class TestBigQueryDataset(BaseTestCase):
         # Check existing session row has been updated.
         self.assertIn("UPDATE my-project.my-dataset.session", mock_big_query_client.queries[1])
 
-        # Check no rows have been inserted.
+        # Check no new rows have been inserted.
         self.assertEqual(mock_big_query_client.inserted_rows, [])

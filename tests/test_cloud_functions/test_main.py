@@ -3,8 +3,7 @@ import datetime
 import json
 import os
 import sys
-import types
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 from flask import Flask, request
@@ -110,9 +109,9 @@ class TestUploadWindow(BaseTestCase):
         configuration_id = "0ee0f88e-166f-4b9b-9bf1-43f6ff84063a"
         mock_big_query_client = MockBigQueryClient(
             expected_query_results=[
-                [types.SimpleNamespace(reference="my-session")],
-                [types.SimpleNamespace(reference="my-session")],
-                [types.SimpleNamespace(id=configuration_id)],
+                [Mock(reference="my-session")],
+                [Mock(reference="my-session")],
+                [Mock(id=configuration_id)],
             ]
         )
 
@@ -243,9 +242,7 @@ class TestAddSensorType(BaseTestCase):
         """Test that a 409 error is returned if the sensor type reference sent to the endpoint already exists in the
         BigQuery dataset.
         """
-        mock_big_query_client = MockBigQueryClient(
-            expected_query_results=[[types.SimpleNamespace(reference="my-sensor_type")]]
-        )
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(reference="my-sensor_type")]])
 
         with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
             with self.app.test_client() as client:
