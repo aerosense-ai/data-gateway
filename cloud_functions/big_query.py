@@ -332,7 +332,7 @@ class BigQueryDataset:
             )
             return
 
-        for key, value in session_data:
+        for key, value in session_data.items():
             if key in SENSOR_NAME_MAPPING:
                 session_data[key] = SENSOR_NAME_MAPPING[key]
 
