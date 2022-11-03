@@ -128,7 +128,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_new_sensor_type(self):
         """Test that new sensor types can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
+        mock_big_query_client = MockBigQueryClient()
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(
@@ -161,7 +161,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation(self):
         """Test that installations can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
+        mock_big_query_client = MockBigQueryClient()
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
@@ -200,7 +200,7 @@ class TestBigQueryDataset(BaseTestCase):
         """Test that a configuration can be added. The sha256 hash is used in the tests but blake3 is used in
         production. This is to avoid the need to install rust to install blake3 as a development dependency.
         """
-        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
+        mock_big_query_client = MockBigQueryClient()
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_configuration(
@@ -238,7 +238,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_or_update_session(self):
         """Test that sessions can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_results=[[]])
+        mock_big_query_client = MockBigQueryClient()
 
         session_data = {
             "reference": "effervescent-slug-of-doom",
