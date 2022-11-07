@@ -15,7 +15,7 @@ on board a turbine nacelle.
 It's anticipated that you're using:
     - Raspberry Pi 4
     - With at least 2GB ram
-    - Python >= 3.7.1
+    - Python >= 3.8
 
 You'll need to install Raspberry Pi OS (formerly "Raspbian", which was a much better name) onto your **pi**. Use
 `the current instructions from raspberrypi.org <https://www.raspberrypi.org/software/>`_, and follow their setup guides.
