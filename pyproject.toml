@@ -59,6 +59,7 @@ gateway = "data_gateway.cli:gateway_cli"
 
 [tool.poetry.group.dev.dependencies]
 pandas = "^1.5.1"
+pyarrow = "^10.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
