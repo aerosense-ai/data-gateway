@@ -332,9 +332,9 @@ class BigQueryDataset:
             )
             return
 
-        for key, value in session_data.items():
-            if key in SENSOR_NAME_MAPPING:
-                session_data[key] = SENSOR_NAME_MAPPING[key]
+        for key, value in SENSOR_NAME_MAPPING.items():
+            session_data[value] = session_data[key]
+            del session_data[key]
 
         errors = self.client.insert_rows(table=self.client.get_table(self.table_names["session"]), rows=[session_data])
 
