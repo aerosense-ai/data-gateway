@@ -44,15 +44,20 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
             metadata={METADATA_CONFIGURATION_KEY: configuration},
         )
 
-        # Poll for the new data in the test BigQuery dataset.
-        session_data = self._poll_for_data(
-            query=f"SELECT * FROM `test_greta.session` WHERE reference = '{session_reference}'"
+        # Poll for the new session in the test BigQuery dataset.
+        session_data = (
+            self._poll_for_data(query=f"SELECT * FROM `test_greta.session` WHERE reference = '{session_reference}'")
+            .iloc[0]
+            .to_dict()
         )
 
-        self.assertEqual(session_data, configuration["session"])
+        self.assertEqual(session_data["reference"], configuration["session"]["reference"])
+        self.assertEqual(session_data["start_time"], configuration["session"]["start_time"])
+        self.assertEqual(session_data["end_time"], configuration["session"]["end_time"])
 
+        # Poll for the new sensor data in the test BigQuery dataset.
         sensor_data = self._poll_for_data(
-            query=f"SELECT label FROM `test_greta.sensor_data` WHERE session_reference = '{session_reference}'"
+            query=f"SELECT * FROM `test_greta.sensor_data` WHERE session_reference = '{session_reference}'"
         )
 
         self.assertTrue(len(sensor_data) > 20)
@@ -67,7 +72,7 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         start_time = time.time()
 
         while time.time() - start_time < timeout:
-            results = list(self.bigquery_client.query(query).result())
+            results = self.bigquery_client.query(query).result().to_dataframe()
 
             if len(results) > 0:
                 return results
