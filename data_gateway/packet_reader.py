@@ -544,6 +544,7 @@ class PacketReader:
 
             for i in range(node_config.samples_per_packet["Diff_Baros"]):
                 for j in range(number_of_diff_baros_sensors):
+                    logger.debug('Checking contents of Diff Baros packet %s', packet)
                     data[packet_origin]["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
                             (bytes_per_sample * (number_of_diff_baros_sensors * i + j)) : (
