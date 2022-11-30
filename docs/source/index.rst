@@ -20,7 +20,11 @@ The data flow from the aerosense sensor modules looks like this:
     ->  Receiver (bluetooth equipment in-nacelle)
     --->  Gateway (data manager and uploader on-nacelle)
     ----->  Ingress (Cloud Function to receive data on-cloud)
-    ------->  Digital Twin (data analysis and storage system)
+    ------->  Google Cloud BigQuery + Google Cloud Store (database / object storage system)
+        |---->  Digital Twin (data analysis system)
+        |---->  Jupyter Notebooks (data analysis/introspection for researchers)
+        |---->  Dashboard (data visualisation for researchers and system installers)
+    
 
 A ``Node`` streams data to the ``Receiver`` via bluetooth. The ``Receiver`` writes the bytestream directly to a serial
 port. The ``Gateway`` (this library) reads the bytestream from the serial port, decodes it and buffers it in local
@@ -46,4 +50,5 @@ The code for the Cloud Function ``Ingress`` is also included in this repository.
    deployment
    cloud_functions
    hardware_and_firmware_versions
+   information_for_developers
    version_history
