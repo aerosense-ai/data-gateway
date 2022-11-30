@@ -541,10 +541,22 @@ class PacketReader:
         if packet_type_name == "Diff. baros":
             bytes_per_sample = 2
             number_of_diff_baros_sensors = node_config.number_of_sensors["Diff_Baros"]
+            
+#             TODO REMOVE THIS DEBUGGING LOG LOOP AS ITS WASTEFUL
+            logger.debug('Checking contents of Diff Baros payload %s', payload)
+            for i in range(len(payload)):
+                if (i % 2) == 0:
+                    logger.debug('decoded payload value %i at position %i', int.from_bytes(
+                        payload[
+                            i:i+1
+                        ],
+                        self.config.gateway.endian,
+                        signed=False,
+                    )
+
 
             for i in range(node_config.samples_per_packet["Diff_Baros"]):
                 for j in range(number_of_diff_baros_sensors):
-                    logger.debug('Checking contents of Diff Baros packet %s', packet)
                     data[packet_origin]["Diff_Baros"][j][i] = int.from_bytes(
                         payload[
                             (bytes_per_sample * (number_of_diff_baros_sensors * i + j)) : (
