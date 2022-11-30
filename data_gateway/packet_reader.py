@@ -546,13 +546,14 @@ class PacketReader:
             logger.debug('Checking contents of Diff Baros payload %s', payload)
             for i in range(len(payload)):
                 if (i % 2) == 0:
-                    logger.debug('decoded payload value %i at position %i', int.from_bytes(
+                    the_integer = int.from_bytes(
                         payload[
                             i:i+1
                         ],
                         self.config.gateway.endian,
                         signed=False,
                     )
+                    logger.debug('decoded payload value %i at position %i', the_integer, i)
 
 
             for i in range(node_config.samples_per_packet["Diff_Baros"]):
