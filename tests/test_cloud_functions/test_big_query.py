@@ -43,7 +43,7 @@ class TestBigQueryDataset(BaseTestCase):
                 node_id="0",
                 configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
                 installation_reference="turbine-1",
-                session_reference="my-session",
+                measurement_campaign_reference="my-measurement-campaign",
             )
 
         self.assertEqual(len(mock_big_query_client.inserted_rows[0]), 8)
@@ -56,7 +56,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [1, 2, 3, 4],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -65,7 +65,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [6, 7, 8, 9],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -74,7 +74,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [11, 12, 13, 14],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -83,7 +83,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [16, 17, 18, 19],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -92,7 +92,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [21, 22, 23, 24],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -101,7 +101,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [26, 27, 28, 29],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -110,7 +110,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [31, 32, 33, 34],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -119,7 +119,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [36, 37, 38, 39],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "session_reference": "my-session",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
         ]
 
@@ -231,11 +231,11 @@ class TestBigQueryDataset(BaseTestCase):
 
                 self.assertEqual(configuration_id, existing_configuration_id)
 
-    def test_add_or_update_session(self):
-        """Test that new sessions can be added."""
+    def test_add_or_update_measurement_campaign(self):
+        """Test that new measurement campaigns can be added."""
         mock_big_query_client = MockBigQueryClient()
 
-        session_data = {
+        measurement_campaign_data = {
             "reference": "effervescent-slug-of-doom",
             "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
             "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
@@ -243,14 +243,16 @@ class TestBigQueryDataset(BaseTestCase):
         }
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
-            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_or_update_session(session_data)
+            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_or_update_measurement_campaign(
+                measurement_campaign_data
+            )
 
         self.assertEqual(
             mock_big_query_client.inserted_rows[0][0],
             {
-                "reference": session_data["reference"],
-                "start_time": session_data["start_time"],
-                "end_time": session_data["end_time"],
+                "reference": measurement_campaign_data["reference"],
+                "start_time": measurement_campaign_data["start_time"],
+                "end_time": measurement_campaign_data["end_time"],
                 "microphone": True,
                 "barometer": True,
                 "barometer_thermometer": True,
@@ -263,12 +265,12 @@ class TestBigQueryDataset(BaseTestCase):
             },
         )
 
-    def test_add_or_update_session_when_session_already_exists_just_updates_session_row(self):
-        """Test that trying to add a session with an existing reference just updates the existing session row."""
-        existing_session_reference = "howling-piranha-of-heaven"
+    def test_add_or_update_measurement_campaign_when_measurement_campaign_already_exists_just_updates_session_row(self):
+        """Test that trying to add a measurement campaign with an existing reference just updates the existing measurement campaign row."""
+        existing_measurement_campaign_reference = "howling-piranha-of-heaven"
 
-        session_data = {
-            "reference": existing_session_reference,
+        measurement_campaign_data = {
+            "reference": existing_measurement_campaign_reference,
             "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
             "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
             **{sensor_name: True for sensor_name in DEFAULT_SENSOR_NAMES},
@@ -276,7 +278,7 @@ class TestBigQueryDataset(BaseTestCase):
 
         mock_big_query_client = MockBigQueryClient(
             expected_query_results=[
-                [Mock(reference=existing_session_reference)],
+                [Mock(reference=existing_measurement_campaign_reference)],
                 [],
             ]
         )
@@ -285,15 +287,15 @@ class TestBigQueryDataset(BaseTestCase):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
 
             with self.assertLogs(level=logging.INFO) as logging_context:
-                dataset.add_or_update_session(session_data=session_data)
+                dataset.add_or_update_measurement_campaign(measurement_campaign_data=measurement_campaign_data)
 
         self.assertEqual(
             logging_context.records[0].message,
-            f"Session {existing_session_reference!r} already exists - updating session end time.",
+            f"Measurement campaign {existing_measurement_campaign_reference!r} already exists - updating measurement campaign end time.",
         )
 
-        # Check existing session row has been updated.
-        self.assertIn("UPDATE my-project.my-dataset.session", mock_big_query_client.queries[1])
+        # Check existing measurement campaign row has been updated.
+        self.assertIn("UPDATE my-project.my-dataset.measurement_campaign", mock_big_query_client.queries[1])
 
         # Check no new rows have been inserted.
         self.assertEqual(mock_big_query_client.inserted_rows, [])

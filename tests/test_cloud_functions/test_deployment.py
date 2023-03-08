@@ -35,8 +35,8 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
 
         configuration = copy.deepcopy(self.VALID_CONFIGURATION)
 
-        session_reference = coolname.generate_slug(4)
-        configuration["session"]["reference"] = session_reference
+        measurement_campaign_reference = coolname.generate_slug(4)
+        configuration["measurement_campaign"]["reference"] = measurement_campaign_reference
 
         self.storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
@@ -44,20 +44,22 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
             metadata={METADATA_CONFIGURATION_KEY: configuration},
         )
 
-        # Poll for the new session in the test BigQuery dataset.
-        session_data = (
-            self._poll_for_data(query=f"SELECT * FROM `test_greta.session` WHERE reference = '{session_reference}'")
+        # Poll for the new measurement campaign in the test BigQuery dataset.
+        measurement_campaign_data = (
+            self._poll_for_data(
+                query=f"SELECT * FROM `test_greta.measurement_campaign` WHERE reference = '{measurement_campaign_reference}'"
+            )
             .iloc[0]
             .to_dict()
         )
 
-        self.assertEqual(session_data["reference"], configuration["session"]["reference"])
-        self.assertEqual(session_data["start_time"], configuration["session"]["start_time"])
-        self.assertEqual(session_data["end_time"], configuration["session"]["end_time"])
+        self.assertEqual(measurement_campaign_data["reference"], configuration["measurement_campaign"]["reference"])
+        self.assertEqual(measurement_campaign_data["start_time"], configuration["measurement_campaign"]["start_time"])
+        self.assertEqual(measurement_campaign_data["end_time"], configuration["measurement_campaign"]["end_time"])
 
         # Poll for the new sensor data in the test BigQuery dataset.
         sensor_data = self._poll_for_data(
-            query=f"SELECT * FROM `test_greta.sensor_data` WHERE session_reference = '{session_reference}'"
+            query=f"SELECT * FROM `test_greta.sensor_data` WHERE measurement_campaign_reference = '{measurement_campaign_reference}'"
         )
 
         self.assertTrue(len(sensor_data) > 20)

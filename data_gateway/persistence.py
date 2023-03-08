@@ -259,13 +259,13 @@ class BatchingUploader(TimeBatcher):
         """
         window_path = self._generate_window_path()
 
-        # Update the session end time in case this is the last window upload.
+        # Update the measurement campaign end time in case this is the last window upload.
         if self.metadata.get(METADATA_CONFIGURATION_KEY):
-            self.metadata[METADATA_CONFIGURATION_KEY]["session"]["end_time"] = datetime.datetime.now()
+            self.metadata[METADATA_CONFIGURATION_KEY]["measurement_campaign"]["end_time"] = datetime.datetime.now()
         else:
             logger.warning(
-                f"Session end time could not be added to metadata as the {METADATA_CONFIGURATION_KEY!r} key was not "
-                "present."
+                f"Measurement campaign end time could not be added to metadata as the {METADATA_CONFIGURATION_KEY!r} "
+                "key was not present."
             )
 
         try:
@@ -308,7 +308,6 @@ class BatchingUploader(TimeBatcher):
         :return None:
         """
         for filename in os.listdir(self._backup_directory):
-
             if not filename.startswith(self._file_prefix):
                 continue
 

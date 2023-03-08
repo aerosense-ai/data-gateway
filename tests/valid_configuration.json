@@ -370,7 +370,7 @@
       }
     }
   },
-  "session": {
+  "measurement_campaign": {
     "label": "my-test-1"
   }
 }

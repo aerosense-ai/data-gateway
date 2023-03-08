@@ -122,7 +122,7 @@ DEFAULT_NUMBER_OF_SENSORS = {
     "battery_info": 3,
 }
 
-DEFAULT_SESSION = {
+DEFAULT_MEASUREMENT_CAMPAIGN_METADATA = {
     "label": None,
 }
 
@@ -358,22 +358,22 @@ class NodeConfiguration:
 
 
 class Configuration:
-    """Configuration class for gateway, node and session configuration data.
+    """Configuration class for gateway, node and measurement campaign configuration data.
 
     :param dict|None gateway: A dict of values used to customise the gateway configuration
     :param dict|None nodes: A dict of dicts, keyed by node_id, used to customise the configuration for each node
-    :param dict|None session: A dict of metadata about the current session of the gateway provided by the user
+    :param dict|None measurement_campaign: A dict of metadata about the current measurement campaign of the gateway provided by the user
     :return None:
     """
 
-    def __init__(self, gateway=None, nodes=None, session=None, **kwargs):
+    def __init__(self, gateway=None, nodes=None, measurement_campaign=None, **kwargs):
         gateway_configuration = gateway or {}
         self.gateway = GatewayConfiguration(**gateway_configuration)
 
         if len(kwargs) > 0:
             raise ValueError(
-                "Properties other than 'gateway', 'nodes' and 'session' passed to Configuration. Are you using an "
-                "old-format configuration file?"
+                "Properties other than 'gateway', 'nodes' and 'measurement_campaign' passed to Configuration. Are you "
+                "using an old-format configuration file?"
             )
 
         # Set up a single-node default in the absence of any nodes at all.
@@ -385,8 +385,8 @@ class Configuration:
             for node_id, node in nodes.items():
                 self.nodes[str(node_id)] = NodeConfiguration(**node)
 
-        # Set up the session-specific data as empty.
-        self.session = session or DEFAULT_SESSION
+        # Set up the measurement-campaign-specific data as empty.
+        self.measurement_campaign = measurement_campaign or DEFAULT_MEASUREMENT_CAMPAIGN_METADATA
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -405,7 +405,7 @@ class Configuration:
         return cls(
             gateway=dictionary["gateway"],
             nodes=dictionary["nodes"],
-            session=dictionary["session"],
+            measurement_campaign=dictionary["measurement_campaign"],
         )
 
     @property
@@ -450,5 +450,5 @@ class Configuration:
         return {
             "gateway": self.gateway.to_dict(),
             "nodes": {name: node.to_dict() for name, node in self.nodes.items()},
-            "session": self.session,
+            "measurement_campaign": self.measurement_campaign,
         }

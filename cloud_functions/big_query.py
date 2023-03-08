@@ -60,7 +60,7 @@ class BigQueryDataset:
         self.dataset_id = f"{project_name}.{dataset_name}"
 
         self.table_names = {
-            "session": f"{self.dataset_id}.session",
+            "measurement_campaign": f"{self.dataset_id}.measurement_campaign",
             "configuration": f"{self.dataset_id}.configuration",
             "installation": f"{self.dataset_id}.installation",
             "sensor_type": f"{self.dataset_id}.sensor_type",
@@ -68,14 +68,14 @@ class BigQueryDataset:
             "microphone_data": f"{self.dataset_id}.microphone_data",
         }
 
-    def add_sensor_data(self, data, node_id, configuration_id, installation_reference, session_reference):
+    def add_sensor_data(self, data, node_id, configuration_id, installation_reference, measurement_campaign_reference):
         """Insert sensor data into the dataset for the given configuration and installation references.
 
         :param dict data: data from the sensors - the keys are the sensor names and the values are samples in the form of lists of lists
         :param str node_id:
         :param str configuration_id: the UUID of the configuration used to produce the given data
         :param str installation_reference: the reference (name) of the installation that produced the data
-        :param str session_reference: the reference of the session that produced the data
+        :param str measurement_campaign_reference: the reference of the measurement campaign that produced the data
         :raise ValueError: if the insertion fails
         :return None:
         """
@@ -93,7 +93,7 @@ class BigQueryDataset:
                         "sensor_value": sample[1:],
                         "configuration_id": configuration_id,
                         "installation_reference": installation_reference,
-                        "session_reference": session_reference,
+                        "measurement_campaign_reference": measurement_campaign_reference,
                     }
                 )
 
@@ -131,7 +131,7 @@ class BigQueryDataset:
         configuration_id,
         installation_reference,
         timestamp,
-        session_reference,
+        measurement_campaign_reference,
     ):
         """Record the file location and metadata for a window of microphone data.
 
@@ -140,7 +140,7 @@ class BigQueryDataset:
         :param str configuration_id: the UUID of the configuration used to produce the data
         :param str installation_reference: the reference for the installation that produced the data
         :param float timestamp: The posix timestamp coinciding with the first entry in the window
-        :param str session_reference: the reference of the session that produced the data
+        :param str measurement_campaign_reference: the reference of the measurement campaign that produced the data
         :raise ValueError: if the addition fails
         :return None:
         """
@@ -153,7 +153,7 @@ class BigQueryDataset:
                     "node_id": node_id,
                     "configuration_id": configuration_id,
                     "installation_reference": installation_reference,
-                    "session_reference": session_reference,
+                    "measurement_campaign_reference": measurement_campaign_reference,
                 }
             ],
         )
@@ -299,48 +299,62 @@ class BigQueryDataset:
         logger.info("Added configuration %r to BigQuery dataset %r.", configuration_id, self.dataset_id)
         return configuration_id
 
-    def add_or_update_session(self, session_data):
-        """Add a session to the BigQuery dataset or, if it already exists, update its end time.
+    def add_or_update_measurement_campaign(self, measurement_campaign_data):
+        """Add a measurement campaign to the BigQuery dataset or, if it already exists, update its end time.
 
-        :param dict session_data: the session data including the session reference, start time, end time, and available sensors
+        :param dict measurement_campaign_data: the measurement campaign data including the measurement campaign reference, start time, end time, and available sensors
         :return None:
         """
-        session_reference = self._get_field_if_exists(
-            table_name=self.table_names["session"],
+        measurement_campaign_reference = self._get_field_if_exists(
+            table_name=self.table_names["measurement_campaign"],
             field_name="reference",
             comparison_field_name="reference",
-            value=session_data["reference"],
+            value=measurement_campaign_data["reference"],
         )
 
-        if session_reference:
-            logger.info("Session %r already exists - updating session end time.", session_data["reference"])
+        if measurement_campaign_reference:
+            logger.info(
+                "Measurement campaign %r already exists - updating measurement campaign end time.",
+                measurement_campaign_data["reference"],
+            )
 
             query_config = bigquery.QueryJobConfig(
                 query_parameters=[
-                    bigquery.ScalarQueryParameter("end_time", "DATETIME", session_data["end_time"]),
-                    bigquery.ScalarQueryParameter("session_reference", "STRING", session_data["reference"]),
+                    bigquery.ScalarQueryParameter("end_time", "DATETIME", measurement_campaign_data["end_time"]),
+                    bigquery.ScalarQueryParameter(
+                        "measurement_campaign_reference",
+                        "STRING",
+                        measurement_campaign_data["reference"],
+                    ),
                 ]
             )
 
             self.client.query(
-                f"""UPDATE {self.table_names["session"]}
+                f"""UPDATE {self.table_names["measurement_campaign"]}
                 SET end_time = @end_time
-                WHERE reference = @session_reference;
+                WHERE reference = @measurement_campaign_reference;
                 """,
                 job_config=query_config,
             )
             return
 
         for key, value in SENSOR_NAME_MAPPING.items():
-            session_data[value] = session_data[key]
-            del session_data[key]
+            measurement_campaign_data[value] = measurement_campaign_data[key]
+            del measurement_campaign_data[key]
 
-        errors = self.client.insert_rows(table=self.client.get_table(self.table_names["session"]), rows=[session_data])
+        errors = self.client.insert_rows(
+            table=self.client.get_table(self.table_names["measurement_campaign"]),
+            rows=[measurement_campaign_data],
+        )
 
         if errors:
             raise ValueError(errors)
 
-        logger.info("Added session %r to BigQuery dataset %r.", session_data["reference"], self.dataset_id)
+        logger.info(
+            "Added measurement campaign %r to BigQuery dataset %r.",
+            measurement_campaign_data["reference"],
+            self.dataset_id,
+        )
 
     def _get_field_if_exists(self, table_name, field_name, comparison_field_name, value):
         """Get the value of the given field for the row of the given table for which the comparison field has the

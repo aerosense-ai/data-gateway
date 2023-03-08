@@ -77,11 +77,11 @@ class TestUploadWindow(BaseTestCase):
                     main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        expected_session = expected_configuration.pop("session")
+        expected_measurement_campaign = expected_configuration.pop("measurement_campaign")
 
-        # Check that a session was added.
-        self.assertIn("add_or_update_session", mock_dataset.mock_calls[1][0])
-        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_session)
+        # Check that a measurement campaign was added.
+        self.assertIn("add_or_update_measurement_campaign", mock_dataset.mock_calls[1][0])
+        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_measurement_campaign)
 
         # Check configuration was added.
         self.assertIn("add_configuration", mock_dataset.mock_calls[2][0])
@@ -91,7 +91,10 @@ class TestUploadWindow(BaseTestCase):
         self.assertIn("add_sensor_data", mock_dataset.mock_calls[3][0])
         self.assertEqual(mock_dataset.mock_calls[3].kwargs["data"].keys(), {"Constat"})
         self.assertEqual(mock_dataset.mock_calls[3].kwargs["installation_reference"], "my_installation_reference")
-        self.assertEqual(mock_dataset.mock_calls[3].kwargs["session_reference"], expected_session["reference"])
+        self.assertEqual(
+            mock_dataset.mock_calls[3].kwargs["measurement_campaign_reference"],
+            expected_measurement_campaign["reference"],
+        )
 
     def test_upload_window_with_microphone_data(self):
         """Test that, if present, microphone data is uploaded to cloud storage and its location is recorded in BigQuery."""
@@ -108,8 +111,8 @@ class TestUploadWindow(BaseTestCase):
         configuration_id = "0ee0f88e-166f-4b9b-9bf1-43f6ff84063a"
         mock_big_query_client = MockBigQueryClient(
             expected_query_results=[
-                [Mock(reference="my-session")],
-                [Mock(reference="my-session")],
+                [Mock(reference="my-measurement-campaign")],
+                [Mock(reference="my-measurement-campaign")],
                 [Mock(id=configuration_id)],
             ]
         )
@@ -136,7 +139,7 @@ class TestUploadWindow(BaseTestCase):
                 "configuration_id": configuration_id,
                 "datetime": datetime.datetime.fromtimestamp(0),
                 "installation_reference": "my_installation_reference",
-                "session_reference": self.VALID_CONFIGURATION["session"]["reference"],
+                "measurement_campaign_reference": self.VALID_CONFIGURATION["measurement_campaign"]["reference"],
             },
         )
 
@@ -346,7 +349,6 @@ class TestCreateInstallation(BaseTestCase):
         """
         with patch("cloud_functions.main.BigQueryDataset"):
             with self.app.test_client() as client:
-
                 for expected_error_field, data in (
                     ("reference", {"reference": "not slugified", "receiver_firmware_version": "0.0.1"}),
                     ("reference", {"reference": None, "receiver_firmware_version": "0.0.1"}),

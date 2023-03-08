@@ -71,8 +71,8 @@ class WindowHandler:
         :param dict window_metadata: useful metadata about how the data was produced (currently the configuration the data gateway used to read it from the sensors)
         :return None:
         """
-        session_data = window_metadata.pop("session")
-        self.dataset.add_or_update_session(session_data)
+        measurement_campaign_data = window_metadata.pop("measurement_campaign")
+        self.dataset.add_or_update_measurement_campaign(measurement_campaign_data)
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)
@@ -86,7 +86,7 @@ class WindowHandler:
                     node_id=node_id,
                     configuration_id=configuration_id,
                     installation_reference=window_metadata["gateway"]["installation_reference"],
-                    session_reference=session_data["reference"],
+                    measurement_campaign_reference=measurement_campaign_data["reference"],
                 )
 
             self.dataset.add_sensor_data(
@@ -94,12 +94,19 @@ class WindowHandler:
                 node_id=node_id,
                 configuration_id=configuration_id,
                 installation_reference=window_metadata["gateway"]["installation_reference"],
-                session_reference=session_data["reference"],
+                measurement_campaign_reference=measurement_campaign_data["reference"],
             )
 
         logger.info("Uploaded window to BigQuery dataset %r.", self.destination_big_query_dataset)
 
-    def _store_microphone_data(self, data, node_id, configuration_id, installation_reference, session_reference):
+    def _store_microphone_data(
+        self,
+        data,
+        node_id,
+        configuration_id,
+        installation_reference,
+        measurement_campaign_reference,
+    ):
         """Store microphone data as an HDF5 file in the destination cloud storage bucket and record its location and
         metadata in a BigQuery table.
 
@@ -107,7 +114,7 @@ class WindowHandler:
         :param str node_id:
         :param str configuration_id:
         :param str installation_reference:
-        :param str session_reference:
+        :param str measurement_campaign_reference:
         :return None:
         """
         _, upload_path = storage.path.split_bucket_name_from_cloud_path(self.window_cloud_path)
@@ -123,7 +130,7 @@ class WindowHandler:
                 "node_id": node_id,
                 "configuration_id": configuration_id,
                 "installation_reference": installation_reference,
-                "session_reference": session_reference,
+                "measurement_campaign_reference": measurement_campaign_reference,
             },
             ignore_stored_metadata=True,
         )
@@ -139,5 +146,5 @@ class WindowHandler:
             configuration_id=configuration_id,
             installation_reference=installation_reference,
             timestamp=window_timestamp,
-            session_reference=session_reference,
+            measurement_campaign_reference=measurement_campaign_reference,
         )

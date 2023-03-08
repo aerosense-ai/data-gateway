@@ -151,7 +151,7 @@ class DataGateway:
             daemon=True,
         )
 
-        self._add_mandatory_session_data(self.packet_reader.config.session)
+        self._add_mandatory_measurement_campaign_metadata()
         reader_process.start()
         parser_process.start()
 
@@ -224,23 +224,25 @@ class DataGateway:
                 "session."
             )
 
-    def _add_mandatory_session_data(self, session_data):
-        """Add the session start time and a boolean for each of the default sensors types indicating whether they are
-        present on the node. Note that the session end time is not added here but instead updated on each data window
-        upload.
+    def _add_mandatory_measurement_campaign_metadata(self):
+        """Add the measurement campaign start time and a boolean for each of the default sensors types indicating
+        whether they are present on the node. Note that the measurement campaign end time is not added here but instead
+        updated on each data window upload.
 
-        :param dict session_data: the session data dictionary to add this information to
         :return None:
         """
-        session_data["reference"] = coolname.generate_slug(4)
-        session_data["label"] = self._label
-        session_data["start_time"] = datetime.datetime.now()
+        measurement_campaign_metadata = self.packet_reader.config.measurement_campaign
+        measurement_campaign_metadata["reference"] = coolname.generate_slug(4)
+        measurement_campaign_metadata["label"] = self._label
+        measurement_campaign_metadata["start_time"] = datetime.datetime.now()
 
-        # Mark available sensors on the first node as present in the session.
+        # Mark available sensors on the first node as present in the measurement campaign.
         zeroth_node_id = self.packet_reader.config.node_ids[0]
 
         for sensor_name in DEFAULT_SENSOR_NAMES:
-            session_data[sensor_name] = sensor_name in self.packet_reader.config.nodes[zeroth_node_id].sensor_names
+            measurement_campaign_metadata[sensor_name] = (
+                sensor_name in self.packet_reader.config.nodes[zeroth_node_id].sensor_names
+            )
 
     def _send_command_to_sensors(self, command):
         """Send a textual command to the sensors.
