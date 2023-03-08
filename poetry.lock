@@ -966,14 +966,14 @@ numpy = ">=1.14.5"
 
 [[package]]
 name = "identify"
-version = "2.5.18"
+version = "2.5.19"
 description = "File identification library for Python"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "identify-2.5.18-py2.py3-none-any.whl", hash = "sha256:93aac7ecf2f6abf879b8f29a8002d3c6de7086b8c28d88e1ad15045a15ab63f9"},
-    {file = "identify-2.5.18.tar.gz", hash = "sha256:89e144fa560cc4cffb6ef2ab5e9fb18ed9f9b3cb054384bab4b95c12f6c309fe"},
+    {file = "identify-2.5.19-py2.py3-none-any.whl", hash = "sha256:3ee3533e7f6f5023157fbebbd5687bb4b698ce6f305259e0d24b2d7d9efb72bc"},
+    {file = "identify-2.5.19.tar.gz", hash = "sha256:4102ecd051f6884449e7359e55b38ba6cd7aafb6ef27b8e2b38495a5723ea106"},
 ]
 
 [package.extras]
@@ -2038,4 +2038,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<=3.10"
-content-hash = "2c774a8188a86d7aa8aafdd8401d5716ab4e751ee288e2fb7cade62b06303daa"
+content-hash = "13417a64a79bf3bd63e1aee294e53351d4388c169ea1185668f5d40bd91f1aa9"

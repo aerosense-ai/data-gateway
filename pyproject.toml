@@ -34,8 +34,10 @@ octue = "0.41.0"
 # meaning it gets installed from pypi by default.
 grpcio = "1.45.0"
 
+[tool.poetry.scripts]
+gateway = "data_gateway.cli:gateway_cli"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 # Testing.
 gcp-storage-emulator = "2021.6.2"
 tox = "^3.23"
@@ -52,13 +54,6 @@ coverage = "^6.3"
 h5py = "^3.7.0"
 pytest = "^7.1.2"
 black = "22.3.0"
-
-
-[tool.poetry.scripts]
-gateway = "data_gateway.cli:gateway_cli"
-
-
-[tool.poetry.group.dev.dependencies]
 pandas = "^1.5.1"
 pyarrow = "^10.0.0"
 
