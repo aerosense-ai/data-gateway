@@ -1,0 +1,29 @@
+{
+  "commands": [
+    ["selMsgDest 1", 5], 
+    ["selMsgDest 1", 6],
+    ["startMics", 7],  
+    ["selMsgDest 2", 8], 
+    ["selMsgDest 2", 9],
+    ["startMics", 10],
+    ["selMsgDest 3", 11], 
+    ["selMsgDest 3", 12],
+    ["startMics", 13],
+    ["stopMics", 43],
+    ["selMsgDest 2", 44], 
+    ["selMsgDest 2", 45],
+    ["stopMics", 46],
+    ["selMsgDest 1", 47], 
+    ["selMsgDest 1", 48],
+    ["stopMics", 49],
+    ["readMics", 50],
+    ["selMsgDest 2", 350], 
+    ["selMsgDest 2", 351],
+    ["readMics", 352],
+    ["selMsgDest 3", 653],
+    ["selMsgDest 3", 654],
+    ["readMics", 655],
+    ["selMsgDest 1", 955]
+  ],
+  "period": 1000
+}

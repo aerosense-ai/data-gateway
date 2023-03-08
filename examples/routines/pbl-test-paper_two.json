@@ -1,0 +1,20 @@
+{
+  "commands": [
+    ["selMsgDest 1", 5], 
+    ["selMsgDest 1", 6],
+    ["startMics", 7],  
+    ["selMsgDest 2", 8], 
+    ["selMsgDest 2", 9],
+    ["startMics", 10],
+    ["stopMics", 40],
+    ["selMsgDest 1", 41], 
+    ["selMsgDest 1", 42],
+    ["stopMics", 43],
+    ["readMics", 44],
+    ["selMsgDest 2", 344], 
+    ["selMsgDest 2", 345],
+    ["readMics", 346],
+    ["selMsgDest 1", 646]
+  ],
+  "period": 800
+}
