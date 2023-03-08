@@ -42,6 +42,7 @@ SENSOR_NAME_MAPPING = {
     "Gyro": "gyroscope",
     "Mag": "magnetometer",
     "Analog Vbat": "battery_voltmeter",
+    "battery_info": "battery_info",
     "Constat": "connection_statistics",
 }
 
@@ -97,12 +98,10 @@ class BigQueryDataset:
                 )
 
         if len(rows) > 0:
-
             logger.info("Inserting %s rows into database in batches of %s", len(rows), INSERT_BATCH_SIZE)
 
             batches = [rows[i : i + INSERT_BATCH_SIZE] for i in range(0, len(rows), INSERT_BATCH_SIZE)]
             for batch in batches:
-
                 errors = self.client.insert_rows(
                     table=self.client.get_table(self.table_names["sensor_data"]), rows=batch
                 )

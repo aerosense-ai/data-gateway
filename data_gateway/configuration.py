@@ -51,7 +51,7 @@ DEFAULT_DECLINE_REASONS = {
 
 DEFAULT_SLEEP_STATES = {"0": "Exiting sleep", "1": "Entering sleep"}
 
-DEFAULT_REMOTE_INFO_TYPES = {"0": "Battery info"}
+DEFAULT_REMOTE_INFO_TYPES = {"0": "Battery info", "1": "Status feedback"}
 
 DEFAULT_LOCAL_INFO_TYPES = {
     "0": "Synchronization not ready as not every sensor node is connected",

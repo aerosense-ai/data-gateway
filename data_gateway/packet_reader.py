@@ -102,7 +102,6 @@ class PacketReader:
         :return None:
         """
         try:
-
             process_id = os.getpid()
             logger.info("Packet reader process (pid %s) started from main process.", process_id)
 
@@ -125,7 +124,6 @@ class PacketReader:
             packet_count = 0
 
             while stop_signal.value == 0:
-
                 # Check the leading byte of the packet
                 leading_byte = serial_port.read()
 
@@ -287,7 +285,6 @@ class PacketReader:
                                 )
 
                             elif packet_type_name == "Local Info Message":
-
                                 local_info_type = str(
                                     int.from_bytes(packet[0:1], self.config.gateway.endian, signed=False)
                                 )
@@ -354,7 +351,6 @@ class PacketReader:
                                 "Timestamp Packet 0",
                                 "Timestamp Packet 1",
                             ]:
-
                                 data, sensor_names = self._parse_sensor_packet_data(
                                     packet_origin=packet_origin,
                                     packet_type_name=packet_type_name,
@@ -380,6 +376,7 @@ class PacketReader:
                                 self._parse_remote_info_packet(
                                     packet_origin=packet_origin,
                                     packet_type_name=packet_type_name,
+                                    timestamp=timestamp,
                                     packet=packet,
                                 )
 
@@ -439,7 +436,6 @@ class PacketReader:
         logger.info("Successfully updated handles for node %s.", node_id)
 
     def _apply_time_offset(self, packet_origin, packet_type_name, packet, packet_timestamp):
-
         # Full length packets are always suffixed by a timestamp
         if len(packet) == 244:
             node_timestamp = (
@@ -544,6 +540,17 @@ class PacketReader:
             bytes_per_sample = 2
             number_of_diff_baros_sensors = node_config.number_of_sensors["Diff_Baros"]
 
+            #             TODO REMOVE THIS DEBUGGING LOG LOOP AS ITS WASTEFUL
+            logger.debug("Checking contents of Diff Baros payload %s", payload)
+            for i in range(len(payload)):
+                if (i % 2) == 0:
+                    the_integer = int.from_bytes(
+                        payload[i : i + 1],
+                        self.config.gateway.endian,
+                        signed=False,
+                    )
+                    logger.debug("decoded payload value %i at position %i", the_integer, i)
+
             for i in range(node_config.samples_per_packet["Diff_Baros"]):
                 for j in range(number_of_diff_baros_sensors):
                     data[packet_origin]["Diff_Baros"][j][i] = int.from_bytes(
@@ -564,7 +571,6 @@ class PacketReader:
 
             for i in range(node_config.samples_per_packet["Mics"] // 2):
                 for j in range(node_config.number_of_sensors[DEFAULT_SENSOR_NAMES[0]] // 2):
-
                     index = j + 20 * i
 
                     data[packet_origin][DEFAULT_SENSOR_NAMES[0]][j][2 * i] = int.from_bytes(
@@ -667,7 +673,7 @@ class PacketReader:
             logger.error("Sensor of type %r is unknown.", packet_type_name)
             raise exceptions.UnknownPacketTypeError(f"Sensor of type {packet_type_name!r} is unknown.")
 
-    def _parse_remote_info_packet(self, packet_origin, packet_type_name, packet):
+    def _parse_remote_info_packet(self, packet_origin, packet_type_name, timestamp, packet):
         """Parse information type packet and send the information to logger.
 
         :param str packet_origin: the ID of the node the packet is from
@@ -703,6 +709,10 @@ class PacketReader:
                 voltage = int.from_bytes(packet[1:5], self.config.gateway.endian, signed=False) / 1000000
                 cycle = int.from_bytes(packet[5:9], self.config.gateway.endian, signed=False) / 100
                 state_of_charge = int.from_bytes(packet[9:13], self.config.gateway.endian, signed=False) / 256
+
+                self._add_data_to_current_window(
+                    packet_origin, sensor_name="battery_info", data=[timestamp, voltage, cycle, state_of_charge]
+                )
 
                 logger.info(
                     "Voltage : %fV\n Cycle count: %f\nState of charge: %f%%",
