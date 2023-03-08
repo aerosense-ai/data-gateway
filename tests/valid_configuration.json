@@ -37,6 +37,7 @@
       "baros_freq": 100,
       "blade_id": "0",
       "constat_period": 45,
+      "battery_info_period": 3600,
       "decline_reason": {
         "0": "Bad block detection ongoing",
         "1": "Task already registered, cannot register again",
@@ -80,7 +81,7 @@
         "Mag": 3,
         "Analog Vbat": 1,
         "Constat": 4,
-        "battery_info": 1
+        "battery_info": 3
       },
       "periods": {
         "Mics": 6.4e-5,
@@ -92,7 +93,7 @@
         "Mag": 0.08,
         "Analog Vbat": 6.103515625e-5,
         "Constat": 0.045,
-        "battery_info": 1
+        "battery_info": 3600
       },
       "samples_per_packet": {
         "Mics": 8,
@@ -217,7 +218,7 @@
         "Mag": [1, 1, 1],
         "Analog Vbat": [1],
         "Constat": [1, 1, 1, 1],
-        "battery_info": [1]
+        "battery_info": [1e6, 100, 256]
       },
       "sensor_coordinates": {
         "Mics": [
@@ -345,7 +346,11 @@
           [0, 0, 0],
           [0, 0, 0]
         ],
-        "battery_info": [[0, 0, 0]]
+        "battery_info": [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ]
       },
       "sensor_names": [
         "Mics",

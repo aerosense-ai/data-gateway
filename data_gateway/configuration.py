@@ -119,7 +119,7 @@ DEFAULT_NUMBER_OF_SENSORS = {
     "Mag": 3,
     "Analog Vbat": 2,
     "Constat": 4,
-    "battery_info": 1,
+    "battery_info": 3,
 }
 
 DEFAULT_SESSION = {
@@ -195,6 +195,7 @@ class NodeConfiguration:
     :param float baros_freq: barometers sampling frequency
     :param str blade_id: The id of the blade on which the node is mounted, if known
     :param float constat_period: period of incoming connection statistic parameters in ms
+    :param int|float battery_info_period: period of battery information in s
     :param dict|None decline_reason:
     :param float diff_baros_freq: differential barometers sampling frequency
     :param dict|None initial_node_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
@@ -226,6 +227,7 @@ class NodeConfiguration:
         baros_freq=100,
         blade_id="unknown",
         constat_period=45,
+        battery_info_period=3600,
         decline_reason=None,
         diff_baros_freq=1000,
         initial_node_handles=None,
@@ -254,6 +256,7 @@ class NodeConfiguration:
         self.baros_freq = baros_freq
         self.blade_id = blade_id
         self.constat_period = constat_period
+        self.battery_info_period = battery_info_period
         self.diff_baros_freq = diff_baros_freq
         self.gyro_freq = gyro_freq
         self.gyro_range = gyro_range
@@ -309,7 +312,7 @@ class NodeConfiguration:
             "Mag": 1 / self.mag_freq,
             "Analog Vbat": 1 / self.analog_freq,
             "Constat": self.constat_period / 1000,
-            "battery_info": 1,
+            "battery_info": self.battery_info_period,
         }
 
     def to_dict(self):
