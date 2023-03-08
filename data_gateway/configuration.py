@@ -15,6 +15,7 @@ DEFAULT_SENSOR_NAMES = [
     "Mag",
     "Analog Vbat",
     "Constat",
+    "battery_info",
 ]
 
 DEFAULT_INITIAL_GATEWAY_HANDLES = {
@@ -77,6 +78,7 @@ DEFAULT_SAMPLES_PER_PACKET = {
     "Mag": 40,  # IMU, int(240 / 2 / 3)
     "Analog Vbat": 60,
     "Constat": 24,
+    "battery_info": 1,
 }
 
 DEFAULT_SENSOR_CONVERSION_CONSTANTS = {
@@ -89,6 +91,7 @@ DEFAULT_SENSOR_CONVERSION_CONSTANTS = {
     "Mag": 1,
     "Analog Vbat": 1,
     "Constat": 1,
+    "battery_info": 1,
 }
 
 DEFAULT_SENSOR_COMMANDS = {
@@ -116,6 +119,7 @@ DEFAULT_NUMBER_OF_SENSORS = {
     "Mag": 3,
     "Analog Vbat": 2,
     "Constat": 4,
+    "battery_info": 1,
 }
 
 DEFAULT_SESSION = {
@@ -305,6 +309,7 @@ class NodeConfiguration:
             "Mag": 1 / self.mag_freq,
             "Analog Vbat": 1 / self.analog_freq,
             "Constat": self.constat_period / 1000,
+            "battery_info": 1,
         }
 
     def to_dict(self):

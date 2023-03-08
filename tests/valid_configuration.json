@@ -79,7 +79,8 @@
         "Gyro": 3,
         "Mag": 3,
         "Analog Vbat": 1,
-        "Constat": 4
+        "Constat": 4,
+        "battery_info": 1
       },
       "periods": {
         "Mics": 6.4e-5,
@@ -90,7 +91,8 @@
         "Gyro": 0.01,
         "Mag": 0.08,
         "Analog Vbat": 6.103515625e-5,
-        "Constat": 0.045
+        "Constat": 0.045,
+        "battery_info": 1
       },
       "samples_per_packet": {
         "Mics": 8,
@@ -101,7 +103,8 @@
         "Gyro": 40,
         "Mag": 40,
         "Analog Vbat": 60,
-        "Constat": 24
+        "Constat": 24,
+        "battery_info": 1
       },
       "sensor_commands": {
         "start": ["startBaros", "startDiffBaros", "startIMU", "startMics"],
@@ -213,7 +216,8 @@
         "Gyro": [1, 1, 1],
         "Mag": [1, 1, 1],
         "Analog Vbat": [1],
-        "Constat": [1, 1, 1, 1]
+        "Constat": [1, 1, 1, 1],
+        "battery_info": [1]
       },
       "sensor_coordinates": {
         "Mics": [
@@ -340,7 +344,8 @@
           [0, 0, 0],
           [0, 0, 0],
           [0, 0, 0]
-        ]
+        ],
+        "battery_info": [[0, 0, 0]]
       },
       "sensor_names": [
         "Mics",
@@ -351,7 +356,8 @@
         "Gyro",
         "Mag",
         "Analog Vbat",
-        "Constat"
+        "Constat",
+        "battery_info"
       ],
       "sleep_state": {
         "0": "Exiting sleep",
