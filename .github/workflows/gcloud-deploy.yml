@@ -1,3 +1,5 @@
+# Deploy the production cloud functions if pushing to the `main` branch or the test cloud functions if pushing to the
+# `test` branch.
 name: gcloud-deploy
 
 on:
