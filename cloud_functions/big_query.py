@@ -338,10 +338,6 @@ class BigQueryDataset:
             )
             return
 
-        for key, value in SENSOR_NAME_MAPPING.items():
-            measurement_campaign_data[value] = measurement_campaign_data[key]
-            del measurement_campaign_data[key]
-
         errors = self.client.insert_rows(
             table=self.client.get_table(self.table_names["measurement_campaign"]),
             rows=[measurement_campaign_data],
