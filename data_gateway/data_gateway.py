@@ -231,15 +231,13 @@ class DataGateway:
 
         :return None:
         """
-        measurement_campaign_metadata = self.packet_reader.config.measurement_campaign
-        measurement_campaign_metadata["reference"] = coolname.generate_slug(4)
-        measurement_campaign_metadata[
-            "installation_reference"
-        ] = self.packet_reader.config.gateway.installation_reference
-        measurement_campaign_metadata["start_time"] = datetime.datetime.now()
-        measurement_campaign_metadata["label"] = self._label
+        measurement_campaign = self.packet_reader.config.measurement_campaign
+        measurement_campaign["reference"] = coolname.generate_slug(4)
+        measurement_campaign["installation_reference"] = self.packet_reader.config.gateway.installation_reference
+        measurement_campaign["start_time"] = datetime.datetime.now()
+        measurement_campaign["label"] = self._label
 
-        measurement_campaign_metadata["nodes"] = {
+        measurement_campaign["nodes"] = {
             node_id: node.sensor_names for node_id, node in self.packet_reader.config.nodes.items()
         }
 
