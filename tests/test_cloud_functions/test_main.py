@@ -81,7 +81,7 @@ class TestUploadWindow(BaseTestCase):
 
         # Check that a measurement campaign was added.
         self.assertIn("add_or_update_measurement_campaign", mock_dataset.mock_calls[1][0])
-        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_measurement_campaign)
+        self.assertEqual(mock_dataset.mock_calls[1].kwargs, expected_measurement_campaign)
 
         # Check configuration was added.
         self.assertIn("add_configuration", mock_dataset.mock_calls[2][0])
