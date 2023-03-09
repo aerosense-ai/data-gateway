@@ -4,7 +4,6 @@ import os
 import sys
 from unittest.mock import Mock, patch
 
-from data_gateway.configuration import DEFAULT_SENSOR_NAMES
 from tests.base import BaseTestCase
 from tests.test_cloud_functions import REPOSITORY_ROOT
 from tests.test_cloud_functions.mocks import MockBigQueryClient
@@ -239,7 +238,8 @@ class TestBigQueryDataset(BaseTestCase):
             "reference": "effervescent-slug-of-doom",
             "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
             "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
-            **{sensor_name: True for sensor_name in DEFAULT_SENSOR_NAMES},
+            "nodes": {"1": ["microphone"]},
+            "installation_reference": "some-installation",
         }
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
@@ -253,15 +253,8 @@ class TestBigQueryDataset(BaseTestCase):
                 "reference": measurement_campaign_data["reference"],
                 "start_time": measurement_campaign_data["start_time"],
                 "end_time": measurement_campaign_data["end_time"],
-                "microphone": True,
-                "barometer": True,
-                "barometer_thermometer": True,
-                "differential_barometer": True,
-                "accelerometer": True,
-                "gyroscope": True,
-                "magnetometer": True,
-                "battery_voltmeter": True,
-                "connection_statistics": True,
+                "nodes": measurement_campaign_data["nodes"],
+                "installation_reference": measurement_campaign_data["installation_reference"],
             },
         )
 
@@ -273,7 +266,8 @@ class TestBigQueryDataset(BaseTestCase):
             "reference": existing_measurement_campaign_reference,
             "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
             "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
-            **{sensor_name: True for sensor_name in DEFAULT_SENSOR_NAMES},
+            "nodes": {"1": ["microphone"]},
+            "installation_reference": "some-installation",
         }
 
         mock_big_query_client = MockBigQueryClient(
