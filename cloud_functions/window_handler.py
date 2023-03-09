@@ -72,7 +72,11 @@ class WindowHandler:
         :return None:
         """
         measurement_campaign_data = window_metadata.pop("measurement_campaign")
-        self.dataset.add_or_update_measurement_campaign(**measurement_campaign_data)
+
+        self.dataset.add_or_update_measurement_campaign(
+            **measurement_campaign_data,
+            installation_reference=window_metadata["gateway"]["installation_reference"],
+        )
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)

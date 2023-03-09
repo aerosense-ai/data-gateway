@@ -77,11 +77,15 @@ class TestUploadWindow(BaseTestCase):
                     main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        expected_measurement_campaign = expected_configuration.pop("measurement_campaign")
+
+        expected_measurement_campaign_arguments = {
+            **expected_configuration.pop("measurement_campaign"),
+            "installation_reference": expected_configuration["gateway"]["installation_reference"],
+        }
 
         # Check that a measurement campaign was added.
         self.assertIn("add_or_update_measurement_campaign", mock_dataset.mock_calls[1][0])
-        self.assertEqual(mock_dataset.mock_calls[1].kwargs, expected_measurement_campaign)
+        self.assertEqual(mock_dataset.mock_calls[1].kwargs, expected_measurement_campaign_arguments)
 
         # Check configuration was added.
         self.assertIn("add_configuration", mock_dataset.mock_calls[2][0])
@@ -93,7 +97,7 @@ class TestUploadWindow(BaseTestCase):
         self.assertEqual(mock_dataset.mock_calls[3].kwargs["installation_reference"], "my_installation_reference")
         self.assertEqual(
             mock_dataset.mock_calls[3].kwargs["measurement_campaign_reference"],
-            expected_measurement_campaign["reference"],
+            expected_measurement_campaign_arguments["reference"],
         )
 
     def test_upload_window_with_microphone_data(self):
