@@ -30,7 +30,7 @@ We use continuous deployment and semantic versioning for our releases.
   ```
   git clone <your_forked_repo_address>                           # Fetch the repo to your local machine
   cd data_gateway                                                # Move into the repo directory
-  pyenv virtualenv 3.6.9 myenv                                   # Make a virtual environment for you to install the dev tools into. Use any python >= 3.7
+  pyenv virtualenv 3.6.9 myenv                                   # Make a virtual environment for you to install the dev tools into. Use any python >= 3.8
   pyend activate myenv                                           # Activate the virtual environment so you don't screw up other installations
   poetry install                                                 # Install the testing and code formatting utilities
   pre-commit install && pre-commit install -t commit-msg         # Install the pre-commit code formatting hooks in the git repo

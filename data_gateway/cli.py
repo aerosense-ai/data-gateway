@@ -121,13 +121,6 @@ def gateway_cli(logger_uri, log_level):
     help="The name of the Google Cloud Platform (GCP) storage bucket to use. This value is overridden by the environment variable GATEWAY_GCP_BUCKET_NAME if set.",
 )
 @click.option(
-    "--label",
-    type=str,
-    default=None,
-    show_default=True,
-    help="An optional label to associate with data persisted in this run of the gateway.",
-)
-@click.option(
     "--no-stop-sensors-on-exit",
     is_flag=True,
     default=False,
@@ -163,7 +156,6 @@ def start(
     output_dir,
     window_size,
     gcp_bucket_name,
-    label,
     no_stop_sensors_on_exit,
     save_csv_files,
     save_local_logs,
@@ -194,7 +186,6 @@ def start(
         output_directory=overridden_output_dir,
         window_size=window_size,
         bucket_name=overridden_gcp_bucket_name,
-        label=label,
         save_csv_files=save_csv_files,
         use_dummy_serial_port=use_dummy_serial_port,
         log_level=global_cli_context["log_level"],

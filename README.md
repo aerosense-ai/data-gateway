@@ -100,8 +100,8 @@ Prerequisites:
 
 Installation:
 ```shell
-pyenv install 3.7.0  # (or higher)
-pyenv local 3.7.0
+pyenv install 3.8.0  # (or higher)
+pyenv local 3.8.0
 pyenv rehash
 virtualenv venv
 ./venv/Scripts/activate

@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import struct
@@ -6,7 +7,7 @@ import warnings
 from time import time
 
 import numpy as np
-from octue.cloud.emulators import GoogleCloudStorageEmulatorTestResultModifier
+from octue.cloud.emulators.cloud_storage import GoogleCloudStorageEmulatorTestResultModifier
 
 from data_gateway.configuration import Configuration
 from tests import LENGTH, RANDOM_BYTES, TEST_BUCKET_NAME
@@ -17,6 +18,12 @@ class DatasetMixin:
 
     with open(configuration_path) as f:
         VALID_CONFIGURATION = json.load(f)
+
+    # Add measurement campaign data that would be added only when the gateway is run.
+    VALID_CONFIGURATION["measurement_campaign"]["reference"] = "effervescent-slug-of-doom"
+    VALID_CONFIGURATION["measurement_campaign"]["start_time"] = datetime.datetime(2022, 11, 2, 16, 14, 40, 896294)
+    VALID_CONFIGURATION["measurement_campaign"]["end_time"] = datetime.datetime(2022, 11, 2, 16, 14, 44, 896294)
+    VALID_CONFIGURATION["measurement_campaign"]["nodes"] = {"0": ["microphone"]}
 
     def random_sensor_data(self, rows, cols, first_sample_time, last_sample_time):
         """Generate a numpy array with time column from first_sample_time to last_sample_time and rows x cols random

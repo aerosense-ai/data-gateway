@@ -1,3 +1,5 @@
+# Deploy the production cloud functions if pushing to the `main` branch or the test cloud functions if pushing to the
+# `test` branch.
 name: gcloud-deploy
 
 on:
@@ -18,11 +20,11 @@ jobs:
         run: |
           echo ${{ github.ref }}
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "::set-output name=name_prefix::"
-            echo "::set-output name=dataset_name_prefix::"
+            echo "name_prefix=" >> $GITHUB_OUTPUT
+            echo "dataset_name_prefix=" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=name_prefix::test-"
-            echo "::set-output name=dataset_name_prefix::test_"
+            echo "name_prefix=test-" >> $GITHUB_OUTPUT
+            echo "dataset_name_prefix=test_" >> $GITHUB_OUTPUT
           fi
 
   deploy-add-sensor-type:

@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import multiprocessing
@@ -7,6 +8,7 @@ import sys
 import threading
 import time
 
+import coolname
 from octue.log_handlers import apply_log_handler
 
 from data_gateway import stop_gateway
@@ -48,7 +50,6 @@ class DataGateway:
     :param str output_directory: the name of the directory in which to save data in the cloud bucket or local file system
     :param float window_size: the period in seconds at which data is persisted
     :param str|None bucket_name: the name of the Google Cloud bucket to upload to
-    :param str|None label: a label to be associated with the data collected in this run of the data gateway
     :param bool save_csv_files: if `True`, also save windows locally as CSV files for debugging
     :param bool use_dummy_serial_port: if `True` use a dummy serial port for testing
     :param bool stop_sensors_on_exit: if true, and a `stop_routine_file` path is present, hte stop routine will be executed by the gateway main thread prior to quitting
@@ -68,7 +69,6 @@ class DataGateway:
         output_directory="data_gateway",
         window_size=600,
         bucket_name=None,
-        label=None,
         save_csv_files=False,
         use_dummy_serial_port=False,
         log_level=logging.INFO,
@@ -89,7 +89,6 @@ class DataGateway:
         self.interactive = interactive
 
         packet_reader_configuration = self._load_configuration(configuration_path=configuration_path)
-        packet_reader_configuration.session["label"] = label
 
         self.serial_port_name = serial_port
         self.use_dummy_serial_port = use_dummy_serial_port
@@ -149,6 +148,7 @@ class DataGateway:
             daemon=True,
         )
 
+        self._add_mandatory_measurement_campaign_metadata()
         reader_process.start()
         parser_process.start()
 
@@ -177,24 +177,7 @@ class DataGateway:
                 time.sleep(5)
 
         finally:
-            if self.stop_sensors_on_exit:
-                if self.stop_routine is not None:
-                    logger.info(
-                        "Safely shutting down sensors using stop_routine. Press ctrl+c again to hard-exit (unsafe!)"
-                    )
-                    # Run a thread to execute the stop routine
-                    routine_thread = threading.Thread(
-                        name="RoutineCommandsThread",
-                        target=self.stop_routine.run,
-                        kwargs={"stop_signal": stop_signal},
-                        daemon=True,
-                    )
-                    routine_thread.start()
-                    # Wait a sensible amount of time for the stop signals to flush, then exit
-                    time.sleep(5)
-
-                else:
-                    logger.warning("No stop_routine file supplied - sensors cannot be automatically stopped.")
+            self._stop(stop_signal)
 
     def _load_configuration(self, configuration_path):
         """Load a configuration from the path if it exists; otherwise load the default configuration.
@@ -238,6 +221,29 @@ class DataGateway:
                 "session."
             )
 
+    def _add_mandatory_measurement_campaign_metadata(self):
+        """Add the measurement campaign's start time and the names of the available sensors on each node to the
+        configuration. If the configuration doesn't contain a reference for the measurement campaign, a name is
+        generated so a new measurement campaign can be created.
+
+        :return None:
+        """
+        measurement_campaign = self.packet_reader.config.measurement_campaign
+
+        if "reference" not in measurement_campaign:
+            measurement_campaign["reference"] = coolname.generate_slug(4)
+
+            logger.info(
+                "No measurement campaign reference specified in configuration - creating new campaign called %r.",
+                measurement_campaign["reference"],
+            )
+
+        measurement_campaign["start_time"] = datetime.datetime.now()
+
+        measurement_campaign["nodes"] = {
+            node_id: node.sensor_names for node_id, node in self.packet_reader.config.nodes.items()
+        }
+
     def _send_command_to_sensors(self, command):
         """Send a textual command to the sensors.
 
@@ -278,3 +284,28 @@ class DataGateway:
         except Exception as e:
             stop_gateway(logger, stop_signal)
             raise e
+
+    def _stop(self, stop_signal):
+        """Stop the data gateway.
+
+        :param multiprocessing.Value stop_signal: a value of 0 means don't stop; a value of 1 means stop
+        :return None:
+        """
+        if self.stop_sensors_on_exit:
+            if self.stop_routine is not None:
+                logger.info(
+                    "Safely shutting down sensors using stop_routine. Press ctrl+c again to hard-exit (unsafe!)"
+                )
+                # Run a thread to execute the stop routine
+                routine_thread = threading.Thread(
+                    name="RoutineCommandsThread",
+                    target=self.stop_routine.run,
+                    kwargs={"stop_signal": stop_signal},
+                    daemon=True,
+                )
+                routine_thread.start()
+                # Wait a sensible amount of time for the stop signals to flush, then exit
+                time.sleep(5)
+
+            else:
+                logger.warning("No stop_routine file supplied - sensors cannot be automatically stopped.")

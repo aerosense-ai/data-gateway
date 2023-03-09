@@ -15,6 +15,7 @@ DEFAULT_SENSOR_NAMES = [
     "Mag",
     "Analog Vbat",
     "Constat",
+    "battery_info",
 ]
 
 DEFAULT_INITIAL_GATEWAY_HANDLES = {
@@ -77,6 +78,7 @@ DEFAULT_SAMPLES_PER_PACKET = {
     "Mag": 40,  # IMU, int(240 / 2 / 3)
     "Analog Vbat": 60,
     "Constat": 24,
+    "battery_info": 1,
 }
 
 DEFAULT_SENSOR_CONVERSION_CONSTANTS = {
@@ -89,6 +91,7 @@ DEFAULT_SENSOR_CONVERSION_CONSTANTS = {
     "Mag": 1,
     "Analog Vbat": 1,
     "Constat": 1,
+    "battery_info": 1,
 }
 
 DEFAULT_SENSOR_COMMANDS = {
@@ -116,10 +119,12 @@ DEFAULT_NUMBER_OF_SENSORS = {
     "Mag": 3,
     "Analog Vbat": 2,
     "Constat": 4,
+    "battery_info": 3,
 }
 
-DEFAULT_SESSION = {
+DEFAULT_MEASUREMENT_CAMPAIGN_METADATA = {
     "label": None,
+    "description": None,
 }
 
 HANDLE_DEFINITION_PACKET_TYPE = 255  # 0xFF,
@@ -191,6 +196,7 @@ class NodeConfiguration:
     :param float baros_freq: barometers sampling frequency
     :param str blade_id: The id of the blade on which the node is mounted, if known
     :param float constat_period: period of incoming connection statistic parameters in ms
+    :param int|float battery_info_period: period of battery information in s
     :param dict|None decline_reason:
     :param float diff_baros_freq: differential barometers sampling frequency
     :param dict|None initial_node_handles: Map of the default handles which a node will use to communicate packet type (the expected contents of packet payload). These are defaults, as they may be altered on the fly by a node.
@@ -222,6 +228,7 @@ class NodeConfiguration:
         baros_freq=100,
         blade_id="unknown",
         constat_period=45,
+        battery_info_period=3600,
         decline_reason=None,
         diff_baros_freq=1000,
         initial_node_handles=None,
@@ -250,6 +257,7 @@ class NodeConfiguration:
         self.baros_freq = baros_freq
         self.blade_id = blade_id
         self.constat_period = constat_period
+        self.battery_info_period = battery_info_period
         self.diff_baros_freq = diff_baros_freq
         self.gyro_freq = gyro_freq
         self.gyro_range = gyro_range
@@ -305,6 +313,7 @@ class NodeConfiguration:
             "Mag": 1 / self.mag_freq,
             "Analog Vbat": 1 / self.analog_freq,
             "Constat": self.constat_period / 1000,
+            "battery_info": self.battery_info_period,
         }
 
     def to_dict(self):
@@ -350,22 +359,22 @@ class NodeConfiguration:
 
 
 class Configuration:
-    """Configuration class for gateway, node and session configuration data.
+    """Configuration class for gateway, node and measurement campaign configuration data.
 
     :param dict|None gateway: A dict of values used to customise the gateway configuration
     :param dict|None nodes: A dict of dicts, keyed by node_id, used to customise the configuration for each node
-    :param dict|None session: A dict of metadata about the current session of the gateway provided by the user
+    :param dict|None measurement_campaign: A dict of metadata about the current measurement campaign of the gateway provided by the user
     :return None:
     """
 
-    def __init__(self, gateway=None, nodes=None, session=None, **kwargs):
+    def __init__(self, gateway=None, nodes=None, measurement_campaign=None, **kwargs):
         gateway_configuration = gateway or {}
         self.gateway = GatewayConfiguration(**gateway_configuration)
 
         if len(kwargs) > 0:
             raise ValueError(
-                "Properties other than 'gateway', 'nodes' and 'session' passed to Configuration. Are you using an "
-                "old-format configuration file?"
+                "Properties other than 'gateway', 'nodes' and 'measurement_campaign' passed to Configuration. Are you "
+                "using an old-format configuration file?"
             )
 
         # Set up a single-node default in the absence of any nodes at all.
@@ -377,8 +386,8 @@ class Configuration:
             for node_id, node in nodes.items():
                 self.nodes[str(node_id)] = NodeConfiguration(**node)
 
-        # Set up the session-specific data as empty.
-        self.session = session or DEFAULT_SESSION
+        # Set up the measurement-campaign-specific data as empty.
+        self.measurement_campaign = measurement_campaign or DEFAULT_MEASUREMENT_CAMPAIGN_METADATA
 
     @classmethod
     def from_dict(cls, dictionary):
@@ -397,7 +406,7 @@ class Configuration:
         return cls(
             gateway=dictionary["gateway"],
             nodes=dictionary["nodes"],
-            session=dictionary["session"],
+            measurement_campaign=dictionary["measurement_campaign"],
         )
 
     @property
@@ -442,5 +451,5 @@ class Configuration:
         return {
             "gateway": self.gateway.to_dict(),
             "nodes": {name: node.to_dict() for name, node in self.nodes.items()},
-            "session": self.session,
+            "measurement_campaign": self.measurement_campaign,
         }

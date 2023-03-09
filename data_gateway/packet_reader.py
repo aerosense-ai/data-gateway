@@ -10,6 +10,7 @@ import time
 
 from octue.cloud import storage
 from octue.log_handlers import apply_log_handler
+from octue.utils.encoders import OctueJSONEncoder
 
 from data_gateway import exceptions, stop_gateway
 from data_gateway.configuration import (
@@ -20,6 +21,7 @@ from data_gateway.configuration import (
 )
 from data_gateway.persistence import (
     DEFAULT_OUTPUT_DIRECTORY,
+    METADATA_CONFIGURATION_KEY,
     BatchingFileWriter,
     BatchingUploader,
     NoOperationContextManager,
@@ -199,7 +201,7 @@ class PacketReader:
                 bucket_name=self.bucket_name,
                 window_size=self.window_size,
                 output_directory=self.cloud_output_directory,
-                metadata={"data_gateway__configuration": self.config.to_dict()},
+                metadata={METADATA_CONFIGURATION_KEY: self.config.to_dict()},
             )
         else:
             self.uploader = NoOperationContextManager()
@@ -501,7 +503,7 @@ class PacketReader:
         :return None:
         """
         with open(os.path.join(self.local_output_directory, "configuration.json"), "w") as f:
-            json.dump(self.config.to_dict(), f)
+            json.dump(self.config.to_dict(), f, cls=OctueJSONEncoder)
 
     def _parse_sensor_packet_data(self, packet_origin, packet_type_name, payload, data):
         """Parse sensor data type payloads.

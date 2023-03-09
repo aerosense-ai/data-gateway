@@ -1,6 +1,7 @@
 import abc
 import copy
 import csv
+import datetime
 import json
 import multiprocessing
 import os
@@ -15,6 +16,7 @@ from octue.utils.persistence import calculate_disk_usage, get_oldest_file_in_dir
 logger = multiprocessing.get_logger()
 
 DEFAULT_OUTPUT_DIRECTORY = "data_gateway"
+METADATA_CONFIGURATION_KEY = "data_gateway__configuration"
 
 
 class NoOperationContextManager:
@@ -255,13 +257,23 @@ class BatchingUploader(TimeBatcher):
 
         :return None:
         """
-        try:
-            logger.info(
-                "Uploading window to bucket_name %s with path %s", self.bucket_name, self._generate_window_path()
+        window_path = self._generate_window_path()
+
+        # Update the measurement campaign end time in case this is the last window upload.
+        if self.metadata.get(METADATA_CONFIGURATION_KEY):
+            self.metadata[METADATA_CONFIGURATION_KEY]["measurement_campaign"]["end_time"] = datetime.datetime.now()
+        else:
+            logger.warning(
+                f"Measurement campaign end time could not be added to metadata as the {METADATA_CONFIGURATION_KEY!r} "
+                "key was not present."
             )
+
+        try:
+            logger.info("Uploading window to bucket_name %s with path %s", self.bucket_name, window_path)
+
             self.client.upload_from_string(
                 string=json.dumps(self.ready_window),
-                cloud_path=storage.path.generate_gs_path(self.bucket_name, self._generate_window_path()),
+                cloud_path=storage.path.generate_gs_path(self.bucket_name, window_path),
                 metadata=self.metadata,
                 timeout=self.upload_timeout,
             )
@@ -296,7 +308,6 @@ class BatchingUploader(TimeBatcher):
         :return None:
         """
         for filename in os.listdir(self._backup_directory):
-
             if not filename.startswith(self._file_prefix):
                 continue
 

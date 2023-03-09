@@ -1,7 +1,9 @@
 class MockBigQueryClient:
-    def __init__(self, expected_query_result=None):
-        self.expected_query_result = expected_query_result or []
-        self.rows = []
+    def __init__(self, expected_query_results=None):
+        self.expected_query_results = expected_query_results or [[]]
+        self.inserted_rows = []
+        self.queries = []
+        self._next_query_result_index = 0
 
     def get_table(self, name):
         """Do nothing.
@@ -12,22 +14,32 @@ class MockBigQueryClient:
         pass
 
     def insert_rows(self, table, rows):
-        """Store the given rows in the `self.rows` attribute.
+        """Append the given rows to the `inserted_rows` attribute.
 
         :param str table:
         :param list(dict) rows:
         :return None:
         """
-        self.rows.append(rows)
+        self.inserted_rows.append(rows)
 
-    def query(self, query):
-        """Return the `self.expected_query_result` attribute in a `MockQueryResult` instance.
+    def query(self, query, *args, **kwargs):
+        """Return the next value in the `expected_query_results` attribute as a `MockQueryResult` instance.
 
         :param str query:
         :return MockQueryResult:
         """
-        self._query = query
-        return MockQueryResult(result=self.expected_query_result)
+        self.queries.append(query)
+
+        try:
+            result = MockQueryResult(result=self.expected_query_results[self._next_query_result_index])
+        except IndexError:
+            raise ValueError(
+                "More mock queries have been run than mock query results given - make sure you've given enough in the "
+                f"{type(self).__name__} constructor."
+            )
+
+        self._next_query_result_index += 1
+        return result
 
 
 class MockQueryResult:

@@ -3,8 +3,7 @@ import datetime
 import json
 import os
 import sys
-import types
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 from flask import Flask, request
@@ -13,6 +12,7 @@ from octue.cloud.storage.client import GoogleCloudStorageClient
 from octue.resources import Datafile
 from octue.utils.encoders import OctueJSONEncoder
 
+from data_gateway.persistence import METADATA_CONFIGURATION_KEY
 from tests import TEST_BUCKET_NAME  # noqa
 from tests.base import BaseTestCase  # noqa
 from tests.test_cloud_functions import REPOSITORY_ROOT
@@ -61,7 +61,7 @@ class TestUploadWindow(BaseTestCase):
         GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={METADATA_CONFIGURATION_KEY: self.VALID_CONFIGURATION},
         )
 
         with patch.dict(
@@ -76,17 +76,29 @@ class TestUploadWindow(BaseTestCase):
                 with patch("window_handler.BigQueryDataset") as mock_dataset:
                     main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
-        # Check configuration without user data was added.
         expected_configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-        del expected_configuration["session"]
-        self.assertIn("add_configuration", mock_dataset.mock_calls[1][0])
-        self.assertEqual(mock_dataset.mock_calls[1].args[0], expected_configuration)
+
+        expected_measurement_campaign_arguments = {
+            **expected_configuration.pop("measurement_campaign"),
+            "installation_reference": expected_configuration["gateway"]["installation_reference"],
+        }
+
+        # Check that a measurement campaign was added.
+        self.assertIn("add_or_update_measurement_campaign", mock_dataset.mock_calls[1][0])
+        self.assertEqual(mock_dataset.mock_calls[1].kwargs, expected_measurement_campaign_arguments)
+
+        # Check configuration was added.
+        self.assertIn("add_configuration", mock_dataset.mock_calls[2][0])
+        self.assertEqual(mock_dataset.mock_calls[2].args[0], expected_configuration)
 
         # Check data was persisted.
-        self.assertIn("add_sensor_data", mock_dataset.mock_calls[2][0])
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["data"].keys(), {"Constat"})
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["installation_reference"], "my_installation_reference")
-        self.assertEqual(mock_dataset.mock_calls[2].kwargs["label"], "my-test-1")
+        self.assertIn("add_sensor_data", mock_dataset.mock_calls[3][0])
+        self.assertEqual(mock_dataset.mock_calls[3].kwargs["data"].keys(), {"Constat"})
+        self.assertEqual(mock_dataset.mock_calls[3].kwargs["installation_reference"], "my_installation_reference")
+        self.assertEqual(
+            mock_dataset.mock_calls[3].kwargs["measurement_campaign_reference"],
+            expected_measurement_campaign_arguments["reference"],
+        )
 
     def test_upload_window_with_microphone_data(self):
         """Test that, if present, microphone data is uploaded to cloud storage and its location is recorded in BigQuery."""
@@ -97,11 +109,17 @@ class TestUploadWindow(BaseTestCase):
         storage_client.upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={METADATA_CONFIGURATION_KEY: self.VALID_CONFIGURATION},
         )
 
         configuration_id = "0ee0f88e-166f-4b9b-9bf1-43f6ff84063a"
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[types.SimpleNamespace(id=configuration_id)])
+        mock_big_query_client = MockBigQueryClient(
+            expected_query_results=[
+                [Mock(reference="my-measurement-campaign")],
+                [Mock(reference="my-measurement-campaign")],
+                [Mock(id=configuration_id)],
+            ]
+        )
 
         with patch.dict(
             os.environ,
@@ -118,14 +136,14 @@ class TestUploadWindow(BaseTestCase):
 
         # Check location of microphone data has been recorded in BigQuery.
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "path": expected_microphone_cloud_path,
                 "node_id": "0",
                 "configuration_id": configuration_id,
-                "datetime": datetime.datetime(1970, 1, 1, 0, 0),
+                "datetime": datetime.datetime.fromtimestamp(0),
                 "installation_reference": "my_installation_reference",
-                "label": "my-test-1",
+                "measurement_campaign_reference": self.VALID_CONFIGURATION["measurement_campaign"]["reference"],
             },
         )
 
@@ -140,9 +158,9 @@ class TestUploadWindow(BaseTestCase):
             )
 
         # Check non-microphone sensor data was added to BigQuery.
-        self.assertEqual(mock_big_query_client.rows[1][0]["sensor_type_reference"], "connection_statistics")
-        self.assertEqual(mock_big_query_client.rows[1][0]["configuration_id"], configuration_id)
-        self.assertEqual(len(mock_big_query_client.rows[1]), len(window["0"]["Constat"]))
+        self.assertEqual(mock_big_query_client.inserted_rows[1][0]["sensor_type_reference"], "connection_statistics")
+        self.assertEqual(mock_big_query_client.inserted_rows[1][0]["configuration_id"], configuration_id)
+        self.assertEqual(len(mock_big_query_client.inserted_rows[1]), len(window["0"]["Constat"]))
 
     def test_upload_window_for_existing_configuration(self):
         """Test that uploading a window with a configuration that already exists in BigQuery does not fail."""
@@ -151,7 +169,7 @@ class TestUploadWindow(BaseTestCase):
         GoogleCloudStorageClient().upload_from_string(
             string=json.dumps(window, cls=OctueJSONEncoder),
             cloud_path=storage.path.generate_gs_path(self.SOURCE_BUCKET_NAME, "window-0.json"),
-            metadata={"data_gateway__configuration": self.VALID_CONFIGURATION},
+            metadata={METADATA_CONFIGURATION_KEY: self.VALID_CONFIGURATION},
         )
 
         with patch.dict(
@@ -166,9 +184,8 @@ class TestUploadWindow(BaseTestCase):
                 "window_handler.BigQueryDataset.add_configuration",
                 side_effect=ConfigurationAlreadyExists("blah", "8b9337d8-40b1-4872-b2f5-b1bfe82b241e"),
             ):
-                with patch("window_handler.BigQueryDataset.add_sensor_data", return_value=None):
-                    with patch("big_query.bigquery.Client"):
-                        main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
+                with patch("cloud_functions.big_query.bigquery.Client", return_value=MockBigQueryClient()):
+                    main.upload_window(event=self.MOCK_EVENT, context=self._make_mock_context())
 
     @staticmethod
     def _make_mock_context():
@@ -231,9 +248,7 @@ class TestAddSensorType(BaseTestCase):
         """Test that a 409 error is returned if the sensor type reference sent to the endpoint already exists in the
         BigQuery dataset.
         """
-        mock_big_query_client = MockBigQueryClient(
-            expected_query_result=[types.SimpleNamespace(reference="my-sensor_type")]
-        )
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(reference="my-sensor_type")]])
 
         with patch("cloud_functions.big_query.bigquery.Client", return_value=mock_big_query_client):
             with self.app.test_client() as client:
@@ -338,7 +353,6 @@ class TestCreateInstallation(BaseTestCase):
         """
         with patch("cloud_functions.main.BigQueryDataset"):
             with self.app.test_client() as client:
-
                 for expected_error_field, data in (
                     ("reference", {"reference": "not slugified", "receiver_firmware_version": "0.0.1"}),
                     ("reference", {"reference": None, "receiver_firmware_version": "0.0.1"}),

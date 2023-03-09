@@ -1,7 +1,8 @@
 import datetime
+import json
+import logging
 import os
 import sys
-import types
 from unittest.mock import Mock, patch
 
 from tests.base import BaseTestCase
@@ -42,10 +43,10 @@ class TestBigQueryDataset(BaseTestCase):
                 node_id="0",
                 configuration_id="dbfed555-1b70-4191-96cb-c22071464b90",
                 installation_reference="turbine-1",
-                label="my-test",
+                measurement_campaign_reference="my-measurement-campaign",
             )
 
-        self.assertEqual(len(mock_big_query_client.rows[0]), 8)
+        self.assertEqual(len(mock_big_query_client.inserted_rows[0]), 8)
 
         expected_rows = [
             {
@@ -55,7 +56,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [1, 2, 3, 4],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -64,7 +65,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [6, 7, 8, 9],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -73,7 +74,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [11, 12, 13, 14],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -82,7 +83,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [16, 17, 18, 19],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -91,7 +92,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [21, 22, 23, 24],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -100,7 +101,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [26, 27, 28, 29],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -109,7 +110,7 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [31, 32, 33, 34],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
             {
                 "datetime": datetime.datetime(2021, 11, 10, 15, 55, 20, 639327),
@@ -118,15 +119,15 @@ class TestBigQueryDataset(BaseTestCase):
                 "sensor_value": [36, 37, 38, 39],
                 "configuration_id": "dbfed555-1b70-4191-96cb-c22071464b90",
                 "installation_reference": "turbine-1",
-                "label": "my-test",
+                "measurement_campaign_reference": "my-measurement-campaign",
             },
         ]
 
-        self.assertEqual(mock_big_query_client.rows[0], expected_rows)
+        self.assertEqual(mock_big_query_client.inserted_rows[0], expected_rows)
 
     def test_add_new_sensor_type(self):
         """Test that new sensor types can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient()
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_sensor_type(
@@ -135,7 +136,7 @@ class TestBigQueryDataset(BaseTestCase):
             )
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "reference": "my-sensor-name",
                 "name": "My sensor_Name",
@@ -147,9 +148,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_new_sensor_type_raises_error_if_sensor_type_already_exists(self):
         """Test that an error is raised if attempting to add a new sensor type that already exists."""
-        mock_big_query_client = MockBigQueryClient(
-            expected_query_result=[types.SimpleNamespace(reference="my-sensor-type")]
-        )
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(reference="my-sensor-type")]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -159,7 +158,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation(self):
         """Test that installations can be added."""
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient()
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_installation(
@@ -169,7 +168,7 @@ class TestBigQueryDataset(BaseTestCase):
             )
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "reference": "my-installation",
                 "turbine_id": "my-turbine",
@@ -180,9 +179,7 @@ class TestBigQueryDataset(BaseTestCase):
 
     def test_add_installation_raises_error_if_installation_already_exists(self):
         """Test that an error is raised if attempting to add an installation that already exists."""
-        mock_big_query_client = MockBigQueryClient(
-            expected_query_result=[types.SimpleNamespace(reference="my-installation")]
-        )
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(reference="my-installation")]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -198,17 +195,17 @@ class TestBigQueryDataset(BaseTestCase):
         """Test that a configuration can be added. The sha256 hash is used in the tests but blake3 is used in
         production. This is to avoid the need to install rust to install blake3 as a development dependency.
         """
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[])
+        mock_big_query_client = MockBigQueryClient()
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_configuration(
                 configuration={"nodes": {"0": {"blah": "blah"}}, "gateway": {"stuff": "data"}}
             )
 
-        del mock_big_query_client.rows[0][0]["id"]
+        del mock_big_query_client.inserted_rows[0][0]["id"]
 
         self.assertEqual(
-            mock_big_query_client.rows[0][0],
+            mock_big_query_client.inserted_rows[0][0],
             {
                 "nodes_configuration": '{"0": {"blah": "blah"}}',
                 "nodes_configuration_hash": "1aea08f4603f76a55d3267dd40c310e14787a8d64663a72cfc62f58152e44504",
@@ -222,7 +219,7 @@ class TestBigQueryDataset(BaseTestCase):
         existing configuration is returned.
         """
         existing_configuration_id = "0846401a-89fb-424e-89e6-039063e0ee6d"
-        mock_big_query_client = MockBigQueryClient(expected_query_result=[Mock(id=existing_configuration_id)])
+        mock_big_query_client = MockBigQueryClient(expected_query_results=[[Mock(id=existing_configuration_id)]])
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
@@ -233,3 +230,71 @@ class TestBigQueryDataset(BaseTestCase):
                 )
 
                 self.assertEqual(configuration_id, existing_configuration_id)
+
+    def test_add_or_update_measurement_campaign(self):
+        """Test that new measurement campaigns can be added."""
+        mock_big_query_client = MockBigQueryClient()
+
+        measurement_campaign_data = {
+            "reference": "effervescent-slug-of-doom",
+            "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
+            "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
+            "nodes": {"1": ["microphone"]},
+            "installation_reference": "some-installation",
+        }
+
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
+            dataset.add_or_update_measurement_campaign(**measurement_campaign_data)
+
+        self.assertEqual(
+            mock_big_query_client.inserted_rows[0][0],
+            {
+                "reference": measurement_campaign_data["reference"],
+                "start_time": measurement_campaign_data["start_time"],
+                "end_time": measurement_campaign_data["end_time"],
+                "nodes": json.dumps(measurement_campaign_data["nodes"]),
+                "installation_reference": measurement_campaign_data["installation_reference"],
+                "label": None,
+                "description": None,
+            },
+        )
+
+    def test_add_or_update_measurement_campaign_when_measurement_campaign_already_exists_just_updates_session_row(self):
+        """Test that trying to add a measurement campaign with an existing reference just updates the existing
+        measurement campaign row.
+        """
+        existing_measurement_campaign_reference = "howling-piranha-of-heaven"
+
+        measurement_campaign_data = {
+            "reference": existing_measurement_campaign_reference,
+            "start_time": datetime.datetime(2022, 11, 2, 16, 14, 40, 896294),
+            "end_time": datetime.datetime(2022, 11, 2, 16, 14, 44, 896294),
+            "nodes": {"1": ["microphone"]},
+            "installation_reference": "some-installation",
+        }
+
+        mock_big_query_client = MockBigQueryClient(
+            expected_query_results=[
+                [Mock(reference=existing_measurement_campaign_reference)],
+                [],
+            ]
+        )
+
+        with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
+            dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
+
+            with self.assertLogs(level=logging.INFO) as logging_context:
+                dataset.add_or_update_measurement_campaign(**measurement_campaign_data)
+
+        self.assertEqual(
+            logging_context.records[0].message,
+            f"Measurement campaign {existing_measurement_campaign_reference!r} already exists - updating measurement "
+            "campaign end time.",
+        )
+
+        # Check existing measurement campaign row has been updated.
+        self.assertIn("UPDATE my-project.my-dataset.measurement_campaign", mock_big_query_client.queries[1])
+
+        # Check no new rows have been inserted.
+        self.assertEqual(mock_big_query_client.inserted_rows, [])
