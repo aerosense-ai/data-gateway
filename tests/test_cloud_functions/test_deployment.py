@@ -34,7 +34,6 @@ class TestDeployment(unittest.TestCase, DatasetMixin):
         upload_path = storage.path.generate_gs_path(os.environ["TEST_BUCKET_NAME"], "window-0.json")
 
         configuration = copy.deepcopy(self.VALID_CONFIGURATION)
-
         measurement_campaign_reference = coolname.generate_slug(4)
         configuration["measurement_campaign"]["reference"] = measurement_campaign_reference
 
