@@ -261,7 +261,9 @@ class TestBigQueryDataset(BaseTestCase):
         )
 
     def test_add_or_update_measurement_campaign_when_measurement_campaign_already_exists_just_updates_session_row(self):
-        """Test that trying to add a measurement campaign with an existing reference just updates the existing measurement campaign row."""
+        """Test that trying to add a measurement campaign with an existing reference just updates the existing
+        measurement campaign row.
+        """
         existing_measurement_campaign_reference = "howling-piranha-of-heaven"
 
         measurement_campaign_data = {
@@ -287,7 +289,8 @@ class TestBigQueryDataset(BaseTestCase):
 
         self.assertEqual(
             logging_context.records[0].message,
-            f"Measurement campaign {existing_measurement_campaign_reference!r} already exists - updating measurement campaign end time.",
+            f"Measurement campaign {existing_measurement_campaign_reference!r} already exists - updating measurement "
+            "campaign end time.",
         )
 
         # Check existing measurement campaign row has been updated.
