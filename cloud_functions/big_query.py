@@ -302,7 +302,7 @@ class BigQueryDataset:
     def add_or_update_measurement_campaign(self, measurement_campaign_data):
         """Add a measurement campaign to the BigQuery dataset or, if it already exists, update its end time.
 
-        :param dict measurement_campaign_data: the measurement campaign data including the measurement campaign reference, start time, end time, and available sensors
+        :param dict measurement_campaign_data: the measurement campaign data including the measurement campaign reference, start time, end time, and available nodes mapped to their sensors. An optional label and description can also be included.
         :return None:
         """
         measurement_campaign_reference = self._get_field_if_exists(
@@ -337,6 +337,9 @@ class BigQueryDataset:
                 job_config=query_config,
             )
             return
+
+        measurement_campaign_data = measurement_campaign_data.copy()
+        measurement_campaign_data["nodes"] = json.dumps(measurement_campaign_data["nodes"])
 
         errors = self.client.insert_rows(
             table=self.client.get_table(self.table_names["measurement_campaign"]),
