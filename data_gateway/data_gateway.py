@@ -225,9 +225,9 @@ class DataGateway:
             )
 
     def _add_mandatory_measurement_campaign_metadata(self):
-        """Add the measurement campaign start time and a boolean for each of the default sensors types indicating
-        whether they are present on the node. Note that the measurement campaign end time is not added here but instead
-        updated on each data window upload.
+        """Add the measurement campaign's reference, start time, names of the available sensors on each node, and
+        installation reference to the configuration. If the configuration doesn't contain a measurement campaign
+        reference, a name is generated so a new measurement campaign can be created.
 
         :return None:
         """
