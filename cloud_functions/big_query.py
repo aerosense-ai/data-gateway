@@ -299,33 +299,42 @@ class BigQueryDataset:
         logger.info("Added configuration %r to BigQuery dataset %r.", configuration_id, self.dataset_id)
         return configuration_id
 
-    def add_or_update_measurement_campaign(self, measurement_campaign_data):
+    def add_or_update_measurement_campaign(
+        self,
+        reference,
+        start_time,
+        end_time,
+        installation_reference,
+        nodes,
+        label=None,
+        description=None,
+    ):
         """Add a measurement campaign to the BigQuery dataset or, if it already exists, update its end time.
 
-        :param dict measurement_campaign_data: the measurement campaign data including the measurement campaign reference, start time, end time, and available nodes mapped to their sensors. An optional label and description can also be included.
+        :param str reference: the reference of the measurement campaign
+        :param datetime.datetime start_time: the measurement campaign's start time
+        :param datetime.datetime end_time: the measurement campaign's end time
+        :param str installation_reference: the reference of the installation the measurement campaign is carried out from
+        :param dict nodes: a mapping of each node's ID to a list of its sensors' names
+        :param str|None label: an optional label to give the measurement campaign
+        :param str|None description: an optional description to give the measurement campaign
+
         :return None:
         """
-        measurement_campaign_reference = self._get_field_if_exists(
+        measurement_campaign_exists = self._get_field_if_exists(
             table_name=self.table_names["measurement_campaign"],
             field_name="reference",
             comparison_field_name="reference",
-            value=measurement_campaign_data["reference"],
+            value=reference,
         )
 
-        if measurement_campaign_reference:
-            logger.info(
-                "Measurement campaign %r already exists - updating measurement campaign end time.",
-                measurement_campaign_data["reference"],
-            )
+        if measurement_campaign_exists:
+            logger.info("Measurement campaign %r already exists - updating measurement campaign end time.", reference)
 
             query_config = bigquery.QueryJobConfig(
                 query_parameters=[
-                    bigquery.ScalarQueryParameter("end_time", "DATETIME", measurement_campaign_data["end_time"]),
-                    bigquery.ScalarQueryParameter(
-                        "measurement_campaign_reference",
-                        "STRING",
-                        measurement_campaign_data["reference"],
-                    ),
+                    bigquery.ScalarQueryParameter("end_time", "DATETIME", end_time),
+                    bigquery.ScalarQueryParameter("measurement_campaign_reference", "STRING", reference),
                 ]
             )
 
@@ -338,22 +347,25 @@ class BigQueryDataset:
             )
             return
 
-        measurement_campaign_data = measurement_campaign_data.copy()
-        measurement_campaign_data["nodes"] = json.dumps(measurement_campaign_data["nodes"])
-
         errors = self.client.insert_rows(
             table=self.client.get_table(self.table_names["measurement_campaign"]),
-            rows=[measurement_campaign_data],
+            rows=[
+                {
+                    "reference": reference,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "installation_reference": installation_reference,
+                    "nodes": json.dumps(nodes),
+                    "label": label,
+                    "description": description,
+                }
+            ],
         )
 
         if errors:
             raise ValueError(errors)
 
-        logger.info(
-            "Added measurement campaign %r to BigQuery dataset %r.",
-            measurement_campaign_data["reference"],
-            self.dataset_id,
-        )
+        logger.info("Added measurement campaign %r to BigQuery dataset %r.", reference, self.dataset_id)
 
     def _get_field_if_exists(self, table_name, field_name, comparison_field_name, value):
         """Get the value of the given field for the row of the given table for which the comparison field has the

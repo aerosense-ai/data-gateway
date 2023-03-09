@@ -72,7 +72,7 @@ class WindowHandler:
         :return None:
         """
         measurement_campaign_data = window_metadata.pop("measurement_campaign")
-        self.dataset.add_or_update_measurement_campaign(measurement_campaign_data)
+        self.dataset.add_or_update_measurement_campaign(**measurement_campaign_data)
 
         try:
             configuration_id = self.dataset.add_configuration(window_metadata)

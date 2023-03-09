@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import sys
@@ -243,9 +244,8 @@ class TestBigQueryDataset(BaseTestCase):
         }
 
         with patch("big_query.bigquery.Client", return_value=mock_big_query_client):
-            BigQueryDataset(project_name="my-project", dataset_name="my-dataset").add_or_update_measurement_campaign(
-                measurement_campaign_data
-            )
+            dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
+            dataset.add_or_update_measurement_campaign(**measurement_campaign_data)
 
         self.assertEqual(
             mock_big_query_client.inserted_rows[0][0],
@@ -253,8 +253,10 @@ class TestBigQueryDataset(BaseTestCase):
                 "reference": measurement_campaign_data["reference"],
                 "start_time": measurement_campaign_data["start_time"],
                 "end_time": measurement_campaign_data["end_time"],
-                "nodes": measurement_campaign_data["nodes"],
+                "nodes": json.dumps(measurement_campaign_data["nodes"]),
                 "installation_reference": measurement_campaign_data["installation_reference"],
+                "label": None,
+                "description": None,
             },
         )
 
@@ -281,7 +283,7 @@ class TestBigQueryDataset(BaseTestCase):
             dataset = BigQueryDataset(project_name="my-project", dataset_name="my-dataset")
 
             with self.assertLogs(level=logging.INFO) as logging_context:
-                dataset.add_or_update_measurement_campaign(measurement_campaign_data=measurement_campaign_data)
+                dataset.add_or_update_measurement_campaign(**measurement_campaign_data)
 
         self.assertEqual(
             logging_context.records[0].message,
