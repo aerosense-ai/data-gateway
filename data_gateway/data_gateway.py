@@ -70,7 +70,6 @@ class DataGateway:
         output_directory="data_gateway",
         window_size=600,
         bucket_name=None,
-        label=None,
         save_csv_files=False,
         use_dummy_serial_port=False,
         log_level=logging.INFO,
@@ -91,7 +90,6 @@ class DataGateway:
         self.interactive = interactive
 
         packet_reader_configuration = self._load_configuration(configuration_path=configuration_path)
-        self._label = label
 
         self.serial_port_name = serial_port
         self.use_dummy_serial_port = use_dummy_serial_port
@@ -225,9 +223,9 @@ class DataGateway:
             )
 
     def _add_mandatory_measurement_campaign_metadata(self):
-        """Add the measurement campaign's reference, start time, names of the available sensors on each node, and
-        installation reference to the configuration. If the configuration doesn't contain a measurement campaign
-        reference, a name is generated so a new measurement campaign can be created.
+        """Add the measurement campaign's start time and the names of the available sensors on each node to the
+        configuration. If the configuration doesn't contain a reference for the measurement campaign, a name is
+        generated so a new measurement campaign can be created.
 
         :return None:
         """
@@ -235,14 +233,13 @@ class DataGateway:
 
         if "reference" not in measurement_campaign:
             measurement_campaign["reference"] = coolname.generate_slug(4)
+
             logger.info(
-                "No measurement campaign reference specified in configuration - creating new campaign called %r",
+                "No measurement campaign reference specified in configuration - creating new campaign called %r.",
                 measurement_campaign["reference"],
             )
 
-        measurement_campaign["installation_reference"] = self.packet_reader.config.gateway.installation_reference
         measurement_campaign["start_time"] = datetime.datetime.now()
-        measurement_campaign["label"] = self._label
 
         measurement_campaign["nodes"] = {
             node_id: node.sensor_names for node_id, node in self.packet_reader.config.nodes.items()
