@@ -23,6 +23,7 @@ class DatasetMixin:
     VALID_CONFIGURATION["measurement_campaign"]["reference"] = "effervescent-slug-of-doom"
     VALID_CONFIGURATION["measurement_campaign"]["start_time"] = datetime.datetime(2022, 11, 2, 16, 14, 40, 896294)
     VALID_CONFIGURATION["measurement_campaign"]["end_time"] = datetime.datetime(2022, 11, 2, 16, 14, 44, 896294)
+    VALID_CONFIGURATION["measurement_campaign"]["installation_reference"] = "mature-papaya-gharial-of-sorcery"
     VALID_CONFIGURATION["measurement_campaign"]["nodes"] = {"0": ["microphone"]}
 
     def random_sensor_data(self, rows, cols, first_sample_time, last_sample_time):
