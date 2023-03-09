@@ -50,7 +50,6 @@ class DataGateway:
     :param str output_directory: the name of the directory in which to save data in the cloud bucket or local file system
     :param float window_size: the period in seconds at which data is persisted
     :param str|None bucket_name: the name of the Google Cloud bucket to upload to
-    :param str|None label: a label to be associated with the data collected in this run of the data gateway
     :param bool save_csv_files: if `True`, also save windows locally as CSV files for debugging
     :param bool use_dummy_serial_port: if `True` use a dummy serial port for testing
     :param bool stop_sensors_on_exit: if true, and a `stop_routine_file` path is present, hte stop routine will be executed by the gateway main thread prior to quitting
