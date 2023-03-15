@@ -4,12 +4,35 @@
 Information for Developers
 ==========================
 
+.. _editing_files:
+
+Editing configuration and routine files
+=======================================
+
+Often, whilst testing or getting set up, you'll want to edit files on a device itself,
+particularly a configuration or routine file that you're just trying out.
+
+For this, the ``nano`` editor has been installed in the built containers so you can do:
+
+.. code-block:: shell
+    $ nano $GATEWAY_ROUTINE_FILE
+    
+or
+
+.. code-block:: shell
+    $ nano $GATEWAY_CONFIG_FILE
+    
+to edit either the routine or the configuration files.
+
+
 .. _scp_of_files:
 
 SCP of files to/from BalenaOS
 =============================
 
-Sometimes, for debugging, you might run the gateway with the ``-l`` and/or ``--save-local-logs`` options, then want to
+For 99% of the time, using nano to edit (or paste from your own preferred IDE) will be fine.
+Occasionally though, you'll want to get files on/off a device. In particular, for debugging, 
+you might run the gateway with the ``-l`` and/or ``--save-local-logs`` options, then want to
 directly inspect the data files that result.
 
 However, the ``balena`` cli doesn't support ``scp`` that well out of the box (although there are workarounds using tunneling).
@@ -56,3 +79,4 @@ To copy files between ``/data`` directory (on a container deployed by Balena) an
     scp-uuid 4bfe19d3651d27dc89d4b1a8c95061fa.balena:/var/lib/docker/volumes/1945598_resin-data/_data/gateway/20221122T100229/window-2.json .
 
 #. The scp command should work recursively with folders, but take care because they can be large if a long session has taken place.
+

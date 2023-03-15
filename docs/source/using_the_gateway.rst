@@ -4,6 +4,7 @@
 Using the Gateway
 =================
 
+
 .. _gateway_cli:
 
 Gateway CLI
@@ -18,13 +19,7 @@ help by typing:
 
    gateway --help
 
-The main command to start the gateway running is:
-
-.. code-block:: shell
-
-   gateway start
-
-You can see help about this command by executing:
+Or see more detailed help on the ``start`` subcommand with:
 
 .. code-block:: shell
 
@@ -44,7 +39,7 @@ Before starting this mode, Google application credentials must be provided. To s
 
     export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json
 
-    gateway start --gcp-bucket-name=my-bucket --output-dir=path/to/output-directory-in-cloud-bucket
+    gateway start
 
 If the connection to Google Cloud fails, windows will be written to the hidden directory
 ``./<output_directory>/.backup`` where they will stay until the connection resumes. Backup files are deleted upon
@@ -65,7 +60,7 @@ To start this mode, type:
 
     export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json
 
-    gateway start --interactive --output-dir=<path/to/output-directory>
+    gateway start --interactive
 
 Typing ``stop`` or pressing ``Ctrl + C`` will stop the session.
 
@@ -83,8 +78,10 @@ Other options
 Configuring the Gateway
 =======================
 
-Configuration options for the gateway can be supplied via a configuration file. By default, **data-gateway** looks for
-a file named ``config.json`` in the working directory, although the CLI allows this to be overridden to use a specific
+Configuration options for the gateway can be supplied via a configuration file. 
+The easiest way of specifying the file is to set an environment variable 
+By default, **data-gateway** looks for a file named ``config.json`` in the working directory,
+although the CLI allows this to be overridden to use a specific
 configuration file. Here is the contents of an example configuration file:
 
 .. code-block:: json
