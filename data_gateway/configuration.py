@@ -66,6 +66,7 @@ DEFAULT_LOCAL_INFO_TYPES = {
     "128": "Time sync success",
     "129": "Coarse sync finish",
     "130": "Time sync msg sent",
+    "240": "Command not registered",
 }
 
 DEFAULT_SAMPLES_PER_PACKET = {
