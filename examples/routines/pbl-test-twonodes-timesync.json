@@ -1,0 +1,24 @@
+{
+  "commands": [
+    ["startSync", 5],
+    ["selMsgDest 1", 10], 
+    ["selMsgDest 1", 11],
+    ["getBattery", 12],  
+    ["startBaros", 14],  
+    ["selMsgDest 2", 15], 
+    ["selMsgDest 2", 16],
+    ["getBattery", 17],
+    ["startBaros", 19],
+    ["stopBaros", 49],
+    ["selMsgDest 1", 50], 
+    ["selMsgDest 1", 51],
+    ["stopBaros", 52],
+    ["stoptSync", 53],
+    ["readSens", 55],
+    ["selMsgDest 2", 355], 
+    ["selMsgDest 2", 356],
+    ["readSens", 357],
+    ["selMsgDest 1", 657]
+  ],
+  "period": 800
+}
