@@ -64,4 +64,4 @@ can log into BalenaCloud then invite you.
     :align: center
     :figclass: align-center
 
-    Go to the service accounts view, and click "Create Service Account"
+    The current list of admins in balena.

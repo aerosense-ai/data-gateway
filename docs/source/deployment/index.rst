@@ -21,38 +21,14 @@ Go through the following steps:
 
 4. :ref:`Check <check>` the gateway.
 
-Once complete, move on to :ref:`using the gateway <using_the_gateway>`.
+Once complete, move on to :ref:`using the gateway <usage>`.
 
 .. toctree::
-   :maxdepth: 1
-   :hidden:
+   :caption: Deployment Contents
+   :maxdepth: 2
 
    using_balena
    manual_installation
    configuration
    registration
    check
-
-
-.. _check:
-
-Check
-=====
-
-Once the above steps are complete, in the balena (or your own, for a manual installation) terminal, check the installation by typing:
-
-.. code-block:: shell
-   
-   gateway --help
-
-.. figure:: /images/balena/gateway-help.png
-    :width: 600px
-    :align: center
-    :figclass: align-center
-
-    If the gateway is correctly installed, you should see this.
-
-
-To get started, see :ref:`using the gateway <using_the_gateway>`. 
-
-

@@ -5,7 +5,7 @@ Manual Installation
 ===================
 
 .. note::
-    Once installed, you'll need to configure with a service account; follow the steps in :ref:`<configuration>` using your own terminal and system environment variables.
+    Once installed, you'll need to configure with a service account; follow the :ref:`setup steps <configuration>` using your own terminal and system environment variables.
 
 .. warning::
     
@@ -33,6 +33,7 @@ You'll need to install Raspberry Pi OS (formerly "Raspbian", which was a much be
 When booted into your **pi**, use the following commands to install...
 
 .. code-block:: shell
+    
    sudo apt-get update
    sudo apt-get install libhdf5-dev libhdf5-serial-dev
 

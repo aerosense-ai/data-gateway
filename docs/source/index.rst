@@ -1,6 +1,3 @@
-.. ATTENTION::
-    This library is in experimental stages! Please pin deployments to a specific release, and consider every release as breaking.
-
 ============
 Data Gateway
 ============
@@ -8,12 +5,12 @@ Data Gateway
 .. epigraph::
    *"Data Gateway" ~ reads data from an Aerosense receiver and shoves it into the cloud.*
 
-Get Started
-===========
+Get Started Quick
+=================
 
 - :ref:`Deploy a gateway <deployment>`. 
 
-- :ref:`Run an already-deployed gateway <using_the_gateway>`. 
+- :ref:`Run an already-deployed gateway <usage>`. 
 
 Data Flow
 =========
@@ -44,16 +41,12 @@ internet outages.
 
 The code for the Cloud Function ``Ingress`` is also included in this repository.
 
-
 .. toctree::
+   :caption: Table of Contents
    :maxdepth: 2
-   :hidden:
 
    deployment/index
-   using_the_gateway
-   output_data
-   routines
+   usage/index
    cloud/index
    hardware_and_firmware_versions
-   information_for_developers
    version_history

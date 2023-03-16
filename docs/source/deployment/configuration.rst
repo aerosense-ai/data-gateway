@@ -6,7 +6,7 @@ Configuration
 
 .. note::
   
-  The majority of users will confgure directly in Balena so we'll use that to provide the steps here.
+  The majority of users will use Balena, so we'll give examples in balena here.
   Configuring in a manually installed environment is broadly the same.
 
 
@@ -38,7 +38,7 @@ This file will persist over reboots of the device; you shouldn't need to touch i
 Add routine and configuration files
 ===================================
 
-We'll start with basic configuration files, you can change them later. Do:
+We'll start with an empty routine file, which you can change later (see :ref:`routine_files`), and a basic configuration file.
 
 .. code-block:: shell
 
