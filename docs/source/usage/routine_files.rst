@@ -1,8 +1,8 @@
-.. _sensor_command_routines:
+.. _routine_files:
 
-=======================
-Sensor command routines
-=======================
+=============
+Routine files
+=============
 
 Commands can be sent to the sensors in two ways:
 
@@ -11,7 +11,7 @@ Commands can be sent to the sensors in two ways:
 
 
 Creating and providing a routine file
--------------------------------------
+=====================================
 
 A routine file looks like this:
 
@@ -37,7 +37,7 @@ exist and the ``--routine-file`` option isn't provided, the command assumes ther
 
 
 Routine file schema
--------------------
+===================
 
 - The ``commands`` key in the file should be a list of two-element lists. Each two-element list should comprise a valid string command to 
   send to the sensors and a delay in seconds from the gateway starting to run the command.
@@ -46,49 +46,49 @@ Routine file schema
 
 
 Example routine files
----------------------
+=====================
 
-The following routine file instructs the gateway to 
 .. code-block:: shell
 
-    {
-        "commands": [
-            [
-            "startDiffBaros",
-            60
+   {
+       "commands": [
+           [
+           "startDiffBaros",
+           60
+           ],
+           [
+           "startIMU",
+           65
+           ],
+           [
+           "getBattery",
+           70
+           ],
+           [
+           "stopDiffBaros",
+           660
             ],
-            [
-            "startIMU",
-            65
-            ],
-            [
-            "getBattery",
-            70
-            ],
-            [
-            "stopDiffBaros",
-            660
-            ],
-            [
-            "startBaros",
-            670
-            ],
-            [
-            "startMics",
-            1265
-            ],
-            [
-            "stopBaros",
-            1270
-            ],
-            [
-            "stopIMU",
-            1275
-            ],
-            [
-            "stopMics",
+           [
+           "startBaros",
+           670
+           ],
+           [
+           "startMics",
+           1265
+           ],
+           [
+           "stopBaros",
+           1270
+           ],
+           [
+           "stopIMU",
+           1275
+           ],
+           [
+           "stopMics",
             1280
-            ]
-        ],
-        "period": 3600
-    }
+           ]
+       ],
+       "period": 3600
+   }
+

@@ -1,6 +1,3 @@
-.. ATTENTION::
-    This library is in experimental stages! Please pin deployments to a specific release, and consider every release as breaking.
-
 ============
 Data Gateway
 ============
@@ -8,6 +5,12 @@ Data Gateway
 .. epigraph::
    *"Data Gateway" ~ reads data from an Aerosense receiver and shoves it into the cloud.*
 
+Get Started Quick
+=================
+
+- :ref:`Deploy a gateway <deployment>`. 
+
+- :ref:`Run an already-deployed gateway <usage>`. 
 
 Data Flow
 =========
@@ -17,8 +20,8 @@ The data flow from the aerosense sensor modules looks like this:
 .. code-block::
 
     Node (edge processor on-blade)
-    ->  Receiver (bluetooth equipment in-nacelle)
-    --->  Gateway (data manager and uploader on-nacelle)
+    ->  Base Station (bluetooth equipment on-tower)
+    --->  Gateway (data manager and uploader on-tower)
     ----->  Ingress (Cloud Function to receive data on-cloud)
     ------->  Google Cloud BigQuery + Google Cloud Store (database / object storage system)
         |---->  Digital Twin (data analysis system)
@@ -26,7 +29,7 @@ The data flow from the aerosense sensor modules looks like this:
         |---->  Dashboard (data visualisation for researchers and system installers)
     
 
-A ``Node`` streams data to the ``Receiver`` via bluetooth. The ``Receiver`` writes the bytestream directly to a serial
+A ``Node`` streams data to the ``Base Station`` via bluetooth. The ``Base Station`` writes the bytestream directly to a serial
 port. The ``Gateway`` (this library) reads the bytestream from the serial port, decodes it and buffers it in local
 storage. The ``Gateway`` then is responsible for:
 
@@ -38,17 +41,12 @@ internet outages.
 
 The code for the Cloud Function ``Ingress`` is also included in this repository.
 
-
 .. toctree::
+   :caption: Table of Contents
    :maxdepth: 2
-   :hidden:
 
-   installation
-   using_the_gateway
-   output_data
-   routines
-   deployment
-   cloud_functions
+   deployment/index
+   usage/index
+   cloud/index
    hardware_and_firmware_versions
-   information_for_developers
    version_history

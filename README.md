@@ -2,22 +2,25 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![python-template](https://img.shields.io/badge/template-python--library-blue)](https://github.com/thclark/python-library-template)
-
+[![docs](https://readthedocs.org/projects/aerosense-data-gateway/badge/?version=latest)](https://aerosense-data-gateway.readthedocs.io/en/latest/)
 
 # data-gateway
 
-Read the docs [here.](https://aerosense-data-gateway.readthedocs.io/en/latest/)
+Usage: Read the documentation [here.](https://aerosense-data-gateway.readthedocs.io/en/latest/)
 
-*Note that the test coverage figure is more like 90% - the recent addition of multiprocessing has made it difficult to
-measure the true coverage across multiple processes.*
+_Note that the test coverage figure is more like 90% - the recent addition of multiprocessing has made it difficult to
+measure the true coverage across multiple processes._
 
 ## Installation and usage
+
 To install, run:
+
 ```shell
 pip install git+https://github.com/aerosense-ai/data-gateway.git
 ```
 
 The command line interface (CLI) can then be accessed via:
+
 ```shell
 gateway --help
 ```
@@ -50,19 +53,25 @@ Commands:
 ### Installation
 
 #### Poetry
+
 We're using `poetry` instead of `pip` to manage the package to take advantage of the `poetry.lock` file [among other
 useful features](https://python-poetry.org/). In terms of developer experience, this just means there are some slightly
 different commands to run than usual. `data-gateway` can still be `pip`-installed by anyone anywhere, but dependency
 resolution and dependency specification for `data-gateway` developers is improved by using `poetry` locally.
 
 #### Architecture-specific installations
+
 Due to some (most likely temporary) constraints with `poetry` and the need to run and develop the gateway on Linux,
 Windows, M1 Macs, and Raspberry Pis, the need has arisen for some slightly different installation procedures on these
-different architectures/platforms. Instructions are detailed below - [click here](https://github.com/aerosense-ai/data-gateway/issues/65)
+different architectures/platforms. [click here](https://github.com/aerosense-ai/data-gateway/issues/65)
 to read more.
 
+For Raspberry Pis, overwhelmingly the simple thing to do is use balena instead ([see the docs](https://aerosense-data-gateway.readthedocs.io/en/latest/)).
+
 #### Clone the repository
+
 First, clone the repository and `cd` into it:
+
 ```shell
 git clone https://github.com/aerosense-ai/data-gateway.git
 cd data-gateway
@@ -70,8 +79,10 @@ cd data-gateway
 
 Then follow the instructions for your platform below.
 
-#### Install on MacOS and Linux (except on Raspberry Pi)
+#### Install on MacOS and Linux
+
 Run the following from the repository root:
+
 ```shell
 pip install poetry
 
@@ -80,25 +91,31 @@ poetry install
 ```
 
 This will editably install `data-gateway` in a `poetry`-managed virtual environment, meaning:
+
 - Any local changes you make to it will be automatically used when running it locally
 - It won't be affected by changes to other python packages you have installed on your system, making development much
   easier and more deterministic
 
 #### Install on Raspberry Pi
-Run the following from the repository root:
+
+It's best to use [balena](https://aerosense-data-gateway.readthedocs.io/en/latest/) but if you do need to run the install, do the following from the repository root:
+
 ```shell
 pip install -r requirements-pi-dev.txt
 ```
 
 #### Install on Windows
-This workflow works for Windows using Powershell.
+
+This workflow works for Windows using Powershell, if you're the most masochistic of people.
 
 Prerequisites:
+
 1. Make sure to have python not installed from [python.org](https://www.python.org/)
 2. Install [pyenv-win](https://github.com/pyenv-win/pyenv-win) via pip method
-3. Execute ```pip install virtualenv```
+3. Execute `pip install virtualenv`
 
 Installation:
+
 ```shell
 pyenv install 3.8.0  # (or higher)
 pyenv local 3.8.0
@@ -110,25 +127,32 @@ poetry install
 ```
 
 Every time you enter the repo over powershell again, make sure to activate the venv using
+
 ```shell
 ./venv/Scripts/activate
 ```
 
 #### Troubleshooting
+
 If there are problems reading the serial port, try running this (or the equivalent on non-Linux platforms) and retrying:
+
 ```shell
 sudo apt-get update
 sudo apt-get install libhdf5-dev libhdf5-serial-dev
 ```
 
 ### Testing
+
 These environment variables need to be set to run the tests:
-* `GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json`
+
+- `GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service/account/file.json`
 
 Then, from the repository root, run
+
 ```bash
 tox
 ```
 
 ## Contributing
+
 Take a look at our [contributing](/docs/contributing.md) page.
