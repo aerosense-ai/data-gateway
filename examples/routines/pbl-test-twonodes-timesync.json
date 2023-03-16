@@ -1,24 +1,34 @@
 {
   "commands": [
     ["startSync", 5],
-    ["selMsgDest 1", 10], 
+    ["selMsgDest 1", 10],
     ["selMsgDest 1", 11],
-    ["getBattery", 12],  
-    ["startBaros", 14],  
-    ["selMsgDest 2", 15], 
-    ["selMsgDest 2", 16],
-    ["getBattery", 17],
-    ["startBaros", 19],
-    ["stopBaros", 49],
-    ["selMsgDest 1", 50], 
-    ["selMsgDest 1", 51],
-    ["stopBaros", 52],
-    ["stoptSync", 53],
-    ["readSens", 55],
-    ["selMsgDest 2", 355], 
-    ["selMsgDest 2", 356],
-    ["readSens", 357],
-    ["selMsgDest 1", 657]
+    ["getBattery", 12],
+    ["startIMU" 14]
+    ["startBaros", 16],
+    ["selMsgDest 2", 18], 
+    ["selMsgDest 2", 19],
+    ["getBattery", 20],
+    ["startIMU", 22]
+    ["startBaros", 24],
+    ["startDiffBaros", 496]  
+    ["selMsgDest 1", 498],
+    ["selMsgDest 1", 499],
+    ["startDiffBaros", 500]
+    ["stopDiffBaros", 620]
+    ["stopBaros", 622]
+    ["stopIMU", 624]
+    ["selMsgDest 2", 626],
+    ["selMsgDest 2", 627],
+    ["stopDiffBaros", 628]
+    ["stopBaros", 630]  
+    ["stopIMU", 632]
+    ["stoptSync", 634],
+    ["readSens", 636],
+    ["selMsgDest 1", 1900], 
+    ["selMsgDest 1", 1901],
+    ["readSens", 1202],
+    ["selMsgDest 1", 3200]
   ],
-  "period": 800
+  "period": 3600
 }
