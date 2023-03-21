@@ -1,4 +1,4 @@
-import logging
+import multiprocessing
 import os
 
 import serial
@@ -6,7 +6,7 @@ import serial
 from data_gateway.dummy_serial import DummySerial
 
 
-logger = logging.getLogger(__name__)
+logger = multiprocessing.get_logger()
 
 
 def get_serial_port(serial_port, configuration, use_dummy_serial_port=False):
