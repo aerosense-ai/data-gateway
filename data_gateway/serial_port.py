@@ -25,6 +25,9 @@ def get_serial_port(serial_port, configuration, use_dummy_serial_port=False):
             serial_port = DummySerial(port=serial_port_name, baudrate=configuration.gateway.baudrate)
         else:
             serial_port = serial.Serial(port=serial_port_name, baudrate=configuration.gateway.baudrate)
+            serial_port.reset_input_buffer()
+            serial_port.reset_output_buffer()
+            logger.info("Reset serial port input and output buffers")
 
         logger.info("Serial port %r found.", serial_port_name)
 
