@@ -1,7 +1,5 @@
 import copy
 
-from data_gateway.exceptions import WrongNumberOfSensorCoordinatesError
-
 
 BASE_STATION_ID = "base-station"
 
@@ -214,7 +212,7 @@ class NodeConfiguration:
     :param dict|None samples_per_packet: A map for each sensor, giving the number of samples sent in a packet from that sensor
     :param dict|None sensor_commands:
     :param dict|None sensor_conversion_constants:
-    :param dict|None sensor_coordinates:
+    :param dict sensor_coordinates:
     :param list|None sensor_names: List of sensors present on the measurement node
     :param dict|None sleep_state:
     :return None:
@@ -268,6 +266,7 @@ class NodeConfiguration:
         self.mics_bm = mics_bm
         self.mics_freq = mics_freq
         self.node_firmware_version = node_firmware_version
+        self.sensor_coordinates = sensor_coordinates
 
         # Set default dictionaries
         self.decline_reason = decline_reason or DEFAULT_DECLINE_REASONS
@@ -279,18 +278,6 @@ class NodeConfiguration:
         self.sensor_conversion_constants = sensor_conversion_constants or DEFAULT_SENSOR_CONVERSION_CONSTANTS
         self.sensor_names = sensor_names or DEFAULT_SENSOR_NAMES
         self.sleep_state = sleep_state or DEFAULT_SLEEP_STATES
-
-        # Set calculated defaults
-        self.sensor_coordinates = sensor_coordinates or self._get_default_sensor_coordinates()
-
-        for sensor, coordinates in self.sensor_coordinates.items():
-            number_of_sensors = self.number_of_sensors[sensor]
-
-            if len(coordinates) != number_of_sensors:
-                raise WrongNumberOfSensorCoordinatesError(
-                    f"The number of sensors for the {sensor!r} sensor type is {number_of_sensors} but coordinates "
-                    f"were only given for {len(coordinates)} sensors. Coordinates must be given for every sensor."
-                )
 
         # Ensure conversion constants are consistent
         self._expand_sensor_conversion_constants()
@@ -323,12 +310,6 @@ class NodeConfiguration:
         :return dict:
         """
         return {**vars(self), "periods": self.periods}
-
-    def _get_default_sensor_coordinates(self):
-        return {
-            sensor_name: [(0, 0, 0)] * number_of_sensors
-            for sensor_name, number_of_sensors in self.number_of_sensors.items()
-        }
 
     def _check(self):
         """Serialise self to JSON then make sure it matches a schema"""
