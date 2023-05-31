@@ -62,6 +62,12 @@ class DummySerial(object):
         """
         pass
 
+    def reset_input_buffer(self):
+        pass
+
+    def reset_output_buffer(self):
+        pass
+
     def open(self):
         """Open the dummy serial port"""
         logger.debug("Opening port")
@@ -163,7 +169,6 @@ class DummySerial(object):
         return len(self._waiting_data)
 
     def _check_response(self, data_in):
-
         data_out = constants.NO_DATA_PRESENT
         if data_in in self.responses:
             data_out = self.responses[data_in]
