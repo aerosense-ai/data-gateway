@@ -390,7 +390,7 @@ class TestCreateInstallation(BaseTestCase):
                             "reference": "hello",
                             "receiver_firmware_version": "0.0.1",
                             "turbine_id": "0",
-                            "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                            "sensor_coordinates": {"blah_sensor": "coordinate_reference"},
                         }
                     )
 
@@ -408,7 +408,7 @@ class TestCreateInstallation(BaseTestCase):
                         "reference": "hello",
                         "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
-                        "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                        "sensor_coordinates": {"blah_sensor": "coordinate_reference"},
                     }
                 )
 
@@ -444,7 +444,7 @@ class TestCreateInstallation(BaseTestCase):
                         "reference": "hello",
                         "receiver_firmware_version": "0.0.1",
                         "turbine_id": "0",
-                        "sensor_coordinates": {"blah_sensor": [[0, 0, 0]]},
+                        "sensor_coordinates": {"blah_sensor": "coordinate_reference"},
                     }
                 )
 

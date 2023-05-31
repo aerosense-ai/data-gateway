@@ -212,7 +212,7 @@ class NodeConfiguration:
     :param dict|None samples_per_packet: A map for each sensor, giving the number of samples sent in a packet from that sensor
     :param dict|None sensor_commands:
     :param dict|None sensor_conversion_constants:
-    :param dict sensor_coordinates:
+    :param dict sensor_coordinates: a mapping of sensor name to sensor coordinates reference
     :param list|None sensor_names: List of sensors present on the measurement node
     :param dict|None sleep_state:
     :return None:
